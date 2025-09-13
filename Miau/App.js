@@ -14,6 +14,7 @@ import CadUser from './src/screens/User/CadUser';
 import AboutUs1 from './src/screens/User/AboutUs1';
 import AboutUs2 from './src/screens/User/AboutUs2';
 import AboutUs3 from './src/screens/User/AboutUs3';
+import Teste from '.src/screens/User/TesteUser';
 
 // Telas de Parceiro (Login, Cadastro)
 import LoginPartner from './src/screens/Partner/loginPartner';
@@ -82,6 +83,7 @@ export default function App() {
         <Stack.Screen name="AboutUs1" component={AboutUs1} />
         <Stack.Screen name="AboutUs2" component={AboutUs2} />
         <Stack.Screen name="AboutUs3" component={AboutUs3} />
+        <Stack.Screen name="Teste" component={Teste} />
         
         {/* Categoria: Parceiro (Geral) */}
         <Stack.Screen name="LoginPartner" component={LoginPartner} />
