@@ -14,7 +14,6 @@ import CadUser from './src/screens/User/CadUser';
 import AboutUs1 from './src/screens/User/AboutUs1';
 import AboutUs2 from './src/screens/User/AboutUs2';
 import AboutUs3 from './src/screens/User/AboutUs3';
-import Teste from '.src/screens/User/TesteUser';
 
 // Telas de Parceiro (Login, Cadastro)
 import LoginPartner from './src/screens/Partner/loginPartner';
@@ -51,6 +50,19 @@ import FormONG4 from './src/screens/Ong/FormONG4';
 import RevisaoONG1 from './src/screens/Ong/RevisaoONG1';
 import RevisaoONG2 from './src/screens/Ong/RevisaoONG2';
 import RevisaoONG3 from './src/screens/Ong/RevisaoONG3';
+// Telas da ONG (Tudo)
+import MainDrawerOng from './src/screens/Ong/NavigationOng/MainDrawerOng';
+import AddAdocaoPetOng from './src/screens/Ong/HomeOngScreens/AddAdocaoPet';
+import ChatEspecificoOng from './src/screens/Ong/HomeOngScreens/ChatEspecifico';
+import ChatOngOng from './src/screens/Ong/HomeOngScreens/ChatOng';
+import EventoOngOng from './src/screens/Ong/HomeOngScreens/EventoOng';
+import HomeOngOng from './src/screens/Ong/HomeOngScreens/HomeOng';
+import PerfilAdocaoPetOng from './src/screens/Ong/HomeOngScreens/PerfilAdocaoPet';
+import FormularioAdocaoOng from './src/screens/Ong/HomeOngScreens/FormularioAdocao';
+import PerfilOngOng from './src/screens/Ong/HomeOngScreens/PerfilOng';
+import SobreAPPOng from './src/screens/Ong/HomeOngScreens/SobreAPP';
+
+
 // Novas importações para About Us da ONG
 import AboutUsO1 from './src/screens/Ong/AboutUsO1';
 import AboutUsO2 from './src/screens/Ong/AboutUsO2';
@@ -83,7 +95,6 @@ export default function App() {
         <Stack.Screen name="AboutUs1" component={AboutUs1} />
         <Stack.Screen name="AboutUs2" component={AboutUs2} />
         <Stack.Screen name="AboutUs3" component={AboutUs3} />
-        <Stack.Screen name="Teste" component={Teste} />
         
         {/* Categoria: Parceiro (Geral) */}
         <Stack.Screen name="LoginPartner" component={LoginPartner} />
@@ -122,7 +133,19 @@ export default function App() {
         <Stack.Screen name="RevisaoONG3" component={RevisaoONG3} />
         <Stack.Screen name="AboutUsO1" component={AboutUsO1} />
         <Stack.Screen name="AboutUsO2" component={AboutUsO2} /> 
-        <Stack.Screen name="AboutUsO3" component={AboutUsO3} /> 
+        <Stack.Screen name="AboutUsO3" component={AboutUsO3} />
+
+        <Stack.Screen name="MainDrawerOng" component={MainDrawerOng} />
+        <Stack.Screen name="AddAdocaoPetOng" component={AddAdocaoPetOng} />
+        <Stack.Screen name="FormularioAdocaoOng" component={FormularioAdocaoOng} />
+        <Stack.Screen name="ChatOngOng" component={ChatOngOng} />
+        <Stack.Screen name="ChatEspecificoOng" component={ChatEspecificoOng} />
+        <Stack.Screen name="EventoOngOng" component={EventoOngOng} />
+        <Stack.Screen name="HomeOngOng" component={HomeOngOng} />
+        <Stack.Screen name="PerfilAdocaoPetOng" component={PerfilAdocaoPetOng} />
+        <Stack.Screen name="PerfilOngOng" component={PerfilOngOng} />
+        <Stack.Screen name="SobreAPPOng" component={SobreAPPOng} />
+          
         
         
         <Stack.Screen name="Finalizacao" component={Finalizacao} />
