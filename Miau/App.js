@@ -40,6 +40,14 @@ import RevisaoCNPJ1 from './src/screens/Partner/CNPJ/RevisaoCNPJ1';
 import RevisaoCNPJ2 from './src/screens/Partner/CNPJ/RevisaoCNPJ2';
 import RevisaoCNPJ3 from './src/screens/Partner/CNPJ/RevisaoCNPJ3';
 
+import HomeCNPJ from './src/screens/Partner/CNPJ/HomeBusinessScreens/Home';
+import PerfilCNPJ from './src/screens/Partner/CNPJ/HomeBusinessScreens/Perfil';
+import SobreCNPJ from './src/screens/Partner/CNPJ/HomeBusinessScreens/Sobre';
+import { BusinessProvider } from './src/screens/Partner/CNPJ/NavigationBusiness/BusinessContext';
+import MainDrawerCNPJ from './src/screens/Partner/CNPJ/NavigationBusiness/MainDrawer';
+import MenuCNPJ from './src/screens/Partner/CNPJ/NavigationBusiness/Menu';
+import TabsCNPJ from './src/screens/Partner/CNPJ/NavigationBusiness/Tabs';
+
 // Telas de ONG (Login, Cadastro e Formulários)
 import LoginOng from './src/screens/Ong/loginOng';
 import CadOng from './src/screens/Ong/CadOng';
@@ -76,80 +84,115 @@ import FinalizacaoONG from './src/screens/Ong/FinalizacaoONG';
 
 const Stack = createNativeStackNavigator();
 
+// --- Stack Business (CNPJ) ---
+function BusinessStack() {
+  return (
+    <BusinessProvider>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MainDrawerCNPJ" component={MainDrawerCNPJ} />
+        <Stack.Screen name="HomeCNPJ" component={HomeCNPJ} />
+        <Stack.Screen name="PerfilCNPJ" component={PerfilCNPJ} />
+        <Stack.Screen name="SobreCNPJ" component={SobreCNPJ} />
+        <Stack.Screen name="MenuCNPJ" component={MenuCNPJ} />
+        <Stack.Screen name="TabsCNPJ" component={TabsCNPJ} />
+        {/* Outras telas CNPJ específicas */}
+      </Stack.Navigator>
+    </BusinessProvider>
+  );
+}
+
+// --- Stack ONG (sem provider por enquanto) ---
+function OngStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainDrawerOng" component={MainDrawerOng} />
+      <Stack.Screen name="AddAdocaoPetOng" component={AddAdocaoPetOng} />
+      <Stack.Screen name="FormularioAdocaoOng" component={FormularioAdocaoOng} />
+      <Stack.Screen name="ChatOngOng" component={ChatOngOng} />
+      <Stack.Screen name="ChatEspecificoOng" component={ChatEspecificoOng} />
+      <Stack.Screen name="EventoOngOng" component={EventoOngOng} />
+      <Stack.Screen name="HomeOngOng" component={HomeOngOng} />
+      <Stack.Screen name="PerfilAdocaoPetOng" component={PerfilAdocaoPetOng} />
+      <Stack.Screen name="PerfilOngOng" component={PerfilOngOng} />
+      <Stack.Screen name="SobreAPPOng" component={SobreAPPOng} />
+      {/* Outras telas ONG específicas */}
+    </Stack.Navigator>
+  );
+}
+
+// --- Stack Inicial (Splash, Welcome, Login, Cadastro, AboutUs) ---
+function InitialStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="UserType" component={UserTypeScreen} />
+      <Stack.Screen name="TypePartner" component={TypePartner} />
+
+      {/* Usuário comum */}
+      <Stack.Screen name="LoginUser" component={LoginUser} />
+      <Stack.Screen name="CadUser" component={CadUser} />
+      <Stack.Screen name="AboutUs1" component={AboutUs1} />
+      <Stack.Screen name="AboutUs2" component={AboutUs2} />
+      <Stack.Screen name="AboutUs3" component={AboutUs3} />
+
+      {/* Parceiro geral */}
+      <Stack.Screen name="LoginPartner" component={LoginPartner} />
+      <Stack.Screen name="CadPartner" component={CadPartner} />
+      <Stack.Screen name="AboutUs1P" component={AboutUs1P} />
+      <Stack.Screen name="AboutUs2P" component={AboutUs2P} />
+      <Stack.Screen name="AboutUs3P" component={AboutUs3P} />
+
+      {/* Telas CPF e CNPJ podem ser chamadas dentro do BusinessStack */}
+      <Stack.Screen name="FormCPF1" component={FormCPF1} />
+      <Stack.Screen name="FormCPF2" component={FormCPF2} />
+      <Stack.Screen name="FormCPF3" component={FormCPF3} />
+      <Stack.Screen name="FormCPF4" component={FormCPF4} />
+      <Stack.Screen name="RevisaoCPF1" component={RevisaoCPF1} />
+      <Stack.Screen name="RevisaoCPF2" component={RevisaoCPF2} />
+      <Stack.Screen name="RevisaoCPF3" component={RevisaoCPF3} />
+
+      <Stack.Screen name="FormCNPJ1" component={FormCNPJ1} />
+      <Stack.Screen name="FormCNPJ2" component={FormCNPJ2} />
+      <Stack.Screen name="FormCNPJ3" component={FormCNPJ3} />
+      <Stack.Screen name="FormCNPJ4" component={FormCNPJ4} />
+      <Stack.Screen name="RevisaoCNPJ1" component={RevisaoCNPJ1} />
+      <Stack.Screen name="RevisaoCNPJ2" component={RevisaoCNPJ2} />
+      <Stack.Screen name="RevisaoCNPJ3" component={RevisaoCNPJ3} />
+      <Stack.Screen name="Finalizacao" component={Finalizacao} />
+
+      {/* Telas ONG iniciais */}
+      <Stack.Screen name="LoginOng" component={LoginOng} />
+      <Stack.Screen name="CadOng" component={CadOng} />
+      <Stack.Screen name="FormONG1" component={FormONG1} />
+      <Stack.Screen name="FormONG2" component={FormONG2} />
+      <Stack.Screen name="FormONG3" component={FormONG3} />
+      <Stack.Screen name="FormONG4" component={FormONG4} />
+      <Stack.Screen name="RevisaoONG1" component={RevisaoONG1} />
+      <Stack.Screen name="RevisaoONG2" component={RevisaoONG2} />
+      <Stack.Screen name="RevisaoONG3" component={RevisaoONG3} />
+      <Stack.Screen name="AboutUsO1" component={AboutUsO1} />
+      <Stack.Screen name="AboutUsO2" component={AboutUsO2} />
+      <Stack.Screen name="AboutUsO3" component={AboutUsO3} />
+      <Stack.Screen name="FinalizacaoONG" component={FinalizacaoONG} />
+    </Stack.Navigator>
+  );
+}
+
+// --- App principal ---
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="InitialStack">
 
-        {/* Categoria: Telas Iniciais */}
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="UserType" component={UserTypeScreen} />
-        <Stack.Screen name="TypePartner" component={TypePartner} />
-        
-        {/* Categoria: Usuário Comum */}
-        <Stack.Screen name="LoginUser" component={LoginUser} />
-        <Stack.Screen name="CadUser" component={CadUser} />
-        <Stack.Screen name="AboutUs1" component={AboutUs1} />
-        <Stack.Screen name="AboutUs2" component={AboutUs2} />
-        <Stack.Screen name="AboutUs3" component={AboutUs3} />
-        
-        {/* Categoria: Parceiro (Geral) */}
-        <Stack.Screen name="LoginPartner" component={LoginPartner} />
-        <Stack.Screen name="CadPartner" component={CadPartner} />
-        <Stack.Screen name="AboutUs1P" component={AboutUs1P} />
-        <Stack.Screen name="AboutUs2P" component={AboutUs2P} />
-        <Stack.Screen name="AboutUs3P" component={AboutUs3P} />
-        
-        {/* Categoria: Parceiro - Pessoa Física (CPF) */}
-        <Stack.Screen name="FormCPF1" component={FormCPF1} />
-        <Stack.Screen name="FormCPF2" component={FormCPF2} />
-        <Stack.Screen name="FormCPF3" component={FormCPF3} />
-        <Stack.Screen name="FormCPF4" component={FormCPF4} />
-        <Stack.Screen name="RevisaoCPF1" component={RevisaoCPF1} />
-        <Stack.Screen name="RevisaoCPF2" component={RevisaoCPF2} />
-        <Stack.Screen name="RevisaoCPF3" component={RevisaoCPF3} />
-        
-        {/* Categoria: Parceiro - Empresa (CNPJ) */}
-        <Stack.Screen name="FormCNPJ1" component={FormCNPJ1} />
-        <Stack.Screen name="FormCNPJ2" component={FormCNPJ2} />
-        <Stack.Screen name="FormCNPJ3" component={FormCNPJ3} />
-        <Stack.Screen name="FormCNPJ4" component={FormCNPJ4} />
-        <Stack.Screen name="RevisaoCNPJ1" component={RevisaoCNPJ1} />
-        <Stack.Screen name="RevisaoCNPJ2" component={RevisaoCNPJ2} />
-        <Stack.Screen name="RevisaoCNPJ3" component={RevisaoCNPJ3} />
-        
-        {/* Categoria: ONG */}
-        <Stack.Screen name="LoginOng" component={LoginOng} />
-        <Stack.Screen name="CadOng" component={CadOng} />
-        <Stack.Screen name="FormONG1" component={FormONG1} />
-        <Stack.Screen name="FormONG2" component={FormONG2} />
-        <Stack.Screen name="FormONG3" component={FormONG3} />
-        <Stack.Screen name="FormONG4" component={FormONG4} />
-        <Stack.Screen name="RevisaoONG1" component={RevisaoONG1} />
-        <Stack.Screen name="RevisaoONG2" component={RevisaoONG2} />
-        <Stack.Screen name="RevisaoONG3" component={RevisaoONG3} />
-        <Stack.Screen name="AboutUsO1" component={AboutUsO1} />
-        <Stack.Screen name="AboutUsO2" component={AboutUsO2} /> 
-        <Stack.Screen name="AboutUsO3" component={AboutUsO3} />
+        {/* Inicial */}
+        <Stack.Screen name="InitialStack" component={InitialStack} />
 
-        <Stack.Screen name="MainDrawerOng" component={MainDrawerOng} />
-        <Stack.Screen name="AddAdocaoPetOng" component={AddAdocaoPetOng} />
-        <Stack.Screen name="FormularioAdocaoOng" component={FormularioAdocaoOng} />
-        <Stack.Screen name="ChatOngOng" component={ChatOngOng} />
-        <Stack.Screen name="ChatEspecificoOng" component={ChatEspecificoOng} />
-        <Stack.Screen name="EventoOngOng" component={EventoOngOng} />
-        <Stack.Screen name="HomeOngOng" component={HomeOngOng} />
-        <Stack.Screen name="PerfilAdocaoPetOng" component={PerfilAdocaoPetOng} />
-        <Stack.Screen name="PerfilOngOng" component={PerfilOngOng} />
-        <Stack.Screen name="SobreAPPOng" component={SobreAPPOng} />
-          
-        
-        
-        <Stack.Screen name="Finalizacao" component={Finalizacao} />
-        <Stack.Screen name="FinalizacaoONG" component={FinalizacaoONG} />
+        {/* Módulo Business */}
+        <Stack.Screen name="BusinessStack" component={BusinessStack} />
+
+        {/* Módulo ONG */}
+        <Stack.Screen name="OngStack" component={OngStack} />
 
       </Stack.Navigator>
     </NavigationContainer>
