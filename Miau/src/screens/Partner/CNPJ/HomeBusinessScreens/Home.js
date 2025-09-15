@@ -114,7 +114,7 @@ const pic = businessData?.logoImage || LogoPatinhasUnidas;
       </View>
       </View>
 
-      <View style={{ width: '100%', height: 250}}>
+      <View style={{ width: '100%', height: 260}}>
       <Image source={Background} style={styles.background3} />
       <Image source={Subtract} style={styles.background2} />
       </View>

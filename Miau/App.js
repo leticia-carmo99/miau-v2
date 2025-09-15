@@ -14,6 +14,29 @@ import CadUser from './src/screens/User/CadUser';
 import AboutUs1 from './src/screens/User/AboutUs1';
 import AboutUs2 from './src/screens/User/AboutUs2';
 import AboutUs3 from './src/screens/User/AboutUs3';
+// Telas de Usuário Comum - TUDO
+import InicialUser from './src/screens/User/HomeScreens/Inicial';
+import PerfilUser from './src/screens/User/HomeScreens/PerfilUser';
+import MainDrawerUser from './src/screens/User/NavigationUser/MainDrawer';
+import AdoteUser from './src/screens/User/HomeScreens/Adote';
+import BlogUser from './src/screens/User/HomeScreens/Blog';
+import ChatUser from './src/screens/User/HomeScreens/ChatUsuario';
+import EventosUser from './src/screens/User/HomeScreens/Eventos';
+import FavoritosUser from './src/screens/User/HomeScreens/Favoritos';
+import MeuPetUser from './src/screens/User/HomeScreens/MeuPet';
+import PerfilCaoUser from './src/screens/User/HomeScreens/PerfilCao';
+import PerfilGatoUser from './src/screens/User/HomeScreens/PerfilGato';
+import SobreUser from './src/screens/User/HomeScreens/Sobre';
+import ChatConversaUser from './src/screens/User/HomeScreens/ChatConversa';
+import EditarMeuPetUser from './src/screens/User/HomeScreens/EditarMeuPet';
+import MapaPetshopUser from './src/screens/User/HomeScreens/MapaPetshop';
+import MapaServicosUser from './src/screens/User/HomeScreens/MapaServicos';
+import PetshopUser from './src/screens/User/HomeScreens/Petshop';
+import ServicoUser from './src/screens/User/HomeScreens/Servico';
+import BlogDetalhesUser from './src/screens/User/HomeScreens/BlogDetalhes';
+import { UserProvider } from './src/screens/User/NavigationUser/UserContext';
+import { PetProvider } from './src/screens/User/NavigationUser/PetContext';
+
 
 // Telas de Parceiro (Login, Cadastro)
 import LoginPartner from './src/screens/Partner/loginPartner';
@@ -39,7 +62,7 @@ import FormCNPJ4 from './src/screens/Partner/CNPJ/FormCNPJ4';
 import RevisaoCNPJ1 from './src/screens/Partner/CNPJ/RevisaoCNPJ1';
 import RevisaoCNPJ2 from './src/screens/Partner/CNPJ/RevisaoCNPJ2';
 import RevisaoCNPJ3 from './src/screens/Partner/CNPJ/RevisaoCNPJ3';
-
+// Telas de Parceiro - Empresa (CNPJ) - TUDO
 import HomeCNPJ from './src/screens/Partner/CNPJ/HomeBusinessScreens/Home';
 import PerfilCNPJ from './src/screens/Partner/CNPJ/HomeBusinessScreens/Perfil';
 import SobreCNPJ from './src/screens/Partner/CNPJ/HomeBusinessScreens/Sobre';
@@ -83,6 +106,36 @@ import FinalizacaoONG from './src/screens/Ong/FinalizacaoONG';
 
 
 const Stack = createNativeStackNavigator();
+
+// --- Stack Usuario ---
+function UsuarioStack() {
+  return(
+    <UserProvider>
+      <PetProvider>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainDrawerUser" component={MainDrawerUser} />
+          <Stack.Screen name="HomeUser" component={InicialUser} />
+          <Stack.Screen name="PerfilUser" component={PerfilUser} />
+          <Stack.Screen name="AdoteUser" component={AdoteUser} />
+          <Stack.Screen name="BlogUser" component={BlogUser} />
+          <Stack.Screen name="ChatUser" component={ChatUser} />
+          <Stack.Screen name="ChatConversa" component={ChatConversaUser} />
+          <Stack.Screen name="EventosUser" component={EventosUser} />
+          <Stack.Screen name="FavoritosUser" component={FavoritosUser} />
+          <Stack.Screen name="MeuPetUser" component={MeuPetUser} />
+          <Stack.Screen name="PerfilCaoUser" component={PerfilCaoUser} />
+          <Stack.Screen name="SobreUser" component={SobreUser} />
+          <Stack.Screen name="EditarMeuPetUser" component={EditarMeuPetUser} />
+          <Stack.Screen name="MapaPetshopUser" component={MapaPetshopUser} />
+          <Stack.Screen name="MapaServicosUser" component={MapaServicosUser} />
+          <Stack.Screen name="ServicoUser" component={ServicoUser} />
+          <Stack.Screen name="PetshopUser" component={PetshopUser} />
+          <Stack.Screen name="BlogDetalhesUser" component={BlogDetalhesUser} />
+        </Stack.Navigator>
+      </PetProvider>
+    </UserProvider>
+  );
+}
 
 // --- Stack Business (CNPJ) ---
 function BusinessStack() {
@@ -193,6 +246,9 @@ export default function App() {
 
         {/* Módulo ONG */}
         <Stack.Screen name="OngStack" component={OngStack} />
+
+        {/* Módulo Usuário */}
+        <Stack.Screen name="UsuarioStack" component={UsuarioStack} />
 
       </Stack.Navigator>
     </NavigationContainer>
