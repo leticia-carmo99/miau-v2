@@ -53,6 +53,15 @@ import FormCPF4 from './src/screens/Partner/CPF/FormCPF4';
 import RevisaoCPF1 from './src/screens/Partner/CPF/RevisaoCPF1';
 import RevisaoCPF2 from './src/screens/Partner/CPF/RevisaoCPF2';
 import RevisaoCPF3 from './src/screens/Partner/CPF/RevisaoCPF3';
+// Telas de Parceiro - Pessoa Física (CPF) - TUDO
+import MainDrawerCPF from './src/screens/Partner/CPF/NavigationPessoa/MainDrawerPessoa';
+import MainTabsCPF from './src/screens/Partner/CPF/NavigationPessoa/MainTabsPessoa';
+import HomeCPF from './src/screens/Partner/CPF/HomePessoasScreens/HomePessoa';
+import PerfilCPF from './src/screens/Partner/CPF/HomePessoasScreens/PerfilPessoa';
+import SobreAppCPF from './src/screens/Partner/CPF/HomePessoasScreens/SobreApp';
+import ChatConversaCPF from './src/screens/Partner/CPF/HomePessoasScreens/ChatConversa';
+import ChatPessoaCPF from './src/screens/Partner/CPF/HomePessoasScreens/ChatPessoa';
+import { PersonProvider } from './src/screens/Partner/CPF/NavigationPessoa/PersonContext';
 
 // Telas de Parceiro - Empresa (CNPJ)
 import FormCNPJ1 from './src/screens/Partner/CNPJ/formCNPJ1';
@@ -124,6 +133,7 @@ function UsuarioStack() {
           <Stack.Screen name="FavoritosUser" component={FavoritosUser} />
           <Stack.Screen name="MeuPetUser" component={MeuPetUser} />
           <Stack.Screen name="PerfilCaoUser" component={PerfilCaoUser} />
+          <Stack.Screen name="PerfilGatoUser" component={PerfilGatoUser} />
           <Stack.Screen name="SobreUser" component={SobreUser} />
           <Stack.Screen name="EditarMeuPetUser" component={EditarMeuPetUser} />
           <Stack.Screen name="MapaPetshopUser" component={MapaPetshopUser} />
@@ -151,6 +161,22 @@ function BusinessStack() {
         {/* Outras telas CNPJ específicas */}
       </Stack.Navigator>
     </BusinessProvider>
+  );
+}
+
+function PersonStack() {
+  return (
+    <PersonProvider>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MainDrawerCPF" component={MainDrawerCPF} />
+        <Stack.Screen name="MainTabsCPF" component={MainTabsCPF} />
+        <Stack.Screen name="HomeCPF" component={HomeCPF} />
+        <Stack.Screen name="PerfilCPF" component={PerfilCPF} />
+        <Stack.Screen name="SobreAppCPF" component={SobreAppCPF} />
+        <Stack.Screen name="ChatConversaCPF" component={ChatConversaCPF} />
+        <Stack.Screen name="ChatPessoaCPF" component={ChatPessoaCPF} />
+      </Stack.Navigator>
+    </PersonProvider>
   );
 }
 
@@ -243,6 +269,9 @@ export default function App() {
 
         {/* Módulo Business */}
         <Stack.Screen name="BusinessStack" component={BusinessStack} />
+
+        {/* Módulo Person */}
+        <Stack.Screen name="PersonStack" component={PersonStack} />
 
         {/* Módulo ONG */}
         <Stack.Screen name="OngStack" component={OngStack} />
