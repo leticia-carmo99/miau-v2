@@ -10,15 +10,44 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./firebaseConfig"; // Importe apenas o que precisa
+import { useUser } from "../NavigationUser/UserContext";
+
 
 const { width, height } = Dimensions.get('window');
 const TOP_HEIGHT = height * 0.3;
 const CARD_HEIGHT = height * 0.6;
 
 export default function LoginUser({ navigation }) {
+  const { userData, setUserData } = useUser();
   const [showPass, setShowPass] = useState(false);
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
+
+  const handleLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, user, pass);
+      
+      // Se o login for bem-sucedido, o UserContext detecta a mudança
+      // e o app já terá os dados corretos.
+      navigation.navigate('MainDrawerUser');
+
+    } catch (error) {
+      // Adicionando tratamento de erros para o usuário
+      console.error("Erro no login:", error.message);
+      let errorMessage = "Erro no login. Tente novamente.";
+      if (error.code === 'auth/invalid-email') {
+        errorMessage = 'O email informado é inválido.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'Este usuário não está cadastrado.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Senha incorreta.';
+      }
+
+      Alert.alert("Ops!", errorMessage);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -67,7 +96,7 @@ export default function LoginUser({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.enterBtn} onPress={() => navigation.navigate('MainDrawerUser')}>
+        <TouchableOpacity style={styles.enterBtn} onPress={handleLogin}>
           <Text style={styles.enterText}>Entrar</Text>
         </TouchableOpacity>
 

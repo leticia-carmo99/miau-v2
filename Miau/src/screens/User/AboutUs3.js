@@ -7,12 +7,50 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from "./firebaseConfig";
+
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFA741';
 const MARRON = '#8C4A14';
 
 export default function AboutUs3({ navigation }) {
+    const route = useRoute(); // <-- AQUI! Use o hook para pegar os dados
+
+  const { nome, email, senha, cpf } = route.params;
+
+  const tipoUsuario = 'comum'; 
+
+  const handleFinalizarCadastro = async () => {
+    try {
+      // Cria o usuário no Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const user = userCredential.user;
+
+      // Salva os dados no Firestore, incluindo o tipo de usuário
+      const userDocRef = doc(db, "usuarios", user.uid);
+      await setDoc(userDocRef, {
+        nome: nome,
+        email: email,
+        cpf: cpf,
+        tipo_usuario: tipoUsuario,
+      });
+
+      Alert.alert("Sucesso!", "Seu cadastro foi realizado com sucesso!");
+      
+      // Navega para a tela principal
+      navigation.navigate('MainDrawerUser');
+
+    } catch (error) {
+      // Lidar com erros do Firebase
+      let errorMessage = "Erro no cadastro. Tente novamente mais tarde.";
+      Alert.alert("Ops!", errorMessage);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Image
@@ -35,7 +73,7 @@ export default function AboutUs3({ navigation }) {
 
       <TouchableOpacity
         style={styles.botao}
-        onPress={() => navigation.navigate('Home')}>
+        onPress={handleFinalizarCadastro}>
         <Text style={styles.botaoTexto}>Avançar</Text>
       </TouchableOpacity>
     </View>

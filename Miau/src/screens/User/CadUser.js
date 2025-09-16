@@ -10,6 +10,9 @@ import {
 } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "./firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
@@ -19,6 +22,61 @@ export default function CadUser() {
   const navigation = useNavigation();
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirma, setMostrarConfirma] = useState(false);
+
+    const [nome, setNome] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [tipoUsuario, setTipoUsuario] = useState('comum'); // Estado para o tipo de usuário
+
+  const handleCadastro = async () => {
+    // 1. Validação simples para senhas
+    if (senha !== confirmarSenha) {
+      Alert.alert("Ops!", "As senhas não coincidem. Por favor, verifique.");
+      return;
+    }
+    
+    // Você pode adicionar mais validações aqui (ex: email válido, senha forte)
+
+    try {
+      // 2. Cria o usuário no Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const user = userCredential.user;
+
+      // 3. Salva os dados no Firestore, incluindo o tipo de usuário
+      // O ID do documento é o mesmo ID do usuário do Firebase Auth (user.uid)
+      const userDocRef = doc(db, "usuarios", user.uid);
+      
+      await setDoc(userDocRef, {
+        nome: nome,
+        email: email,
+        cpf: cpf,
+        // Você pode adicionar outros campos aqui
+        tipo_usuario: tipoUsuario,
+      });
+
+      Alert.alert("Sucesso!", "Seu cadastro foi realizado com sucesso!");
+      
+      // Navega para a tela principal (o UserContext já vai ter os dados)
+          navigation.navigate('AboutUs3', {
+        nome,
+        cpf,
+        email,
+        senha,
+    });
+
+    } catch (error) {
+      // Lidar com erros do Firebase
+      let errorMessage = "Erro no cadastro. Tente novamente mais tarde.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'Este email já está em uso!';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'A senha é muito fraca. Tente uma senha com pelo menos 6 caracteres.';
+      }
+      Alert.alert("Ops!", errorMessage);
+    }
+  };
 
   const irParaQuemSomos = () => {
     navigation.navigate('AboutUs1');
@@ -47,18 +105,24 @@ export default function CadUser() {
           style={styles.input}
           placeholder="Usuário:"
           placeholderTextColor="#999"
+          value={nome}
+          onChangeText={setNome}
         />
         <TextInput
           style={styles.input}
           placeholder="CPF:"
           keyboardType="numeric"
           placeholderTextColor="#999"
+          value={cpf}
+          onChangeText={setCpf}
         />
         <TextInput
           style={styles.input}
           placeholder="E-mail:"
           keyboardType="email-address"
           placeholderTextColor="#999"
+           value={email}
+          onChangeText={setEmail}
         />
 
         <View style={styles.senhaContainer}>
@@ -67,6 +131,8 @@ export default function CadUser() {
             placeholder="Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarSenha}
+            value={senha}
+            onChangeText={setSenha}
           />
           <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
             <Icon
@@ -82,7 +148,9 @@ export default function CadUser() {
             style={styles.senhaInput}
             placeholder="Confirmar Senha:"
             placeholderTextColor={LARANJA}
-            secureTextEntry={!mostrarConfirma}
+            secureTextEntry={!mostrarConfirma} 
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
           />
           <TouchableOpacity
             onPress={() => setMostrarConfirma(!mostrarConfirma)}>
@@ -94,7 +162,7 @@ export default function CadUser() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.botao} onPress={irParaQuemSomos}>
+        <TouchableOpacity style={styles.botao}  onPress={handleCadastro}>
           <Text style={styles.botaoTexto}>Cadastrar</Text>
         </TouchableOpacity>
       </View>

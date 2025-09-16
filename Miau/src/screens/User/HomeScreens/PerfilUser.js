@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, Dimensions, StatusBar, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, Dimensions, StatusBar, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import Menu from '../NavigationUser/MenuSozinho.js';
-import * as ImagePicker from "expo-image-picker"; // para trocar foto
+import * as ImagePicker from "expo-image-picker"; 
 import { useUser } from "../NavigationUser/UserContext";
+
+// Firebase imports
+import { doc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from "./firebaseConfig"; 
 
 import UserIcon from '../assets/FotosInicial/foto-user-roxo.png'; 
 import PetzLogo from '../assets/FotosInicial/petz.png'; 
@@ -16,13 +20,10 @@ import {
   useFonts,
   JosefinSans_400Regular,
   JosefinSans_700Bold,
-  JosefinSans_300Light,
 } from '@expo-google-fonts/josefin-sans';
 import { Nunito_700Bold, Nunito_400Regular } from '@expo-google-fonts/nunito';
 
-
 const { width, height } = Dimensions.get('window');
-
 
 const COLORS = {
   primaryOrange: '#FFAB36',
@@ -41,8 +42,6 @@ const COLORS = {
   petCardBackground: '#FFFFFF',
   petCardBorder: '#D1C4E9',
 };
-
-
 
 const favoritedEstablishments = [
   {
@@ -63,22 +62,28 @@ const favoritedEstablishments = [
   },
 ];
 
-
-
 const userPets = [
   { id: '1', name: 'Luninha', breed: 'Vira-Lata', age: '6 anos', gender: 'female', type: 'dog' },
   { id: '2', name: 'Mia', breed: 'Frajola', age: '4 anos', gender: 'female', type: 'cat' },
 ];
 
-
 export default function PerfilUser() {
   const navigation = useNavigation();
-  const { userData, setUserData } = useUser(); // dados globais
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempName, setTempName] = useState(userData.name);
-  const [tempImage, setTempImage] = useState(userData.profileImage);
+  const { userData, setUserData } = useUser(); // Pegue a função setUserData para atualizar o contexto
 
-  // abrir galeria para escolher nova foto
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const [tempImage, setTempImage] = useState(null);
+
+  // Use useEffect para sincronizar os dados do contexto com o estado local
+  useEffect(() => {
+    if (userData) {
+      setTempName(userData.nome || '');
+      setTempImage(userData.profileImage ? { uri: userData.profileImage } : UserIcon);
+    }
+  }, [userData]); // Roda sempre que userData muda
+
+  // Função para abrir a galeria e carregar a imagem
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -88,13 +93,61 @@ export default function PerfilUser() {
     });
 
     if (!result.canceled) {
+      // Salva a URI local no estado temporário. O upload para o Firebase será na função saveChanges
       setTempImage({ uri: result.assets[0].uri });
     }
   };
 
-    const saveChanges = () => {
-    setUserData({ ...userData, name: tempName, profileImage: tempImage });
-    setIsEditing(false);
+  // Função para salvar as mudanças no Firebase e no Contexto
+  const saveChanges = async () => {
+    try {
+      if (!userData || !userData.uid) {
+        Alert.alert("Erro", "Usuário não autenticado. Tente fazer login novamente.");
+        return;
+      }
+
+      const userDocRef = doc(db, "usuarios", userData.uid);
+      const updates = {};
+
+      // 1. Lógica para UPLOAD da imagem se ela foi alterada
+      if (tempImage && tempImage.uri !== userData.profileImage) {
+        // Pega a URI local da nova imagem
+        const response = await fetch(tempImage.uri);
+        const blob = await response.blob();
+        
+        // Cria uma referência para o local no Firebase Storage
+        const storageRef = ref(storage, `profile_images/${userData.uid}`);
+        
+        // Faz o upload da imagem
+        const uploadResult = await uploadBytes(storageRef, blob);
+        
+        // Pega a URL de download da imagem
+        const newImageUrl = await getDownloadURL(uploadResult.ref);
+        
+        updates.profileImage = newImageUrl;
+      }
+
+      // 2. Lógica para ATUALIZAR o nome no Firestore se ele foi alterado
+      if (tempName !== userData.nome) {
+        updates.nome = tempName;
+      }
+
+      // 3. Atualiza o Firestore apenas se houverem mudanças
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(userDocRef, updates);
+        
+        // Atualiza o contexto global com os novos dados
+        setUserData({ ...userData, ...updates });
+
+        Alert.alert("Sucesso!", "Seu perfil foi atualizado.");
+      }
+      
+      setIsEditing(false); // Fecha o modal de edição
+
+    } catch (error) {
+      console.error("Erro ao salvar o perfil:", error);
+      Alert.alert("Ops!", "Não foi possível salvar as alterações. Tente novamente.");
+    }
   };
 
 
@@ -103,11 +156,9 @@ export default function PerfilUser() {
       style={styles.favoriteEstablishmentCard}
       onPress={() => navigation.navigate('VeterinarioDetalhes', { establishmentId: item.id })}
     >
-      {/* Container logo */}
       <View style={styles.favoriteEstablishmentLogoContainer}>
         <Image source={item.logo} style={styles.favoriteEstablishmentLogo} />
       </View>
-      {/*estabelecimento */}
       <View style={styles.favoriteEstablishmentInfo}>
         <Text style={styles.favoriteEstablishmentName}>{item.name}</Text>
         <View style={styles.favoriteEstablishmentRatingDistance}>
@@ -120,13 +171,11 @@ export default function PerfilUser() {
     </TouchableOpacity>
   );
 
- 
   const renderPetItem = ({ item }) => (
     <TouchableOpacity
       style={styles.petCard}
       onPress={() => navigation.navigate('PerfilPet', { petId: item.id })}
     >
-      {/* pet */}
       <View style={styles.petInfo}>
         <Text style={styles.petName}>{item.name}</Text>
         <View style={styles.petDetailsRow}>
@@ -135,7 +184,6 @@ export default function PerfilUser() {
           <Text style={styles.petAge}>{item.age}</Text>
         </View>
       </View>
-      {/* Ícones de gênero e pata do pet */}
       <View style={styles.petIcons}>
         <Ionicons name={item.gender === 'female' ? 'female' : 'male'} size={width * 0.045} color={COLORS.primaryPurple} style={styles.genderIcon} />
         <Ionicons name="paw" size={width * 0.045} color={COLORS.primaryPurple} />
@@ -143,10 +191,9 @@ export default function PerfilUser() {
     </TouchableOpacity>
   );
 
-    const [fontsLoaded] = useFonts({
+  const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
-    JosefinSans_300Light,
     Nunito_400Regular,
     Nunito_700Bold,
   });
@@ -155,74 +202,44 @@ export default function PerfilUser() {
     return null;
   }
 
+  // Se userData ainda não foi carregado, mostre um indicador de carregamento
+  if (!userData) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text>Carregando perfil...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-        {/* Nova Seção Superior Roxa com Foto de Perfil e Nome */}
         <View style={styles.topPurpleSection}>
-          {/* Ícones do cabeçalho */}
-
-      <Modal visible={isEditing} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Editar Perfil</Text>
-
-            <TouchableOpacity onPress={pickImage}>
-              <Image source={tempImage} style={styles.modalProfileImage} />
-              <Text style={styles.changePhotoText}>Alterar Foto</Text>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 15 }}>
+              <Image source={Back} style={styles.back}/>
             </TouchableOpacity>
-
-            <TextInput
-              value={tempName}
-              onChangeText={setTempName}
-              style={styles.input}
-              placeholder="Digite seu nome"
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.cancelButton}>
-                <Text style={styles.cancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={saveChanges} style={styles.saveButton}>
-                <Text style={styles.saveText}>Salvar</Text>
-              </TouchableOpacity>
-            </View>
+            <Image source={PatinhaBranca} style={styles.patinha}/>
           </View>
-        </View>
-      </Modal>
-
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()}
-          style={{ marginRight: 15 }}
-        >
-          <Image source={Back} style={styles.back}/>
-        </TouchableOpacity>
-                <Image source={PatinhaBranca} style={styles.patinha}/>
-      </View>
-
-          {/* Foto de Perfil e Nome do Usuário */}
           <View style={styles.profileInfoContainer}>
-            <Image source={userData.profileImage} style={styles.profileImageHeader} />
-            <Text style={styles.userNameHeader}>{userData.name}</Text>
+            <Image source={{ uri: userData.profileImage }} style={styles.profileImageHeader} />
+            <Text style={styles.userNameHeader}>{userData.nome}</Text>
           </View>
         </View>
 
-              <TouchableOpacity
-                  onPress={() => setIsEditing(true)}
-                  style={styles.editIcon}>
-                  <Text style={styles.editText}>Editar</Text>
-                </TouchableOpacity>
+        <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.editIcon}>
+          <Text style={styles.editText}>Editar</Text>
+        </TouchableOpacity>
 
-        {/* Detalhes de Contato do Usuário (na parte branca) */}
         <View style={styles.userDetailsSection}>
           <Text style={styles.detailLabel}>E-mail</Text>
           <Text style={styles.detailValue}>{userData.email}</Text>
-          <Text style={styles.detailLabel}>Número</Text>
-          <Text style={styles.detailValue}>{userData.phoneNumber}</Text>
+          <Text style={styles.detailLabel}>CPF</Text>
+          <Text style={styles.detailValue}>{userData.cpf}</Text>
         </View>
 
-        
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Favoritos</Text>
@@ -230,7 +247,6 @@ export default function PerfilUser() {
               <Text style={styles.seeMoreText}>Ver mais</Text>
             </TouchableOpacity>
           </View>
-          
           {favoritedEstablishments.length > 0 ? (
             <FlatList
               data={favoritedEstablishments}
@@ -247,17 +263,10 @@ export default function PerfilUser() {
           )}
         </View>
 
-        
-        <Image
-          source={GatoRoxoImage}
-          style={styles.gatoRoxoImageStandalone}
-          onError={(e) => console.log('Erro ao carregar imagem do gato roxo:', e.nativeEvent.error)}
-        />
+        <Image source={GatoRoxoImage} style={styles.gatoRoxoImageStandalone} />
 
-        
         <View style={styles.petsSectionBackgroundWrapper}>
           <View style={styles.petsContentContainer}>
-            {/* Renderiza a lista de pets ou uma mensagem se estiver vazia */}
             {userPets.length > 0 ? (
               <FlatList
                 data={userPets}
@@ -275,26 +284,56 @@ export default function PerfilUser() {
             )}
           </View>
         </View>
-
       </ScrollView>
+
+      {/* Modal de Edição */}
+      <Modal visible={isEditing} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Editar Perfil</Text>
+            <TouchableOpacity onPress={pickImage}>
+              <Image 
+                source={tempImage} 
+                style={styles.modalProfileImage} 
+              />
+              <Text style={styles.changePhotoText}>Alterar Foto</Text>
+            </TouchableOpacity>
+
+            <TextInput
+              value={tempName}
+              onChangeText={setTempName}
+              style={styles.input}
+              placeholder="Digite seu nome"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.cancelButton}>
+                <Text style={styles.cancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={saveChanges} style={styles.saveButton}>
+                <Text style={styles.saveText}>Salvar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  safeArea: { flex: 1, backgroundColor: COLORS.offWhite },
+  scrollView: { flex: 1 },
+  loadingContainer: {
     flex: 1,
-    backgroundColor: COLORS.offWhite,
-  },
-  scrollView: {
-    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   topPurpleSection: {
     backgroundColor: COLORS.primaryPurple,
     paddingTop: StatusBar.currentHeight || 0,
-    paddingBottom: width * 0.15, 
-    alignItems: 'flex-start', 
-    position: 'relative', // Para posicionamento absoluto da foto se necessário
+    paddingBottom: width * 0.15,
+    alignItems: 'flex-start',
+    position: 'relative',
   },
   header: {
     width: '100%',
@@ -302,15 +341,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: width * 0.025,
-    position: 'relative', 
-    top: 0, 
-    left: 0, 
-    right: 0, 
+    position: 'relative',
+    top: 0,
+    left: 0,
+    right: 0,
     zIndex: 10,
     paddingHorizontal: width * 0.03,
     paddingTop: width * 0.08,
   },
-    back: {
+  back: {
     height: width * 0.08,
     width: width * 0.08,
     padding: width * 0.08,
@@ -324,33 +363,33 @@ const styles = StyleSheet.create({
   profileInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    position: 'absolute', 
-    bottom: -width * 0.1, 
-    left: width * 0.15, 
-    zIndex: 1, 
+    position: 'absolute',
+    bottom: -width * 0.1,
+    left: width * 0.15,
+    zIndex: 1,
   },
   profileImageHeader: {
-    width: width * 0.28, 
-    height: width * 0.28, 
-    borderRadius: (width * 0.28) / 2, 
-    borderWidth: 0, 
-    backgroundColor: COLORS.white, 
-    resizeMode: 'cover', 
+    width: width * 0.28,
+    height: width * 0.28,
+    borderRadius: (width * 0.28) / 2,
+    borderWidth: 0,
+    backgroundColor: COLORS.white,
+    resizeMode: 'cover',
     shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.25, 
-    shadowRadius: 8, 
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
     elevation: 8,
   },
   userNameHeader: {
-    fontSize: width * 0.07, 
+    fontSize: width * 0.07,
     fontFamily: 'JosefinSans_700Bold',
     color: COLORS.white,
     marginLeft: width * 0.06,
   },
   userDetailsSection: {
-    paddingHorizontal: width * 0.08, 
-    marginTop: width * 0.05, 
+    paddingHorizontal: width * 0.08,
+    marginTop: width * 0.05,
     marginBottom: width * 0.05,
   },
   detailLabel: {
@@ -360,9 +399,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
   },
   detailValue: {
-    fontSize: width * 0.045, 
+    fontSize: width * 0.045,
     fontFamily: 'Nunito_400Regular',
-    color: COLORS.mediumGray, 
+    color: COLORS.mediumGray,
     marginBottom: width * 0.03,
   },
   section: {
@@ -376,7 +415,7 @@ const styles = StyleSheet.create({
     marginBottom: width * 0.04,
   },
   sectionTitle: {
-   fontSize: width * 0.06,
+    fontSize: width * 0.06,
     fontFamily: 'Nunito_700Bold',
     color: COLORS.darkGray,
   },
@@ -448,7 +487,6 @@ const styles = StyleSheet.create({
   favoriteEstablishmentDescription: {
     fontSize: width * 0.025,
     color: COLORS.lightGray,
-    // fontFamily: 'Nunito_400Regular',
     textAlign: 'left',
   },
   noFavoritesContainer: {
@@ -458,38 +496,34 @@ const styles = StyleSheet.create({
   noFavoritesText: {
     fontSize: width * 0.04,
     color: COLORS.mediumGray,
-    // fontFamily: 'Nunito_400Regular',
   },
-
-  // Seção de Pets
   gatoRoxoImageStandalone: {
-    width: width * 0.7, // Aumentado o tamanho do gato para melhor sobreposição
-    height: width * 0.7, 
+    width: width * 0.7,
+    height: width * 0.7,
     resizeMode: 'contain',
-    alignSelf: 'center', 
-    marginTop: width * 0.05, 
-    marginBottom: -width * 0.19, 
-    zIndex: 2, 
+    alignSelf: 'center',
+    marginTop: width * 0.05,
+    marginBottom: -width * 0.19,
+    zIndex: 2,
   },
   petsSectionBackgroundWrapper: {
-    width: '100%', 
+    width: '100%',
     alignSelf: 'center',
-    marginTop: -width * 0.15, 
+    marginTop: -width * 0.15,
     marginBottom: width * 0.1,
-    backgroundColor: COLORS.darkerPurple, 
-    borderRadius: width * 0.18, 
+    backgroundColor: COLORS.darkerPurple,
+    borderRadius: width * 0.18,
     paddingTop: width * 0.08,
     paddingBottom: width * 0.08,
     position: 'relative',
   },
   petsContentContainer: {
-    width: '80%', 
+    width: '80%',
     alignSelf: 'center',
     marginTop: width * 0.02,
     paddingVertical: width * 0.02,
   },
-  petsListContent: {
-  },
+  petsListContent: {},
   petCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -531,7 +565,6 @@ const styles = StyleSheet.create({
   },
   petAge: {
     fontSize: width * 0.035,
-
     color: COLORS.mediumGray,
   },
   petIcons: {
@@ -547,7 +580,6 @@ const styles = StyleSheet.create({
   },
   noPetsText: {
     fontSize: width * 0.05,
-
     fontWeight: 'bold',
     color: COLORS.white,
     marginTop: width * 0.03,
@@ -560,22 +592,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
   },
-    editIcon: {
+  editIcon: {
     backgroundColor: COLORS.primaryOrange,
     borderRadius: 20,
     padding: 8,
     alignSelf: 'flex-end',
     margin: width * 0.03,
     alignItems: 'center',
-    justifyContent:'center',
+    justifyContent: 'center',
   },
-  editText: { 
-  width: width * 0.2, 
-  height: width * 0.06, 
-  color: COLORS.white,
-  fontFamily: 'Nunito_700Bold',
-  fontSize: width * 0.045,
-   },
+  editText: {
+    width: width * 0.2,
+    height: width * 0.06,
+    color: COLORS.white,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: width * 0.045,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

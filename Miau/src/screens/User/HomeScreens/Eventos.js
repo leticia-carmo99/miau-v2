@@ -36,9 +36,9 @@ const getDayName = (date) => {
 
 const getEventImage = (eventType) => {
   const eventImages = {
-    'vacinação': require('../assets/FotosEventos/Vacina.png'),
-    'castração': require('../assets/FotosEventos/Castracao.png'),
-    'adoção': require('../assets/FotosEventos/pataAdocao.png'),
+    'vacinação': require('../assets/FotosEvento/Vacina.png'),
+    'castração': require('../assets/FotosEvento/Castracao.png'),
+    'adoção': require('../assets/FotosEvento/pataAdocao.png'),
   };
   return eventImages[eventType] || eventImages['vacinação'];
 };
