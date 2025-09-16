@@ -12,7 +12,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "./firebaseConfig";
+import { auth, db } from "../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';

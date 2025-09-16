@@ -9,7 +9,7 @@ import { useUser } from "../NavigationUser/UserContext";
 // Firebase imports
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from "./firebaseConfig"; 
+import { db, storage } from "../../../../firebaseConfig"; 
 
 import UserIcon from '../assets/FotosInicial/foto-user-roxo.png'; 
 import PetzLogo from '../assets/FotosInicial/petz.png'; 

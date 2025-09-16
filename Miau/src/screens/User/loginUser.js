@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "./firebaseConfig"; // Importe apenas o que precisa
-import { useUser } from "../NavigationUser/UserContext";
+import { auth } from "../../../firebaseConfig"; // Importe apenas o que precisa
+import { useUser } from "./NavigationUser/UserContext";
 
 
 const { width, height } = Dimensions.get('window');

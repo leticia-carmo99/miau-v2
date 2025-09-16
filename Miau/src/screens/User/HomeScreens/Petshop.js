@@ -20,7 +20,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { FontAwesome } from "@expo/vector-icons";
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import MapView, { Marker, UrlTile } from "react-native-maps";
 
 // You can import supported modules from npm
 import { Card } from 'react-native-paper';
@@ -206,28 +205,8 @@ const nota = 4.5;
   }
   return (
         <View style={styles.container}>
-    <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: -23.55052,
-          longitude: -46.633308,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-        // Não use a propriedade "provider" com OpenStreetMap
-      >
-        <UrlTile
-        urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-        maximumZ={19}
-        />
-        {petshop.map((item) => (
-          <Marker
-            key={item.id}
-            coordinate={{ latitude: item.lat, longitude: item.lon }}
-            title={item.name}
-          />
-        ))}
-      </MapView>
+<Image source={{uri: 'https://admin.cnnbrasil.com.br/wp-content/uploads/sites/12/2024/02/google-maps-e1707316052388.png?w=1200&h=900&crop=1'}} style={styles.map}/>
+
 
       <Animated.View
         style={[

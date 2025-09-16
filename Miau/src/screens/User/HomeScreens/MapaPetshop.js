@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import MapView, { Marker, UrlTile } from "react-native-maps";
 
 import {
   useFonts,
@@ -160,28 +159,7 @@ export default function MapaPetshop() {
     <View style={styles.container}>
       {/* MAPA */}
 
-    <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: -23.55052,
-          longitude: -46.633308,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-        // Não use a propriedade "provider" com OpenStreetMap
-      >
-        <UrlTile
-        urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-        maximumZ={19}
-        />
-        {petshop.map((item) => (
-          <Marker
-            key={item.id}
-            coordinate={{ latitude: item.lat, longitude: item.lon }}
-            title={item.name}
-          />
-        ))}
-      </MapView>
+<Image source={{uri: 'https://admin.cnnbrasil.com.br/wp-content/uploads/sites/12/2024/02/google-maps-e1707316052388.png?w=1200&h=900&crop=1'}} style={styles.map}/>
 
       <Animated.View
         style={[

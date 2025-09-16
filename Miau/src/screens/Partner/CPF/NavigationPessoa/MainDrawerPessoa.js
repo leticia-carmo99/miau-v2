@@ -9,7 +9,7 @@ import { useContext } from "react";
 import { PersonContext } from "../NavigationPessoa/PersonContext";
 import Perfil from '../Images/Perfil.png';
 
-import Sobre from '../HomePessoaScreens/SobreApp';
+import Sobre from '../HomePessoasScreens/SobreApp';
 
 const Drawer = createDrawerNavigator();
 const { width } = Dimensions.get('window');

@@ -122,6 +122,13 @@ function UsuarioStack() {
     <UserProvider>
       <PetProvider>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {/* Usuário comum */}
+          <Stack.Screen name="LoginUser" component={LoginUser} />
+          <Stack.Screen name="CadUser" component={CadUser} />
+          <Stack.Screen name="AboutUs1" component={AboutUs1} />
+          <Stack.Screen name="AboutUs2" component={AboutUs2} />
+          <Stack.Screen name="AboutUs3" component={AboutUs3} />
+
           <Stack.Screen name="MainDrawerUser" component={MainDrawerUser} />
           <Stack.Screen name="HomeUser" component={InicialUser} />
           <Stack.Screen name="PerfilUser" component={PerfilUser} />
@@ -207,13 +214,6 @@ function InitialStack() {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="UserType" component={UserTypeScreen} />
       <Stack.Screen name="TypePartner" component={TypePartner} />
-
-      {/* Usuário comum */}
-      <Stack.Screen name="LoginUser" component={LoginUser} />
-      <Stack.Screen name="CadUser" component={CadUser} />
-      <Stack.Screen name="AboutUs1" component={AboutUs1} />
-      <Stack.Screen name="AboutUs2" component={AboutUs2} />
-      <Stack.Screen name="AboutUs3" component={AboutUs3} />
 
       {/* Parceiro geral */}
       <Stack.Screen name="LoginPartner" component={LoginPartner} />

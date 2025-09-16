@@ -15,7 +15,7 @@ import Blog from '../HomeScreens/Blog';
 import { useUser } from "../NavigationUser/UserContext";
 
 import { getAuth, signOut } from "firebase/auth";
-import { auth } from "./firebaseConfig"; 
+import { auth } from "../../../../firebaseConfig"; 
 
 const Drawer = createDrawerNavigator();
 const { width } = Dimensions.get('window');

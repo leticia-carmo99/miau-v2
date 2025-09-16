@@ -27,7 +27,7 @@ export default function UserTypeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('LoginUser')}>
+          onPress={() => navigation.navigate('UsuarioStack', { screen: 'LoginUser' })}>
           <Text style={styles.buttonText}>Quero adotar um pet (Usuário)</Text>
         </TouchableOpacity>
 

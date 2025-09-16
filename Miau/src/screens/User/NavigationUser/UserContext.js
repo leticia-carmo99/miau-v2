@@ -3,7 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import UserIcon from "../assets/FotosInicial/foto-user-roxo.png"; 
-import { auth, db } from "./firebaseConfig"; // Importe a conexão
+import { auth, db } from "../../../../firebaseConfig"; // Importe a conexão
 
 const UserContext = createContext();
 

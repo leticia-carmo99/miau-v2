@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Dimensions, View, Text, StyleSheet } from 'react-native';
 
 // Importa suas telas que farão parte da navegação por abas
-import Home from '../HomePessoaScreens/HomePessoa';
-import Perfil from '../HomePessoaScreens/PerfilPessoa';
-import Chat from '../HomePessoaScreens/ChatPessoa';
+import Home from '../HomePessoasScreens/HomePessoa';
+import Perfil from '../HomePessoasScreens/PerfilPessoa';
+import Chat from '../HomePessoasScreens/ChatPessoa';
 
 
 const Tab = createBottomTabNavigator();
