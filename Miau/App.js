@@ -165,7 +165,6 @@ function BusinessStack() {
         <Stack.Screen name="SobreCNPJ" component={SobreCNPJ} />
         <Stack.Screen name="MenuCNPJ" component={MenuCNPJ} />
         <Stack.Screen name="TabsCNPJ" component={TabsCNPJ} />
-        {/* Outras telas CNPJ específicas */}
       </Stack.Navigator>
     </BusinessProvider>
   );
@@ -209,7 +208,7 @@ function OngStack() {
 // --- Stack Inicial (Splash, Welcome, Login, Cadastro, AboutUs) ---
 function InitialStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false}}  initialRouteName="LoginPartner" >
+    <Stack.Navigator screenOptions={{ headerShown: false}} >
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="UserType" component={UserTypeScreen} />
@@ -222,7 +221,7 @@ function InitialStack() {
       <Stack.Screen name="AboutUs2P" component={AboutUs2P} />
       <Stack.Screen name="AboutUs3P" component={AboutUs3P} />
 
-      /* Telas CPF e CNPJ podem ser chamadas dentro do BusinessStack 
+      {/* Telas CPF e CNPJ podem ser chamadas dentro do BusinessStack */}
       <Stack.Screen name="FormCPF1" component={FormCPF1} />
       <Stack.Screen name="FormCPF2" component={FormCPF2} />
       <Stack.Screen name="FormCPF3" component={FormCPF3} />

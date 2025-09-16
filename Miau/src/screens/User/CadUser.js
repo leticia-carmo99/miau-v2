@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   Dimensions,
+  Alert
 } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -83,90 +84,93 @@ export default function CadUser() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topo} />
+  <View style={styles.container}>
+    <View style={styles.topo} />
 
-      <View style={styles.card}>
-        <Image
-          source={require('../../assets/gatoLaranja.png')}
-          style={styles.gato}
-          resizeMode="contain"
-        />
+    <View style={styles.card}>
+      <Image
+        source={require('../../assets/gatoLaranja.png')}
+        style={styles.gato}
+        resizeMode="contain"
+      />
 
-        <TouchableOpacity
-          style={styles.voltar}
-          onPress={() => navigation.goBack('loginUser')}>
-          <Icon name="arrow-back" size={28} color={LARANJA} />
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.voltar}
+        onPress={() => navigation.goBack('loginUser')}
+      >
+        <Icon name="arrow-back" size={28} color={LARANJA} />
+      </TouchableOpacity>
 
-        <Text style={styles.titulo}>Cadastro</Text>
+      <Text style={styles.titulo}>Cadastro</Text>
 
+      {/* Inputs devem vir depois da imagem para renderizar acima */}
+      <TextInput
+        style={styles.input}
+        placeholder="Usuário:"
+        placeholderTextColor="#999"
+        value={nome}
+        onChangeText={setNome}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="CPF:"
+        keyboardType="numeric"
+        placeholderTextColor="#999"
+        value={cpf}
+        onChangeText={setCpf}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="E-mail:"
+        keyboardType="email-address"
+        placeholderTextColor="#999"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      <View style={styles.senhaContainer}>
         <TextInput
-          style={styles.senhaContainer}
-          placeholder="Usuário:"
-          placeholderTextColor="#999"
-          value={nome}
-          onChangeText={setNome}
+          style={styles.senhaInput}
+          placeholder="Senha:"
+          placeholderTextColor={LARANJA}
+          secureTextEntry={!mostrarSenha}
+          value={senha}
+          onChangeText={setSenha}
         />
-        <TextInput
-          style={styles.senhaContainer}
-          placeholder="CPF:"
-          keyboardType="numeric"
-          placeholderTextColor="#999"
-          value={cpf}
-          onChangeText={setCpf}
-        />
-        <TextInput
-          style={styles.senhaContainer}
-          placeholder="E-mail:"
-          keyboardType="email-address"
-          placeholderTextColor="#999"
-           value={email}
-          onChangeText={setEmail}
-        />
-
-        <View style={styles.senhaContainer}>
-          <TextInput
-            style={styles.senhaInput}
-            placeholder="Senha:"
-            placeholderTextColor={LARANJA}
-            secureTextEntry={!mostrarSenha}
-            value={senha}
-            onChangeText={setSenha}
+        <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
+          <Icon
+            name={mostrarSenha ? 'eye-off' : 'eye'}
+            size={22}
+            color={LARANJA}
           />
-          <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
-            <Icon
-              name={mostrarSenha ? 'eye-off' : 'eye'}
-              size={22}
-              color={LARANJA}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.senhaContainer}>
-          <TextInput
-            style={styles.senhaInput}
-            placeholder="Confirmar Senha:"
-            placeholderTextColor={LARANJA}
-            secureTextEntry={!mostrarConfirma} 
-            value={confirmarSenha}
-            onChangeText={setConfirmarSenha}
-          />
-          <TouchableOpacity
-            onPress={() => setMostrarConfirma(!mostrarConfirma)}>
-            <Icon
-              name={mostrarConfirma ? 'eye-off' : 'eye'}
-              size={22}
-              color={LARANJA}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity style={styles.botao}  onPress={handleCadastro}>
-          <Text style={styles.botaoTexto}>Cadastrar</Text>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.senhaContainer}>
+        <TextInput
+          style={styles.senhaInput}
+          placeholder="Confirmar Senha:"
+          placeholderTextColor={LARANJA}
+          secureTextEntry={!mostrarConfirma} 
+          value={confirmarSenha}
+          onChangeText={setConfirmarSenha}
+        />
+        <TouchableOpacity
+          onPress={() => setMostrarConfirma(!mostrarConfirma)}
+        >
+          <Icon
+            name={mostrarConfirma ? 'eye-off' : 'eye'}
+            size={22}
+            color={LARANJA}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.botao} onPress={handleCadastro}>
+        <Text style={styles.botaoTexto}>Cadastrar</Text>
+      </TouchableOpacity>
     </View>
+  </View>
   );
 }
 
@@ -211,7 +215,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: width * 0.8,
     height: height * 0.5,
-    zIndex: 2,
   },
   titulo: {
     fontSize: width * 0.06,
@@ -228,6 +231,7 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.02,
     fontSize: 16,
     color: '#333',
+    zIndex: 3,
   },
   senhaContainer: {
     width: '100%',
