@@ -102,14 +102,14 @@ export default function CadUser() {
         <Text style={styles.titulo}>Cadastro</Text>
 
         <TextInput
-          style={styles.input}
+          style={styles.senhaContainer}
           placeholder="Usuário:"
           placeholderTextColor="#999"
           value={nome}
           onChangeText={setNome}
         />
         <TextInput
-          style={styles.input}
+          style={styles.senhaContainer}
           placeholder="CPF:"
           keyboardType="numeric"
           placeholderTextColor="#999"
@@ -117,7 +117,7 @@ export default function CadUser() {
           onChangeText={setCpf}
         />
         <TextInput
-          style={styles.input}
+          style={styles.senhaContainer}
           placeholder="E-mail:"
           keyboardType="email-address"
           placeholderTextColor="#999"
@@ -241,11 +241,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     height: height * 0.07,
   },
-  senhaInput: {
-    flex: 1,
-    fontSize: width * 0.035,
-    color: 'rgba(255, 171, 54, 0.6)', 
-  },
+ senhaInput: {
+  flex: 1,
+  fontSize: width * 0.035,
+  color: '#333', // Mude para uma cor escura, como preto ou cinza escuro
+},
   botao: {
     width: '100%',
     backgroundColor: '#FFF',
