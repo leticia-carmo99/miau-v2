@@ -60,12 +60,7 @@ export default function CadUser() {
       Alert.alert("Sucesso!", "Seu cadastro foi realizado com sucesso!");
       
       // Navega para a tela principal (o UserContext já vai ter os dados)
-          navigation.navigate('AboutUs3', {
-        nome,
-        cpf,
-        email,
-        senha,
-    });
+          navigation.navigate('AboutUs1');
 
     } catch (error) {
       // Lidar com erros do Firebase
@@ -79,9 +74,6 @@ export default function CadUser() {
     }
   };
 
-  const irParaQuemSomos = () => {
-    navigation.navigate('AboutUs1');
-  };
 
   return (
   <View style={styles.container}>

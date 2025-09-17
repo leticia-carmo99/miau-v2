@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -15,13 +16,38 @@ const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
 const TOP_HEIGHT = height * 0.001;
 
-export default function CadUser() {
+export default function CadOng() {
   const navigation = useNavigation();
+
+  // Estados para os dados do formulário
+  const [nome, setNome] = useState('');
+  const [cep, setCep] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmaSenha, setConfirmaSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirma, setMostrarConfirma] = useState(false);
 
-  const irParaQuemSomos = () => {
-    navigation.navigate('AboutUsO1');
+  // Função para validar e navegar para a próxima tela
+  const irParaProximaTela = () => {
+    // Validação básica
+    if (!nome || !cep || !email || !senha || !confirmaSenha) {
+      Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+      return;
+    }
+    if (senha !== confirmaSenha) {
+      Alert.alert('Erro', 'As senhas não coincidem.');
+      return;
+    }
+    // Você pode adicionar mais validações aqui (ex: formato de e-mail, complexidade da senha)
+
+    // Passa os dados para a próxima tela como parâmetros
+    navigation.navigate('FormONG1', {
+      nome,
+      cep,
+      email,
+      senha,
+    });
   };
 
   return (
@@ -47,18 +73,24 @@ export default function CadUser() {
           style={styles.input}
           placeholder="Nome da ONG/Abrigo"
           placeholderTextColor="#999"
+          value={nome}
+          onChangeText={setNome}
         />
         <TextInput
           style={styles.input}
           placeholder="CEP:"
           keyboardType="numeric"
           placeholderTextColor="#999"
+          value={cep}
+          onChangeText={setCep}
         />
         <TextInput
           style={styles.input}
           placeholder="E-mail:"
           keyboardType="email-address"
           placeholderTextColor="#999"
+          value={email}
+          onChangeText={setEmail}
         />
 
         <View style={styles.senhaContainer}>
@@ -67,6 +99,8 @@ export default function CadUser() {
             placeholder="Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarSenha}
+            value={senha}
+            onChangeText={setSenha}
           />
           <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
             <Icon
@@ -83,9 +117,10 @@ export default function CadUser() {
             placeholder="Confirmar Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarConfirma}
+            value={confirmaSenha}
+            onChangeText={setConfirmaSenha}
           />
-          <TouchableOpacity
-            onPress={() => setMostrarConfirma(!mostrarConfirma)}>
+          <TouchableOpacity onPress={() => setMostrarConfirma(!mostrarConfirma)}>
             <Icon
               name={mostrarConfirma ? 'eye-off' : 'eye'}
               size={22}
@@ -94,8 +129,8 @@ export default function CadUser() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.botao} onPress={irParaQuemSomos}>
-          <Text style={styles.botaoTexto}>Cadastrar</Text>
+        <TouchableOpacity style={styles.botao} onPress={irParaProximaTela}>
+          <Text style={styles.botaoTexto}>Próximo</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -160,6 +195,7 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.02,
     fontSize: 16,
     color: '#333',
+    zIndex: 3
   },
   senhaContainer: {
     width: '100%',

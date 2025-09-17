@@ -75,13 +75,12 @@ export default function PerfilUser() {
   const [tempName, setTempName] = useState('');
   const [tempImage, setTempImage] = useState(null);
 
-  // Use useEffect para sincronizar os dados do contexto com o estado local
-  useEffect(() => {
-    if (userData) {
-      setTempName(userData.nome || '');
-      setTempImage(userData.profileImage ? { uri: userData.profileImage } : UserIcon);
-    }
-  }, [userData]); // Roda sempre que userData muda
+  useEffect(() => {
+    if (userData) {
+      setTempName(userData.nome || '');
+      setTempImage(userData.profileImage ? { uri: userData.profileImage } : UserIcon);
+    }
+  }, [userData]); 
 
   // Função para abrir a galeria e carregar a imagem
   const pickImage = async () => {
@@ -98,57 +97,58 @@ export default function PerfilUser() {
     }
   };
 
-  // Função para salvar as mudanças no Firebase e no Contexto
-  const saveChanges = async () => {
-    try {
-      if (!userData || !userData.uid) {
-        Alert.alert("Erro", "Usuário não autenticado. Tente fazer login novamente.");
-        return;
-      }
-
-      const userDocRef = doc(db, "usuarios", userData.uid);
-      const updates = {};
-
-      // 1. Lógica para UPLOAD da imagem se ela foi alterada
-      if (tempImage && tempImage.uri !== userData.profileImage) {
-        // Pega a URI local da nova imagem
-        const response = await fetch(tempImage.uri);
-        const blob = await response.blob();
-        
-        // Cria uma referência para o local no Firebase Storage
-        const storageRef = ref(storage, `profile_images/${userData.uid}`);
-        
-        // Faz o upload da imagem
-        const uploadResult = await uploadBytes(storageRef, blob);
-        
-        // Pega a URL de download da imagem
-        const newImageUrl = await getDownloadURL(uploadResult.ref);
-        
-        updates.profileImage = newImageUrl;
-      }
-
-      // 2. Lógica para ATUALIZAR o nome no Firestore se ele foi alterado
-      if (tempName !== userData.nome) {
-        updates.nome = tempName;
-      }
-
-      // 3. Atualiza o Firestore apenas se houverem mudanças
-      if (Object.keys(updates).length > 0) {
-        await updateDoc(userDocRef, updates);
-        
-        // Atualiza o contexto global com os novos dados
-        setUserData({ ...userData, ...updates });
-
-        Alert.alert("Sucesso!", "Seu perfil foi atualizado.");
-      }
-      
-      setIsEditing(false); // Fecha o modal de edição
-
-    } catch (error) {
-      console.error("Erro ao salvar o perfil:", error);
-      Alert.alert("Ops!", "Não foi possível salvar as alterações. Tente novamente.");
+const saveChanges = async () => {
+  try {
+    if (!userData || !userData.uid) {
+      Alert.alert("Erro", "Usuário não autenticado. Tente fazer login novamente.");
+      return;
     }
-  };
+
+    const userDocRef = doc(db, "usuarios", userData.uid);
+    const updates = {};
+    let newImageUrl = userData.profileImage;
+
+    // Check if a new image was selected AND if its URI is a string.
+    // This prevents the error with the local resource.
+    if (tempImage && typeof tempImage.uri === 'string' && tempImage.uri !== userData.profileImage) {
+      // Fetch the blob from the local image URI
+      const response = await fetch(tempImage.uri);
+      const blob = await response.blob();
+
+      // Create a reference in Firebase Storage
+      const storageRef = ref(storage, `profile_images/${userData.uid}`);
+
+      // Upload the image
+      await uploadBytes(storageRef, blob);
+
+      // Get the new download URL
+      newImageUrl = await getDownloadURL(storageRef);
+      updates.profileImage = newImageUrl;
+    }
+
+    // Check if the name was updated
+    if (tempName !== userData.nome) {
+      updates.nome = tempName;
+    }
+
+    // Update Firestore only if there are changes
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(userDocRef, updates);
+      
+      // Update the global user context with the new data
+      setUserData({ ...userData, ...updates });
+
+      Alert.alert("Sucesso!", "Seu perfil foi atualizado.");
+    } else {
+      Alert.alert("Nenhuma mudança", "Nenhuma alteração foi feita no perfil.");
+    }
+
+    setIsEditing(false); // Close the modal
+  } catch (error) {
+    console.error("Erro ao salvar o perfil:", error);
+    Alert.alert("Ops!", "Não foi possível salvar as alterações. Tente novamente.");
+  }
+};
 
 
   const renderFavoritedEstablishment = ({ item }) => (
@@ -224,7 +224,7 @@ export default function PerfilUser() {
             <Image source={PatinhaBranca} style={styles.patinha}/>
           </View>
           <View style={styles.profileInfoContainer}>
-            <Image source={{ uri: userData.profileImage }} style={styles.profileImageHeader} />
+            <Image source={tempImage && typeof tempImage.uri === 'string' ? { uri: tempImage.uri } : UserIcon} style={styles.profileImageHeader} />
             <Text style={styles.userNameHeader}>{userData.nome}</Text>
           </View>
         </View>

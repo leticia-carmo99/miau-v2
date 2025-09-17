@@ -33,7 +33,7 @@ export default function UserTypeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('LoginOng')}>
+          onPress={() => navigation.navigate('OngStack', { screen: 'LoginOng' })}>
           <Text style={styles.buttonText}>
             Sou uma instituição (ONG ou abrigo)
           </Text>

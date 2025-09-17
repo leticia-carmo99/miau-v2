@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -22,16 +23,17 @@ const CARD_HEIGHT = height * 0.6;
 export default function LoginUser({ navigation }) {
   const { userData, setUserData } = useUser();
   const [showPass, setShowPass] = useState(false);
+   const [email, setEmail] = useState('');
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
 
   const handleLogin = async () => {
     try {
-      await signInWithEmailAndPassword(auth, user, pass);
+      await signInWithEmailAndPassword(auth, email, pass);
       
       // Se o login for bem-sucedido, o UserContext detecta a mudança
       // e o app já terá os dados corretos.
-      navigation.navigate('MainDrawerUser');
+      navigation.navigate('TabsUser')
 
     } catch (error) {
       // Adicionando tratamento de erros para o usuário
@@ -66,10 +68,10 @@ export default function LoginUser({ navigation }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Usuário:"
+          placeholder="Email:"
           placeholderTextColor="#AAA"
-          value={user}
-          onChangeText={setUser}
+          value={email}
+          onChangeText={setEmail}
         />
 
         <View style={styles.passWrapper}>

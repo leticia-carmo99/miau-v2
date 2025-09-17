@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { doc, setDoc } from 'firebase/firestore'; // Importação do Firestore
+import { db } from '../../../firebaseConfig'; // Certifique-se que 'db' foi exportado
+import * as FileSystem from 'expo-file-system';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,8 +18,76 @@ export default function RevisaoONG3() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  const allFormData = route.params?.allFormData || {};
+const allFormData = route.params?.allFormData || {};
   const formONG3Data = allFormData.ong3 || {};
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Função para ler o arquivo da URI e convertê-lo para Base64
+  const imageToBase64 = async (uri) => {
+    if (!uri) return null;
+    try {
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      return base64;
+    } catch (error) {
+      console.error('Erro ao converter imagem para Base64:', error);
+      throw new Error('Falha na leitura da imagem.');
+    }
+  };
+
+  // Função principal para finalizar o cadastro e salvar os dados
+  const handleFinalize = async () => {
+    setIsLoading(true);
+
+    try {
+      // 1. Validar CNPJ/CPF da primeira tela
+      const cnpjCpf = allFormData.ong1?.cnpjCpf;
+      if (!cnpjCpf) {
+        throw new Error('CNPJ/CPF não encontrado nos dados do formulário.');
+      }
+      const docId = cnpjCpf.replace(/[^0-9]/g, '');
+
+      // 2. Converter cada imagem para Base64
+      const comprovanteCNPJouEstatutoBase64 = await imageToBase64(
+        formONG3Data.comprovanteCNPJouEstatuto
+      );
+      const fotoFachadaEspacoBase64 = await imageToBase64(
+        formONG3Data.fotoFachadaEspaco
+      );
+      const documentoResponsavelBase64 = await imageToBase64(
+        formONG3Data.documentoResponsavel
+      );
+      const logoInstituicaoBase64 = await imageToBase64(
+        formONG3Data.logoInstituicao
+      );
+
+      // 3. Juntar todos os dados do formulário
+      const finalData = {
+        ...allFormData.ong1,
+        ...allFormData.ong2,
+        ...formONG3Data,
+        comprovanteCNPJouEstatuto: comprovanteCNPJouEstatutoBase64,
+        fotoFachadaEspaco: fotoFachadaEspacoBase64,
+        documentoResponsavel: documentoResponsavelBase64,
+        logoInstituicao: logoInstituicaoBase64,
+        dataCadastro: new Date().toISOString(),
+      };
+
+      // 4. Salvar os dados completos no Firestore
+      await setDoc(doc(db, 'ongs', docId), finalData);
+      
+      // 5. Navegar para a tela de finalização
+      navigation.navigate('FinalizacaoONG', { allFormData: finalData });
+
+    } catch (error) {
+      console.error('Erro ao finalizar o cadastro:', error);
+      Alert.alert('Erro', `Não foi possível finalizar o cadastro: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   function ImageLine({ label, imageUri }) {
     return (
@@ -72,15 +143,15 @@ export default function RevisaoONG3() {
             <Text style={styles.buttonText}>Editar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, styles.nextButton]}
-            onPress={() =>
-              navigation.navigate('FinalizacaoONG', {
-                allFormData: allFormData,
-              })
-            }>
-            <Text style={styles.buttonText}>Próximo</Text>
-          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.nextButton]}
+            onPress={handleFinalize}
+            disabled={isLoading}>
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Finalizando...' : 'Finalizar'}
+            </Text>
+          </TouchableOpacity>
+
         </View>
       </View>
     </View>

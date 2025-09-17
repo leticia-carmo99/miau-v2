@@ -8,8 +8,14 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+// Importações do Firebase
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../../firebaseConfig"; 
 
 const { width, height } = Dimensions.get('window');
 const TOP_HEIGHT = height * 0.3;
@@ -19,6 +25,43 @@ export default function LoginUser({ navigation }) {
   const [showPass, setShowPass] = useState(false);
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
+
+  // ... dentro do seu componente LoginUser
+
+const handleLogin = async () => {
+  if (user === '' || pass === '') {
+    Alert.alert("Erro", "Por favor, preencha todos os campos.");
+    return;
+  }
+
+  try {
+    // 1. Encontre a ONG no Firestore usando o nome (assumindo que seja o email)
+    const ongRef = collection(db, "ONG");
+    const q = query(ongRef, where("email", "==", user)); // Usa 'user' como email
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      Alert.alert("Erro", "ONG não encontrada. Verifique o nome/email.");
+      return;
+    }
+
+    // 2. Tente fazer o login com o Firebase Auth
+    const auth = getAuth();
+    await signInWithEmailAndPassword(auth, user, pass);
+
+    // 3. Login bem-sucedido, navega para a tela principal
+    Alert.alert("Sucesso!", "Login realizado com sucesso.");
+    navigation.navigate('TabsOng');
+
+  } catch (error) {
+    console.error("Erro ao fazer login:", error.code, error.message);
+    let errorMessage = "Erro ao fazer login. Verifique suas credenciais.";
+    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      errorMessage = "E-mail ou senha inválidos.";
+    }
+    Alert.alert("Erro de Login", errorMessage);
+  }
+};
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -67,7 +110,7 @@ export default function LoginUser({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.enterBtn} onPress={() => navigation.navigate('MainDrawerOng')}>
+        <TouchableOpacity style={styles.enterBtn} onPress={handleLogin}>
           <Text style={styles.enterText}>Entrar</Text>
         </TouchableOpacity>
 

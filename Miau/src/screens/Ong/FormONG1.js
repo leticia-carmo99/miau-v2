@@ -9,6 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../../../firebaseConfig"; 
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -38,6 +40,8 @@ export default function FormONG1() {
     redesSociais: '',
     siteOficial: '',
   };
+
+
 
   const [formData, setFormData] = useState(initialFormData);
   const [errorMessage, setErrorMessage] = useState('');

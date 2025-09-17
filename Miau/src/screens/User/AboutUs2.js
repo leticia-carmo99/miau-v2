@@ -7,10 +7,12 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
 export default function AboutUs2({ navigation }) {
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>

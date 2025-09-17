@@ -7,12 +7,14 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFA741';
 const MARRON = '#8C4A14';
 
 export default function AboutUs1({ navigation }) {
+
   return (
     <View style={styles.container}>
       <View style={styles.imageContainer}>

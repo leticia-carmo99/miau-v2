@@ -17,6 +17,7 @@ import AboutUs3 from './src/screens/User/AboutUs3';
 // Telas de Usuário Comum - TUDO
 import InicialUser from './src/screens/User/HomeScreens/Inicial';
 import PerfilUser from './src/screens/User/HomeScreens/PerfilUser';
+import TabsUser from './src/screens/User/NavigationUser/Tabs';
 import MainDrawerUser from './src/screens/User/NavigationUser/MainDrawer';
 import AdoteUser from './src/screens/User/HomeScreens/Adote';
 import BlogUser from './src/screens/User/HomeScreens/Blog';
@@ -36,6 +37,7 @@ import ServicoUser from './src/screens/User/HomeScreens/Servico';
 import BlogDetalhesUser from './src/screens/User/HomeScreens/BlogDetalhes';
 import { UserProvider } from './src/screens/User/NavigationUser/UserContext';
 import { PetProvider } from './src/screens/User/NavigationUser/PetContext';
+import MenuV1User from './src/screens/User/NavigationUser/MenuV1';
 
 
 // Telas de Parceiro (Login, Cadastro)
@@ -91,6 +93,7 @@ import RevisaoONG1 from './src/screens/Ong/RevisaoONG1';
 import RevisaoONG2 from './src/screens/Ong/RevisaoONG2';
 import RevisaoONG3 from './src/screens/Ong/RevisaoONG3';
 // Telas da ONG (Tudo)
+import TabsOng from './src/screens/Ong/NavigationOng/MainTabsOng';
 import MainDrawerOng from './src/screens/Ong/NavigationOng/MainDrawerOng';
 import AddAdocaoPetOng from './src/screens/Ong/HomeOngScreens/AddAdocaoPet';
 import ChatEspecificoOng from './src/screens/Ong/HomeOngScreens/ChatEspecifico';
@@ -130,6 +133,7 @@ function UsuarioStack() {
           <Stack.Screen name="AboutUs3" component={AboutUs3} />
 
           <Stack.Screen name="MainDrawerUser" component={MainDrawerUser} />
+          <Stack.Screen name="TabsUser" component={TabsUser} /> 
           <Stack.Screen name="HomeUser" component={InicialUser} />
           <Stack.Screen name="PerfilUser" component={PerfilUser} />
           <Stack.Screen name="AdoteUser" component={AdoteUser} />
@@ -148,6 +152,7 @@ function UsuarioStack() {
           <Stack.Screen name="ServicoUser" component={ServicoUser} />
           <Stack.Screen name="PetshopUser" component={PetshopUser} />
           <Stack.Screen name="BlogDetalhesUser" component={BlogDetalhesUser} />
+          <Stack.Screen name="MenuV1User" component={MenuV1User} />
         </Stack.Navigator>
       </PetProvider>
     </UserProvider>
@@ -190,6 +195,22 @@ function PersonStack() {
 function OngStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {/* Telas ONG iniciais */}
+      <Stack.Screen name="LoginOng" component={LoginOng} />
+      <Stack.Screen name="CadOng" component={CadOng} />
+      <Stack.Screen name="FormONG1" component={FormONG1} />
+      <Stack.Screen name="FormONG2" component={FormONG2} />
+      <Stack.Screen name="FormONG3" component={FormONG3} />
+      <Stack.Screen name="FormONG4" component={FormONG4} />
+      <Stack.Screen name="RevisaoONG1" component={RevisaoONG1} />
+      <Stack.Screen name="RevisaoONG2" component={RevisaoONG2} />
+      <Stack.Screen name="RevisaoONG3" component={RevisaoONG3} />
+      <Stack.Screen name="AboutUsO1" component={AboutUsO1} />
+      <Stack.Screen name="AboutUsO2" component={AboutUsO2} />
+      <Stack.Screen name="AboutUsO3" component={AboutUsO3} />
+      <Stack.Screen name="FinalizacaoONG" component={FinalizacaoONG} />
+      
+      <Stack.Screen name="TabsOng" component={TabsOng} />
       <Stack.Screen name="MainDrawerOng" component={MainDrawerOng} />
       <Stack.Screen name="AddAdocaoPetOng" component={AddAdocaoPetOng} />
       <Stack.Screen name="FormularioAdocaoOng" component={FormularioAdocaoOng} />
@@ -239,20 +260,7 @@ function InitialStack() {
       <Stack.Screen name="RevisaoCNPJ3" component={RevisaoCNPJ3} />
       <Stack.Screen name="Finalizacao" component={Finalizacao} />
 
-      {/* Telas ONG iniciais */}
-      <Stack.Screen name="LoginOng" component={LoginOng} />
-      <Stack.Screen name="CadOng" component={CadOng} />
-      <Stack.Screen name="FormONG1" component={FormONG1} />
-      <Stack.Screen name="FormONG2" component={FormONG2} />
-      <Stack.Screen name="FormONG3" component={FormONG3} />
-      <Stack.Screen name="FormONG4" component={FormONG4} />
-      <Stack.Screen name="RevisaoONG1" component={RevisaoONG1} />
-      <Stack.Screen name="RevisaoONG2" component={RevisaoONG2} />
-      <Stack.Screen name="RevisaoONG3" component={RevisaoONG3} />
-      <Stack.Screen name="AboutUsO1" component={AboutUsO1} />
-      <Stack.Screen name="AboutUsO2" component={AboutUsO2} />
-      <Stack.Screen name="AboutUsO3" component={AboutUsO3} />
-      <Stack.Screen name="FinalizacaoONG" component={FinalizacaoONG} />
+
     </Stack.Navigator>
   );
 }

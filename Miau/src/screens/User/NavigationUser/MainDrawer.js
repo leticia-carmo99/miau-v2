@@ -13,6 +13,7 @@ import EditarMeuPet from '../HomeScreens/EditarMeuPet';
 import Perfil from '../HomeScreens/PerfilUser';
 import Blog from '../HomeScreens/Blog';
 import { useUser } from "../NavigationUser/UserContext";
+import MenuV1User from "./MenuV1";
 
 import { getAuth, signOut } from "firebase/auth";
 import { auth } from "../../../../firebaseConfig"; 
@@ -39,8 +40,6 @@ function LogoutScreen() {
 
 export default function MainDrawer({ navigation }) { // Adicione navigation aqui
   const { userData, setUserData } = useUser();
-
-  // Verificação de segurança: se userData for nulo, mostre um loading
   if (userData === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -52,7 +51,6 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
   const handleLogout = async () => {
     try {
         await signOut(auth);
- 
         setUserData(null);
         navigation.navigate('SplashScreen'); 
     } catch (error) {
@@ -64,17 +62,13 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
     <Drawer.Navigator
       drawerContent={(props) => (
         <DrawerContentScrollView {...props}>
-          
           <TouchableOpacity
             style={styles.profileSection}
-            onPress={() => props.navigation.navigate('PerfilTab')}
-          >
-            <Image source={userData.profileImage || UserIcon} style={styles.profileImage} />
+            onPress={() => props.navigation.navigate('PerfilTab')}>
+            <Image source={userData.profileImage ? { uri: userData.profileImage } : UserIcon} style={styles.profileImage} />
             <Text style={styles.profileName}>{userData.nome}</Text>
             <Text style={styles.viewProfileText}>Ver perfil</Text>
           </TouchableOpacity>
-
-          {/* O restante do código do Drawer está correto */}
           <View style={styles.drawerItemsContainer}>
             <TouchableOpacity
               style={styles.drawerItem}
@@ -151,7 +145,6 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
         },
       }}
     >
-      
       <Drawer.Screen name="HomeWithTabs" component={Tabs} />
       <Drawer.Screen name="MeuPet" component={MeuPet} />
       <Drawer.Screen name="Eventos" component={Eventos} />
@@ -162,6 +155,7 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
       <Drawer.Screen name="Sair" component={LogoutScreen} />
       <Drawer.Screen name="EditarMeuPet" component={EditarMeuPet} />
       <Drawer.Screen name="PerfilTab" component={Perfil} />
+    <Drawer.Screen name="MenuV1User" component={MenuV1User} />
     </Drawer.Navigator>
   );
 }

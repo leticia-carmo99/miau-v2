@@ -7,6 +7,7 @@ import Menu from '../NavigationUser/MenuV1.js';
 import * as ImagePicker from "expo-image-picker"; // para trocar foto
 import { useUser } from "../NavigationUser/UserContext";
 
+
 import {
   useFonts,
   Nunito_400Regular,
@@ -270,7 +271,7 @@ export default function Inicial() {
   return (
     <SafeAreaView style={styles.safeArea}>
           <View style={styles.menu}>
-          <Menu background ='transparent'/>
+          <Menu background ='transparent' navigation={navigation}/>
           </View>
       <ScrollView
         showsVerticalScrollIndicator={false}

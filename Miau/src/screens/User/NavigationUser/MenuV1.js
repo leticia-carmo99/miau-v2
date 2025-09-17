@@ -6,7 +6,7 @@ import PerfilUser from '../HomeScreens/PerfilUser';
 const { width } = Dimensions.get('window');
 
 export default function Menu({ background }) {
-  const navigation = useNavigation();
+ const navigation = useNavigation();
   const iconeBranco = background === 'colorful';
   return (
     <View style={[styles.container]}>

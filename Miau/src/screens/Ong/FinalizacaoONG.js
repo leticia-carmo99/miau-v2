@@ -22,7 +22,7 @@ export default function DadosEnviados({ navigation }) {
 
   const handleConfirm = () => {
     setModalVisible(false);
-    navigation.navigate('Home');
+    navigation.navigate('TabsOng');
   };
 
   return (
