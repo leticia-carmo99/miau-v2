@@ -132,7 +132,7 @@ if (!result.canceled) {
             <Text style={styles.modalText}>Esta ação não poderá ser desfeita e você perderá suas alterações.</Text>
             <TouchableOpacity
               style={styles.discardButton}
-              onPress={() => navigation.navigate('MeuPet')}
+              onPress={() => navigation.navigate('MeuPetUser')}
             >
               <Text style={styles.discardButtonText} onPress={() => setModalVisible(false)}>
 Continuar editando</Text>
@@ -141,7 +141,7 @@ Continuar editando</Text>
              <TouchableOpacity
               style={styles.saveAltButton}   onPress={() => {
     setModalVisible(false); 
-    navigation.navigate('MeuPet');
+    navigation.navigate('MeuPetUser');
   }}>
               <Text style={styles.saveAltButtonText}>Descartar alterações</Text>
             </TouchableOpacity>

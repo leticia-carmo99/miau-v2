@@ -188,9 +188,9 @@ const [pets, setPets] = useState([
 
 const handleAnimalPress = (animal) => {
   if (animal.type === "gato") {
-    navigation.navigate("PerfilGato", { pet: animal });
+    navigation.navigate("PerfilGatoUser", { pet: animal });
   } else if (animal.type === "cao") {
-    navigation.navigate("PerfilCao", { pet: animal });
+    navigation.navigate("PerfilCaoUser", { pet: animal });
   }
 };
 

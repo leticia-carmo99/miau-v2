@@ -147,6 +147,7 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.018,
     fontSize: 16,
     color: '#333',
+    zIndex: 3
   },
   passWrapper: {
     flexDirection: 'row',

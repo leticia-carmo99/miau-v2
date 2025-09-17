@@ -156,7 +156,7 @@ const blogFood = [
     const renderBlogPost = ({ item }) => (
     <TouchableOpacity
       style={styles.blogCard}
-      onPress={() => navigation.navigate('BlogDetalhes', {post: item})}>
+      onPress={() => navigation.navigate('BlogDetalhesUser', {post: item})}>
       <View
         style={[
           styles.blogImageContainer,
@@ -188,7 +188,7 @@ const blogFood = [
   const renderPopularblogs = ({ item }) => (
     <TouchableOpacity
       style={styles.popularblogsCard} key={item.id} 
-      onPress={() => navigation.navigate('BlogDetalhes', {post: item})}
+      onPress={() => navigation.navigate('BlogDetalhesUser', {post: item})}
     >
       <View style={styles.popularblogsImageView}>
         <Image source={item.logo} style={styles.popularblogsImage} />

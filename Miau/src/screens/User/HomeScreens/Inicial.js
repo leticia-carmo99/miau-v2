@@ -185,7 +185,7 @@ export default function Inicial() {
   const renderBlogPost = ({ item }) => (
     <TouchableOpacity
       style={styles.blogCard} key={item.id} 
-      onPress={() => navigation.navigate('BlogDetalhes', {post: item})}
+      onPress={() => navigation.navigate('BlogDetalhesUser', {post: item})}
     >
       <View style={[styles.blogImageContainer, { backgroundColor: item.type === 'dog' ? COLORS.primaryOrange : COLORS.primaryPurple }]}>
         <Image source={item.imageSource} style={styles.blogImage} />

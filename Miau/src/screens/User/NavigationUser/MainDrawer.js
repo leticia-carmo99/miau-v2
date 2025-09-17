@@ -3,15 +3,15 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import {View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, ActivityIndicator} from 'react-native';
 import { DrawerContentScrollView} from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
-import Tabs from './Tabs';
+import TabsUser from './Tabs';
 import UserIcon from '../assets/FotosInicial/foto-user-roxo.png';
-import MeuPet from '../HomeScreens/MeuPet';
-import Eventos from '../HomeScreens/Eventos';
-import Favoritos from '../HomeScreens/Favoritos';
-import Sobre from '../HomeScreens/Sobre';
-import EditarMeuPet from '../HomeScreens/EditarMeuPet';
-import Perfil from '../HomeScreens/PerfilUser';
-import Blog from '../HomeScreens/Blog';
+import MeuPetUser from '../HomeScreens/MeuPet';
+import EventosUser from '../HomeScreens/Eventos';
+import FavoritosUser from '../HomeScreens/Favoritos';
+import SobreUser from '../HomeScreens/Sobre';
+import EditarMeuPetUser from '../HomeScreens/EditarMeuPet';
+import PerfilUser from '../HomeScreens/PerfilUser';
+import BlogUser from '../HomeScreens/Blog';
 import { useUser } from "../NavigationUser/UserContext";
 import MenuV1User from "./MenuV1";
 
@@ -145,12 +145,12 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
         },
       }}
     >
-      <Drawer.Screen name="HomeWithTabs" component={Tabs} />
-      <Drawer.Screen name="MeuPet" component={MeuPet} />
-      <Drawer.Screen name="Eventos" component={Eventos} />
-      <Drawer.Screen name="Dicas e Cuidados" component={Blog} />
-      <Drawer.Screen name="Favoritos" component={Favoritos} />
-      <Drawer.Screen name="Sobre o App" component={Sobre} />
+      <Drawer.Screen name="HomeWithTabs" component={TabsUser} />
+      <Drawer.Screen name="MeuPet" component={MeuPetUser} />
+      <Drawer.Screen name="Eventos" component={EventosUser} />
+      <Drawer.Screen name="Dicas e Cuidados" component={BlogUser} />
+      <Drawer.Screen name="Favoritos" component={FavoritosUser} />
+      <Drawer.Screen name="Sobre o App" component={SobreUser} />
       <Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} />
       <Drawer.Screen name="Sair" component={LogoutScreen} />
       <Drawer.Screen name="EditarMeuPet" component={EditarMeuPet} />

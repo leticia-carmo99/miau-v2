@@ -231,7 +231,7 @@ export default function MapaServicos() {
 
         {/* Categorias */}
         <View style={styles.row}>
-<TouchableOpacity onPress={() => navigation.navigate('MapaPetshop')}>
+<TouchableOpacity onPress={() => navigation.navigate('MapaPetshopUser')}>
           <View style={styles.category}>
           <View style={styles.categoryPic}>
             <MaterialIcons name="store" size={width * 0.12} color="#9156D1" />
@@ -239,7 +239,7 @@ export default function MapaServicos() {
             <Text style={styles.categoryText}>Petshops</Text>
           </View>
 </TouchableOpacity>
-<TouchableOpacity onPress={() => navigation.navigate('MapaServicos')}>
+<TouchableOpacity onPress={() => navigation.navigate('MapaServicosUser')}>
           <View style={styles.category}>
           <View style={styles.categoryPicSelected}>
             <MaterialIcons
@@ -299,7 +299,7 @@ export default function MapaServicos() {
             </View>
 
             {/* Botão */}
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Servico', {data})}>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ServicoUser', {data})}>
               <Text style={styles.buttonText}>Ver perfil</Text>
             </TouchableOpacity>
           </View>

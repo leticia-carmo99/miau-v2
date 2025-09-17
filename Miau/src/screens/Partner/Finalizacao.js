@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,22 +7,64 @@ import {
   StyleSheet,
   Dimensions,
   Modal,
+  Alert,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../firebaseConfig'; // Verifique o caminho
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
 const MARRON = '#8C4A14';
 
-export default function DadosEnviados({ navigation }) {
+export default function Finalizacao() {
+  const navigation = useNavigation();
+  const route = useRoute();
   const [modalVisible, setModalVisible] = useState(false);
+  const [perfilAtivo, setPerfilAtivo] = useState(false);
+  const { tipoCadastro, documento } = route.params;
+
+  // Função para verificar o status do perfil no Firebase
+  const verificarStatusPerfil = async () => {
+    try {
+      const docRef = doc(db, 'prestador', documento);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists() && docSnap.data().ativo) {
+        setPerfilAtivo(true);
+      } else {
+        setPerfilAtivo(false);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar o status do perfil:", error);
+      Alert.alert("Erro", "Não foi possível verificar o status do seu perfil.");
+      setPerfilAtivo(false);
+    }
+  };
+
+  useEffect(() => {
+    // A tela finalizacao será exibida primeiro e irá verificar o status
+    // Quando você estiver pronto para a aprovação, chame verificarStatusPerfil
+  }, []);
 
   const handlePress = () => {
-    setModalVisible(true);
+    // Redireciona o usuário para a rota correta se o perfil estiver ativo
+    if (perfilAtivo) {
+      if (tipoCadastro === 'CPF') {
+        navigation.navigate('PersonStack', { screen: 'MainTabsCPF' });
+      } else if (tipoCadastro === 'CNPJ') {
+        navigation.navigate('BusinessStack', { screen: 'TabsCNPJ' });
+      }
+    } else {
+      // Se o perfil não estiver ativo, exibe o modal
+      setModalVisible(false);
+    }
   };
 
   const handleConfirm = () => {
-    setModalVisible(false);
-    navigation.navigate('Home');
+    setModalVisible(true);
+    // Redireciona para a tela inicial do app, já que o perfil não está ativo
+    navigation.navigate('Home'); 
   };
 
   return (
@@ -47,12 +89,11 @@ export default function DadosEnviados({ navigation }) {
 
       <TouchableOpacity
         style={styles.botao}
-        onPress={handlePress}
+        onPress={handleConfirm}
       >
         <Text style={styles.botaoTexto}>Avançar</Text>
       </TouchableOpacity>
 
-     
       <Modal
         animationType="fade"
         transparent={true}
@@ -70,7 +111,7 @@ export default function DadosEnviados({ navigation }) {
               <TouchableOpacity style={styles.modalButtonCancelar} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalButtonTextCancelar}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButtonOk} onPress={handleConfirm}>
+              <TouchableOpacity style={styles.modalButtonOk} onPress={handlePress}>
                 <Text style={styles.modalButtonTextOk}>OK</Text>
               </TouchableOpacity>
             </View>
@@ -82,107 +123,107 @@ export default function DadosEnviados({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: LARANJA,
-    paddingHorizontal: width * 0.08,
-    paddingTop: height * 0.05,
-    justifyContent: 'space-between',
-  },
-  imageContainer: {
-    alignItems: 'center',
-  },
-  image: {
-    height: height * 0.32,
-    marginBottom: height * 0,
-  },
-  content: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexGrow: 1,
-    paddingBottom: height * 0.08,
-  },
-  titulo: {
-    fontSize: width * 0.07,
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: height * 0.012,
-  },
-  texto: {
-    fontSize: width * 0.045,
-    color: '#fff',
-    textAlign: 'center',
-    paddingHorizontal: width * 0.03,
-  },
-  botao: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    paddingVertical: height * 0.02,
-    paddingHorizontal: width * 0.07,
-    borderTopLeftRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  botaoTexto: {
-    color: MARRON,
-    fontWeight: 'bold',
-    fontSize: width * 0.04,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: width * 0.8,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: width * 0.08,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: width * 0.05,
-    fontWeight: 'bold',
-    color: LARANJA,
-    marginBottom: height * 0.015,
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: width * 0.04,
-    color: '#737373',
-    textAlign: 'center',
-    marginBottom: height * 0.025,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  modalButtonCancelar: {
-    backgroundColor: '#ccc',
-    paddingVertical: height * 0.01,
-    paddingHorizontal: width * 0.06,
-    borderRadius: 10,
-  },
-  modalButtonOk: {
-    backgroundColor: LARANJA,
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.08,
-    borderRadius: 10,
-  },
-  modalButtonTextCancelar: {
-    color: '#FFF',
-    fontWeight: 'bold',
-  },
-  modalButtonTextOk: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  container: {
+    flex: 1,
+    backgroundColor: LARANJA,
+    paddingHorizontal: width * 0.08,
+    paddingTop: height * 0.05,
+    justifyContent: 'space-between',
+  },
+  imageContainer: {
+    alignItems: 'center',
+  },
+  image: {
+    height: height * 0.32,
+    marginBottom: height * 0,
+  },
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexGrow: 1,
+    paddingBottom: height * 0.08,
+  },
+  titulo: {
+    fontSize: width * 0.07,
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: height * 0.012,
+  },
+  texto: {
+    fontSize: width * 0.045,
+    color: '#fff',
+    textAlign: 'center',
+    paddingHorizontal: width * 0.03,
+  },
+  botao: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.07,
+    borderTopLeftRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  botaoTexto: {
+    color: MARRON,
+    fontWeight: 'bold',
+    fontSize: width * 0.04,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: width * 0.8,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: width * 0.08,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: width * 0.05,
+    fontWeight: 'bold',
+    color: LARANJA,
+    marginBottom: height * 0.015,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: width * 0.04,
+    color: '#737373',
+    textAlign: 'center',
+    marginBottom: height * 0.025,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButtonCancelar: {
+    backgroundColor: '#ccc',
+    paddingVertical: height * 0.01,
+    paddingHorizontal: width * 0.06,
+    borderRadius: 10,
+  },
+  modalButtonOk: {
+    backgroundColor: LARANJA,
+    paddingVertical: height * 0.015,
+    paddingHorizontal: width * 0.08,
+    borderRadius: 10,
+  },
+  modalButtonTextCancelar: {
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  modalButtonTextOk: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 });

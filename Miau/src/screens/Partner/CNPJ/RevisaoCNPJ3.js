@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { doc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from '../../../../firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -10,9 +13,73 @@ const CINZA_CLARO = '#E0E0E0';
 export default function RevisaoCNPJ3() {
   const navigation = useNavigation();
   const route = useRoute();
-
   const allFormData = route.params?.allFormData || {};
+  const formCNPJ1Data = allFormData.cnpj1 || {};
+  const formCNPJ2Data = allFormData.cnpj2 || {};
   const formCNPJ3Data = allFormData.cnpj3 || {};
+  const { tipoCadastro } = allFormData; // Assume que você salva o tipo de cadastro (CNPJ ou CPF) em allFormData
+
+  // Função para fazer o upload da imagem no Firebase Storage
+  const uploadImage = async (uri, fileName) => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const storagePath = tipoCadastro === 'CNPJ' 
+        ? `prestadores/cnpj/${formCNPJ1Data.cnpj}/${fileName}`
+        : `prestadores/cpf/${allFormData.cpf1.cpf}/${fileName}`; // Lógica para CPF
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (e) {
+      console.error("Erro no upload da imagem:", e);
+      return null;
+    }
+  };
+
+  // Função para finalizar o cadastro e enviar tudo para o Firestore
+  const handleFinalizarCadastro = async () => {
+    try {
+      Alert.alert("Enviando...", "Aguarde enquanto salvamos os seus dados.");
+
+      // 1. Upload de cada imagem para o Storage e obtenção dos links
+      const logoUrl = formCNPJ3Data.logoEmpresa 
+        ? await uploadImage(formCNPJ3Data.logoEmpresa, 'logoEmpresa') 
+        : null;
+
+      const comprovanteUrl = formCNPJ3Data.comprovanteCNPJ 
+        ? await uploadImage(formCNPJ3Data.comprovanteCNPJ, 'comprovanteCNPJ') 
+        : null;
+
+      const localFisicoUrl = formCNPJ3Data.localFisico 
+        ? await uploadImage(formCNPJ3Data.localFisico, 'localFisico') 
+        : null;
+
+      // 2. Criação do objeto final com os links de download e outros dados
+      let finalData = {
+        ...formCNPJ1Data,
+        ...formCNPJ2Data,
+        ...formCNPJ3Data,
+        logoEmpresa: logoUrl,
+        comprovanteCNPJ: comprovanteUrl,
+        localFisico: localFisicoUrl,
+        dataCadastro: new Date().toISOString(),
+        ativo: false, // Adicionado para indicar que o prestador ainda não está ativo
+      };
+
+      // 3. Salvamento dos dados no Firestore na coleção 'prestador'
+      const idDocumento = tipoCadastro === 'CNPJ' ? formCNPJ1Data.cnpj : allFormData.cpf1.cpf;
+      const docRef = doc(db, 'prestador', idDocumento);
+      await setDoc(docRef, finalData);
+
+      Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve.");
+      navigation.navigate('FinalizacaoSucesso',  { tipoCadastro: 'CNPJ' });
+      
+    } catch (e) {
+      console.error("Erro ao finalizar o cadastro:", e);
+      Alert.alert("Erro", "Ocorreu um erro ao finalizar o seu cadastro. Tente novamente.");
+    }
+  };
 
   function ImageLine({ label, imageUri }) {
     return (
@@ -68,11 +135,7 @@ export default function RevisaoCNPJ3() {
 
           <TouchableOpacity
             style={[styles.button, styles.nextButton]}
-            onPress={() =>
-              navigation.navigate('Finalizacao', {
-                allFormData: allFormData,
-              })
-            }>
+            onPress={handleFinalizarCadastro}>
             <Text style={styles.buttonText}>Próximo</Text>
           </TouchableOpacity>
         </View>

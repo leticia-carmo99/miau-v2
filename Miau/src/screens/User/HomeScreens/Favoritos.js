@@ -213,7 +213,7 @@ const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([])
   const renderService = ({ item }) => (
     <TouchableOpacity
       style={styles.serviceCard}
-      onPress={() => navigation.navigate('ServicoDetalhes', { serviceId: item.id })}
+      onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}
     >
       <Image source={{ uri: item.image }} style={styles.serviceImage} />
       <Text style={styles.serviceName}>{item.name}</Text>
@@ -221,7 +221,7 @@ const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([])
       <Text style={styles.serviceLocation}>{item.location}</Text>
       <TouchableOpacity
         style={styles.serviceButton}
-        onPress={() => navigation.navigate('PerfilCuidador', { cuidadorId: item.id })}>
+        onPress={() => navigation.navigate('ServicoUser', { cuidadorId: item.id })}>
         <Text style={styles.serviceButtonText}>Ver perfil</Text>
       </TouchableOpacity>
     </TouchableOpacity>

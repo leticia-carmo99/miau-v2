@@ -243,7 +243,7 @@ const saveChanges = async () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Favoritos</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Favoritos')}>
+            <TouchableOpacity onPress={() => navigation.navigate('FavoritosUser')}>
               <Text style={styles.seeMoreText}>Ver mais</Text>
             </TouchableOpacity>
           </View>

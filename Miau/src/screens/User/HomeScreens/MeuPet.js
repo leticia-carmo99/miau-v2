@@ -100,7 +100,7 @@ const imagePet = petData?.image || FotoPerfilCao;
   const renderBlogPost = ({ item }) => (
     <TouchableOpacity
       style={styles.blogCard}
-      onPress={() => navigation.navigate('BlogDetalhes', { postId: item.id })}>
+      onPress={() => navigation.navigate('BlogDetalhesUser', { postId: item.id })}>
       <View
         style={[
           styles.blogImageContainer,
@@ -221,7 +221,7 @@ const imagePet = petData?.image || FotoPerfilCao;
 
         <TouchableOpacity
           style={styles.editProfileButton}
-          onPress={() => navigation.navigate('EditarMeuPet')}>
+          onPress={() => navigation.navigate('EditarMeuPetUser')}>
           <Text style={styles.editProfileText}>EDITAR PERFIL</Text>
         </TouchableOpacity>
 

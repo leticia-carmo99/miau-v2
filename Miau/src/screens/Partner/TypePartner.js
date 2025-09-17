@@ -8,12 +8,18 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
+import { useNavigation, useRoute } from '@react-navigation/native'; // Adicione useRoute
+
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
 const BRANCO = '#FFFFFF';
 
 export default function TypePartner({ navigation }) {
+    const route = useRoute(); // Use o hook para acessar os parâmetros
+    const initialData = route.params?.initialData || {}; // Recebe os dados da tela CadPartner
+
+
   return (
     <View style={styles.container}>
     <TouchableOpacity
@@ -37,13 +43,13 @@ export default function TypePartner({ navigation }) {
       <View style={styles.botoesContainer}>
         <TouchableOpacity
           style={styles.botao}
-          onPress={() => navigation.navigate('FormCNPJ1')}>
+          onPress={() => navigation.navigate('FormCNPJ1', { allFormData: initialData })}>
           <Text style={styles.botaoTexto}>Empresa (CNPJ)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.botao}
-          onPress={() => navigation.navigate('FormCPF1')}>
+          onPress={() => navigation.navigate('FormCPF1', { allFormData: initialData })}>
           <Text style={styles.botaoTexto}>Prestador de Serviços (CPF)</Text>
         </TouchableOpacity>
       </View>

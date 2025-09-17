@@ -20,9 +20,16 @@ export default function CadUser() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirma, setMostrarConfirma] = useState(false);
 
-  const irParaQuemSomos = () => {
-    navigation.navigate('AboutUs1P');
-  };
+  const [nome, setNome] = useState('');
+const [cpfCnpj, setCpfCnpj] = useState('');
+const [email, setEmail] = useState('');
+const [senha, setSenha] = useState('');
+ const [confirmarSenha, setConfirmarSenha] = useState('');
+
+const handleNext = () => {
+    const initialData = { nome, cpfCnpj, email, senha };
+    navigation.navigate('TypePartner', { initialData });
+};
 
   return (
     <View style={styles.container}>
@@ -47,18 +54,24 @@ export default function CadUser() {
           style={styles.input}
           placeholder="Nome do comércio/Empresa:"
           placeholderTextColor="#999"
+            value={nome}
+  onChangeText={setNome}
         />
         <TextInput
           style={styles.input}
           placeholder="CPF ou CNPJ:"
           keyboardType="numeric"
           placeholderTextColor="#999"
+            value={cpfCnpj}
+  onChangeText={setCpfCnpj}
         />
         <TextInput
           style={styles.input}
           placeholder="E-mail:"
           keyboardType="email-address"
           placeholderTextColor="#999"
+            value={email}
+  onChangeText={setEmail}
         />
 
         <View style={styles.senhaContainer}>
@@ -67,6 +80,8 @@ export default function CadUser() {
             placeholder="Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarSenha}
+              value={senha}
+  onChangeText={setSenha}
           />
           <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
             <Icon
@@ -83,6 +98,8 @@ export default function CadUser() {
             placeholder="Confirmar Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarConfirma}
+                      value={confirmarSenha}
+          onChangeText={setConfirmarSenha}
           />
           <TouchableOpacity
             onPress={() => setMostrarConfirma(!mostrarConfirma)}>
@@ -94,7 +111,7 @@ export default function CadUser() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.botao} onPress={irParaQuemSomos}>
+        <TouchableOpacity style={styles.botao} onPress={handleNext}>
           <Text style={styles.botaoTexto}>Cadastrar</Text>
         </TouchableOpacity>
       </View>
@@ -160,6 +177,7 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.02,
     fontSize: 16,
     color: '#333',
+    zIndex: 3
   },
   senhaContainer: {
     width: '100%',

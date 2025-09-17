@@ -205,7 +205,7 @@ export default function MapaPetshop() {
 
     {/* Categorias */}
     <View style={styles.row}>
-      <TouchableOpacity onPress={() => navigation.navigate('MapaPetshop')}>
+      <TouchableOpacity onPress={() => navigation.navigate('MapaPetshopUser')}>
         <View style={styles.category}>
           <View style={styles.categoryPicSelected}>
             <MaterialIcons name="store" size={width * 0.12} color="#fff" />
@@ -238,7 +238,7 @@ export default function MapaPetshop() {
     {/* Cards */}
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       {filtered.map((item) => (
-        <TouchableOpacity key={item.id} onPress={() => navigation.navigate('Petshop', { nome: item.name, foto: item.logo})}>
+        <TouchableOpacity key={item.id} onPress={() => navigation.navigate('PetshopUser', { nome: item.name, foto: item.logo})}>
         <View key={item.id} style={styles.card}>
           <Image source={item.logo} style={styles.cardImage} />
           <View style={styles.cardTitleContainer}>
