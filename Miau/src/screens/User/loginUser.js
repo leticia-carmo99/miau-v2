@@ -33,7 +33,7 @@ export default function LoginUser({ navigation }) {
       
       // Se o login for bem-sucedido, o UserContext detecta a mudança
       // e o app já terá os dados corretos.
-      navigation.navigate('TabsUser')
+      navigation.navigate('MainDrawerUser')
 
     } catch (error) {
       // Adicionando tratamento de erros para o usuário

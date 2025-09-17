@@ -13,6 +13,7 @@ import EditarMeuPetUser from '../HomeScreens/EditarMeuPet';
 import PerfilUser from '../HomeScreens/PerfilUser';
 import BlogUser from '../HomeScreens/Blog';
 import { useUser } from "../NavigationUser/UserContext";
+import InicialUser from '../HomeScreens/Inicial';
 import MenuV1User from "./MenuV1";
 
 import { getAuth, signOut } from "firebase/auth";
@@ -59,8 +60,7 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
   };
 
   return (
-    <Drawer.Navigator
-      drawerContent={(props) => (
+    <Drawer.Navigator drawerContent={(props) => (
         <DrawerContentScrollView {...props}>
           <TouchableOpacity
             style={styles.profileSection}
@@ -136,28 +136,22 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
             <Text style={styles.logoutButtonText}>Sair</Text>
           </TouchableOpacity>
         </DrawerContentScrollView>
-      )}
-      screenOptions={{
-        headerShown: false,
-        drawerStyle: {
-          backgroundColor: 'white',
-          width: '80%', 
-        },
-      }}
-    >
-      <Drawer.Screen name="HomeWithTabs" component={TabsUser} />
-      <Drawer.Screen name="MeuPet" component={MeuPetUser} />
-      <Drawer.Screen name="Eventos" component={EventosUser} />
-      <Drawer.Screen name="Dicas e Cuidados" component={BlogUser} />
-      <Drawer.Screen name="Favoritos" component={FavoritosUser} />
-      <Drawer.Screen name="Sobre o App" component={SobreUser} />
-      <Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} />
-      <Drawer.Screen name="Sair" component={LogoutScreen} />
-      <Drawer.Screen name="EditarMeuPet" component={EditarMeuPet} />
-      <Drawer.Screen name="PerfilTab" component={Perfil} />
-    <Drawer.Screen name="MenuV1User" component={MenuV1User} />
-    </Drawer.Navigator>
-  );
+)}
+screenOptions={{ headerShown: false, drawerStyle: { backgroundColor: 'white', width: '80%',}}}>
+<Drawer.Screen name="HomeWithTabs" component={TabsUser} />
+<Drawer.Screen name="MeuPet" component={MeuPetUser} />
+<Drawer.Screen name="Eventos" component={EventosUser} />
+<Drawer.Screen name="Dicas e Cuidados" component={BlogUser} />
+<Drawer.Screen name="Favoritos" component={FavoritosUser} />
+<Drawer.Screen name="Sobre o App" component={SobreUser} />
+<Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} />
+<Drawer.Screen name="Sair" component={LogoutScreen} />
+<Drawer.Screen name="EditarMeuPet" component={EditarMeuPetUser} />
+<Drawer.Screen name="PerfilTab" component={PerfilUser} />
+<Drawer.Screen name="MenuV1User" component={MenuV1User} />
+<Drawer.Screen name="InicialUser" component={InicialUser} />
+</Drawer.Navigator>
+);
 }
 
 const styles = StyleSheet.create({
@@ -208,7 +202,9 @@ const styles = StyleSheet.create({
     paddingVertical: width * 0.035,
     paddingHorizontal: width * 0.05,
     borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.offWhite, // Uma linha mais suave
+    borderBottomColor: COLORS.offWhite,
+alignItems: 'flex-start',
+ // Uma linha mais suave
   },
   drawerItemText: {
     fontSize: width * 0.045,

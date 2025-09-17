@@ -48,23 +48,15 @@ export default function Finalizacao() {
   }, []);
 
   const handlePress = () => {
-    // Redireciona o usuário para a rota correta se o perfil estiver ativo
-    if (perfilAtivo) {
       if (tipoCadastro === 'CPF') {
-        navigation.navigate('PersonStack', { screen: 'MainTabsCPF' });
+        navigation.navigate('PersonStack', { screen: 'MainDrawerCPF' });
       } else if (tipoCadastro === 'CNPJ') {
-        navigation.navigate('BusinessStack', { screen: 'TabsCNPJ' });
+        navigation.navigate('BusinessStack', { screen: 'MainDrawerCNPJ' });
       }
-    } else {
-      // Se o perfil não estiver ativo, exibe o modal
-      setModalVisible(false);
-    }
   };
 
   const handleConfirm = () => {
     setModalVisible(true);
-    // Redireciona para a tela inicial do app, já que o perfil não está ativo
-    navigation.navigate('Home'); 
   };
 
   return (

@@ -67,7 +67,7 @@ export default function LoginUser({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.enterBtn} onPress={() => navigation.navigate('BusinessStack')}>
+        <TouchableOpacity style={styles.enterBtn} onPress={() => navigation.navigate('PersonStack', { screen: 'MainDrawerCPF' })}>
           <Text style={styles.enterText}>Entrar</Text>
         </TouchableOpacity>
 

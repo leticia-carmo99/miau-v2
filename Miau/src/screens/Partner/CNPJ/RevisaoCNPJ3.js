@@ -73,7 +73,7 @@ export default function RevisaoCNPJ3() {
       await setDoc(docRef, finalData);
 
       Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve.");
-      navigation.navigate('FinalizacaoSucesso',  { tipoCadastro: 'CNPJ' });
+      navigation.navigate('Finalizacao',  { tipoCadastro: 'CNPJ' });
       
     } catch (e) {
       console.error("Erro ao finalizar o cadastro:", e);

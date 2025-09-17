@@ -90,12 +90,11 @@ const pic = personData?.logoImage || Perfil;
         },
       }}
     >
-      
-      <Drawer.Screen name="HomeWithTabs" component={Tabs} />
-      <Drawer.Screen name="Sobre o App" component={Sobre} />
-      <Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} />
-      <Drawer.Screen name="Sair" component={LogoutScreen} />
-    </Drawer.Navigator>
+<Drawer.Screen name="HomeWithTabs" component={Tabs} />
+<Drawer.Screen name="Sobre o App" component={Sobre} />
+<Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} />
+<Drawer.Screen name="Sair" component={LogoutScreen} />
+</Drawer.Navigator>
   );
 }
 
