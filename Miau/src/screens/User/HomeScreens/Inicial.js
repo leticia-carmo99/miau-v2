@@ -327,15 +327,14 @@ export default function Inicial() {
             <Text style={styles.sectionTitle}>BLOG</Text>
             <TouchableOpacity onPress={() => navigation.navigate('BlogListScreen')}>
               <Text style={styles.seeMoreText}>Ver mais</Text>
-            </TouchableOpacity>
+             </TouchableOpacity>
           </View>
           <FlatList
             data={blogPosts}
             renderItem={renderBlogPost}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.blogListContent}
-          />
+            contentContainerStyle={styles.blogListContent}/>
         </View>
 
         <View style={styles.section}>

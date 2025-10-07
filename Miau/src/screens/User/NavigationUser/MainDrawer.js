@@ -33,21 +33,19 @@ const COLORS = {
 };
 
 function ConfiguracoesScreen() {
-  return (<View style={styles.placeholderContainer}><Text style={styles.placeholderText}>Tela Configurações (Drawer)</Text></View>);
-}
-function LogoutScreen() {
-  return (<View style={styles.placeholderContainer}><Text style={styles.placeholderText}>Tela Sair (Ação de Logout)</Text></View>);
+return (<View style={styles.placeholderContainer}><Text style={styles.placeholderText}>Tela Configurações (Drawer)</Text></View>);
 }
 
+
 export default function MainDrawer({ navigation }) { // Adicione navigation aqui
-  const { userData, setUserData } = useUser();
-  if (userData === null) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={COLORS.primaryPurple} />
-      </View>
-    );
-  }
+ const { userData, setUserData } = useUser();
+ if (userData === null) {
+   return (
+     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+       <ActivityIndicator size="large" color={COLORS.primaryPurple} />
+     </View>
+   );
+}
 
   const handleLogout = async () => {
     try {

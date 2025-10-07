@@ -27,7 +27,7 @@ export const UserProvider = ({ children }) => {
             uid: user.uid,
             name: "Usuário",
             email: user.email,
-            profileImage: UserIcon,
+            foto_perfil: UserIcon,
             tipo_usuario: "comum",
           });
         }

@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
-    padding:  width * 0.03,
+    padding:  width * 0.01,
     borderRadius: width * 0.2,
     marginBottom:  width * 0.05,
     elevation: 2,
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     searchBox2: {
     alignItems: 'center',
     backgroundColor: 'white',
-    padding: width * 0.03,
+    padding: width * 0.01,
     borderRadius: width * 0.2,
     marginBottom:  width * 0.05,
     elevation: 2,
