@@ -83,7 +83,6 @@ export default function CadUser() {
         style={styles.gato}
         resizeMode="contain"
       />
-
       <TouchableOpacity
         style={styles.voltar}
         onPress={() => navigation.goBack('loginUser')}
