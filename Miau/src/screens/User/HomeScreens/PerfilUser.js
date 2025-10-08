@@ -9,7 +9,7 @@ import { useUser } from "../NavigationUser/UserContext";
 // Firebase imports
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from "../../../../firebaseConfig"; 
+import { db } from "../../../../firebaseConfig"; 
 
 import UserIcon from '../assets/FotosInicial/foto-user-roxo.png'; 
 import PetzLogo from '../assets/FotosInicial/petz.png'; 
@@ -74,10 +74,12 @@ export default function PerfilUser() {
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState('');
   const [tempImage, setTempImage] = useState(null);
+  const [tempTelephone, setTempTelephone] = useState(null);
 
   useEffect(() => {
     if (userData) {
       setTempName(userData.nome || '');
+      setTempTelephone(userData.telefone || 'Nenhum telefone inserido ainda.');
       setTempImage(userData.profileImage ? { uri: userData.profileImage } : UserIcon);
     }
   }, [userData]); 
@@ -85,7 +87,7 @@ export default function PerfilUser() {
   // Função para abrir a galeria e carregar a imagem
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'Images',
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -100,43 +102,41 @@ export default function PerfilUser() {
 const saveChanges = async () => {
   try {
     if (!userData || !userData.uid) {
-      Alert.alert("Erro", "Usuário não autenticado. Tente fazer login novamente.");
-      return;
-    }
+      Alert.alert("Erro", "Usuário não autenticado. Tente fazer login novamente.");
+      return;
+    }
+    
+    const userDocRef = doc(db, "usuarios", userData.uid);
+    const updates = {};
 
-    const userDocRef = doc(db, "usuarios", userData.uid);
-    const updates = {};
-    let newImageUrl = userData.profileImage;
+    // 1. Atualizar Nome
+    if (tempName !== userData.nome) {
+      updates.nome = tempName;
+    }
 
-    // Check if a new image was selected AND if its URI is a string.
-    // This prevents the error with the local resource.
-    if (tempImage && typeof tempImage.uri === 'string' && tempImage.uri !== userData.profileImage) {
-      // Fetch the blob from the local image URI
-      const response = await fetch(tempImage.uri);
-      const blob = await response.blob();
+    // 2. Atualizar Telefone
+    if (tempTelephone !== userData.telefone) {
+      updates.telefone = tempTelephone;
+    }
 
-      // Create a reference in Firebase Storage
-      const storageRef = ref(storage, `profile_images/${userData.uid}`);
+    // 3. **ATUALIZAR URI DA IMAGEM NO FIRESTORE (SEM FIREBASE STORAGE)**
+    const newImageUri = tempImage && typeof tempImage.uri === 'string' ? tempImage.uri : null;
+    
+    // Verifica se a nova URI é diferente da armazenada (ou se uma URI foi recém-selecionada)
+    if (newImageUri && newImageUri !== userData.profileImage) {
+      updates.profileImage = newImageUri;
+    }
 
-      // Upload the image
-      await uploadBytes(storageRef, blob);
-
-      // Get the new download URL
-      newImageUrl = await getDownloadURL(storageRef);
-      updates.profileImage = newImageUrl;
-    }
-
-    // Check if the name was updated
-    if (tempName !== userData.nome) {
-      updates.nome = tempName;
-    }
-
-    // Update Firestore only if there are changes
-    if (Object.keys(updates).length > 0) {
-      await updateDoc(userDocRef, updates);
-      
-      // Update the global user context with the new data
-      setUserData({ ...userData, ...updates });
+    // Atualiza o Firestore apenas se houver mudanças em algum campo
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(userDocRef, updates);
+      
+      // Atualiza o contexto global do usuário com os novos dados
+      setUserData({ 
+        ...userData, 
+        ...updates,
+        profileImage: updates.profileImage || userData.profileImage // Garante que a imagem no contexto é a URI salva
+      });
 
       Alert.alert("Sucesso!", "Seu perfil foi atualizado.");
     } else {
@@ -236,8 +236,8 @@ const saveChanges = async () => {
         <View style={styles.userDetailsSection}>
           <Text style={styles.detailLabel}>E-mail</Text>
           <Text style={styles.detailValue}>{userData.email}</Text>
-          <Text style={styles.detailLabel}>CPF</Text>
-          <Text style={styles.detailValue}>{userData.cpf}</Text>
+          <Text style={styles.detailLabel}>Telefone</Text>
+          <Text style={styles.detailValue}>{userData.telefone}</Text>
         </View>
 
         <View style={styles.section}>
@@ -305,6 +305,14 @@ const saveChanges = async () => {
               style={styles.input}
               placeholder="Digite seu nome"
             />
+
+            <TextInput
+              value={tempTelephone}
+              onChangeText={setTempTelephone}
+              style={styles.input}
+              placeholder="Digite seu telefone"
+            />
+
             <View style={styles.modalButtons}>
               <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.cancelButton}>
                 <Text style={styles.cancelText}>Cancelar</Text>

@@ -27,8 +27,12 @@ export const UserProvider = ({ children }) => {
             uid: user.uid,
             name: "Usuário",
             email: user.email,
-            foto_perfil: UserIcon,
+            profileImage: UserIcon,
             tipo_usuario: "comum",
+            cep: "6754160",
+            telefone: "Nenhum número inserido ainda",
+            pet1Id: "",
+            pet2Id: "",
           });
         }
       } else {

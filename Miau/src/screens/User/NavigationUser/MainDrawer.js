@@ -78,7 +78,7 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
 
             <TouchableOpacity
               style={styles.drawerItem}
-              onPress={() => props.navigation.navigate('MeuPet')}
+               onPress={() => props.navigation.navigate('MeuPet')}
             >
               <Ionicons name="paw-outline" size={width * 0.06} color={COLORS.mediumGray} />
               <Text style={styles.drawerItemText}>Meu pet</Text>
@@ -143,7 +143,6 @@ screenOptions={{ headerShown: false, drawerStyle: { backgroundColor: 'white', wi
 <Drawer.Screen name="Favoritos" component={FavoritosUser} />
 <Drawer.Screen name="Sobre o App" component={SobreUser} />
 <Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} />
-<Drawer.Screen name="Sair" component={LogoutScreen} />
 <Drawer.Screen name="EditarMeuPet" component={EditarMeuPetUser} />
 <Drawer.Screen name="PerfilTab" component={PerfilUser} />
 <Drawer.Screen name="MenuV1User" component={MenuV1User} />

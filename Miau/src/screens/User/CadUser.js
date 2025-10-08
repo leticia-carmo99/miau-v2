@@ -23,8 +23,7 @@ export default function CadUser() {
   const navigation = useNavigation();
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirma, setMostrarConfirma] = useState(false);
-
-    const [nome, setNome] = useState('');
+  const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -53,7 +52,6 @@ export default function CadUser() {
         nome: nome,
         email: email,
         cpf: cpf,
-        // Você pode adicionar outros campos aqui
         tipo_usuario: tipoUsuario,
       });
 
