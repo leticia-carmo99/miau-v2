@@ -202,16 +202,15 @@ const handleSavePet = async () => {
             <Text style={styles.modalText}>Esta ação não poderá ser desfeita e você perderá suas alterações.</Text>
             <TouchableOpacity
               style={styles.discardButton}
-              onPress={() => navigation.navigate('MeuPetUser')}
             >
               <Text style={styles.discardButtonText} onPress={() => setModalVisible(false)}>
 Continuar editando</Text>
             </TouchableOpacity>
 
              <TouchableOpacity
-              style={styles.saveAltButton}   onPress={() => {
+              style={styles.saveAltButton} onPress={() => {
     setModalVisible(false); 
-    navigation.navigate('MeuPetUser');
+    navigation.goBack();
   }}>
               <Text style={styles.saveAltButtonText}>Descartar alterações</Text>
             </TouchableOpacity>

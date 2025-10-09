@@ -75,10 +75,10 @@ export default function MeuPet() {
   const navigation = useNavigation();
   const { petData, isLoading } = usePet(); 
 
-const nomePet = petData?.nome || "Animal";
-const idadePet = petData?.idade || "6";
-const pesoPet = petData?.peso || "3kg";
-const corPet = petData?.cor || "Branco";
+const nomePet = petData?.nome || "Pet";
+const idadePet = petData?.idade || " ";
+const pesoPet = petData?.peso || " ";
+const corPet = petData?.cor || " ";
 const racaPet = petData?.raca || "Vira-lata";
 const sexoPet = petData?.sexo || "Macho"; // valor padrão// valor padrão
 const imagePet = petData?.image || FotoPerfilCao;
