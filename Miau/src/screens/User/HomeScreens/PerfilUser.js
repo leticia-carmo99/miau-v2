@@ -68,7 +68,8 @@ const favoritedEstablishments = [
 export default function PerfilUser() {
   const navigation = useNavigation();
   const { userData, setUserData } = useUser(); // Pegue a função setUserData para atualizar o contexto
-   const { pets: userPets } = usePet();
+const { petData, isLoading: isPetsLoading } = usePet(); 
+const userPets = petData ? [petData] : []; 
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -171,23 +172,31 @@ const saveChanges = async () => {
   );
 
   const renderPetItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.petCard}
-      onPress={() => navigation.navigate('PerfilPet', { petId: item.id })}
-    >
-      <View style={styles.petInfo}>
-        <Text style={styles.petName}>{item.name}</Text>
-        <View style={styles.petDetailsRow}>
-          <Text style={styles.petBreed}>{item.breed}</Text>
-          <Text style={styles.petSeparator}> • </Text>
-          <Text style={styles.petAge}>{item.age}</Text>
-        </View>
-      </View>
-      <View style={styles.petIcons}>
-        <Ionicons name={item.gender === 'female' ? 'female' : 'male'} size={width * 0.045} color={COLORS.primaryPurple} style={styles.genderIcon} />
-        <Ionicons name="paw" size={width * 0.045} color={COLORS.primaryPurple} />
-      </View>
-    </TouchableOpacity>
+   <TouchableOpacity
+      style={styles.petCard}
+      onPress={() => navigation.navigate('MeuPet', { petId: item.id })} // Alterei para 'MeuPet' se essa for a tela de detalhes
+    >
+      <View style={styles.petInfo}>
+  <View style={styles.petRow1}>
+        <Text style={styles.petName}>{item.nome}</Text> 
+      <View style={styles.petIcons}>
+        <Ionicons 
+          name={item.sexo === 'Fêmea' ? 'female' : 'male'} 
+          size={width * 0.07} 
+          color={COLORS.primaryPurple} 
+          style={styles.genderIcon} 
+        />
+        <Ionicons name="paw" size={width * 0.07} color={COLORS.primaryPurple} />
+      </View>
+</View>
+        <View style={styles.petDetailsRow}>
+          <Text style={styles.petBreed}>{item.raca}</Text> 
+          <Text style={styles.petSeparator}> • </Text>
+          <Text style={styles.petAge}>{item.idade} anos</Text> 
+        </View>
+      </View>
+
+    </TouchableOpacity>
   );
 
   const [fontsLoaded] = useFonts({
@@ -202,15 +211,15 @@ const saveChanges = async () => {
   }
 
   // Se userData ainda não foi carregado, mostre um indicador de carregamento
-  if (!userData || userPets === undefined) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <Text>Carregando perfil...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+if (!userData || isPetsLoading) { 
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.loadingContainer}>
+        <Text>Carregando perfil...</Text>
+      </View>
+    </SafeAreaView>
+  );
+}
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -268,7 +277,7 @@ const saveChanges = async () => {
           <View style={styles.petsContentContainer}>
             {userPets && userPets.length > 0 ? (
               <FlatList
-                data={userPets}
+                data={userPets} 
                 renderItem={renderPetItem}
                 keyExtractor={(item) => item.id}
                 showsVerticalScrollIndicator={false}
@@ -532,51 +541,50 @@ const styles = StyleSheet.create({
   },
   petsListContent: {},
   petCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: COLORS.petCardBackground,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.petCardBorder,
-    paddingVertical: width * 0.04,
-    paddingHorizontal: width * 0.05,
     marginBottom: width * 0.03,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    height: width * 0.25,
+    justifyContent: 'center',
+    paddingTop: width * 0.04
   },
-  petInfo: {
-    flex: 1,
+  petInfo:{
+flexDirection: 'column'
+  },
+  petRow1: {
+flexDirection: 'row',
+alignItems: 'center',
   },
   petName: {
-    fontSize: width * 0.05,
+    fontSize: width * 0.07,
     fontWeight: 'bold',
     color: COLORS.darkGray,
-    marginBottom: width * 0.005,
   },
   petDetailsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
   },
   petBreed: {
-    fontSize: width * 0.035,
+    fontSize: width * 0.04,
     color: COLORS.mediumGray,
   },
   petSeparator: {
-    fontSize: width * 0.035,
+    fontSize: width * 0.04,
     color: COLORS.mediumGray,
-    marginHorizontal: width * 0.01,
+    marginHorizontal: 1,
   },
   petAge: {
-    fontSize: width * 0.035,
+    fontSize: width * 0.04,
     color: COLORS.mediumGray,
   },
   petIcons: {
     flexDirection: 'row',
-    alignItems: 'center',
   },
   genderIcon: {
     marginRight: width * 0.02,
