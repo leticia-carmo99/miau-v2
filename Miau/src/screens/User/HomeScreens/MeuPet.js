@@ -73,7 +73,7 @@ const blogPosts = [
 
 export default function MeuPet() {
   const navigation = useNavigation();
-    const { petData } = usePet();
+  const { petData, isLoading } = usePet(); 
 
 const nomePet = petData?.nome || "Animal";
 const idadePet = petData?.idade || "6";
@@ -138,6 +138,16 @@ const imagePet = petData?.image || FotoPerfilCao;
   if (!fontsLoaded) {
     return null;
   }
+
+  if (isLoading) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.loadingContainer}>
+                    <Text>Carregando dados do pet...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
   return (
     <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>

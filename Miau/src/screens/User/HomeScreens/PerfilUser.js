@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from "expo-image-picker"; 
 import { useUser } from "../NavigationUser/UserContext";
+import { usePet } from "../NavigationUser/PetContext";
 
 // Firebase imports
 import { doc, updateDoc } from 'firebase/firestore';
@@ -62,14 +63,12 @@ const favoritedEstablishments = [
   },
 ];
 
-const userPets = [
-  { id: '1', name: 'Luninha', breed: 'Vira-Lata', age: '6 anos', gender: 'female', type: 'dog' },
-  { id: '2', name: 'Mia', breed: 'Frajola', age: '4 anos', gender: 'female', type: 'cat' },
-];
+
 
 export default function PerfilUser() {
   const navigation = useNavigation();
   const { userData, setUserData } = useUser(); // Pegue a função setUserData para atualizar o contexto
+   const { pets: userPets } = usePet();
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -203,7 +202,7 @@ const saveChanges = async () => {
   }
 
   // Se userData ainda não foi carregado, mostre um indicador de carregamento
-  if (!userData) {
+  if (!userData || userPets === undefined) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
@@ -267,14 +266,14 @@ const saveChanges = async () => {
 
         <View style={styles.petsSectionBackgroundWrapper}>
           <View style={styles.petsContentContainer}>
-            {userPets.length > 0 ? (
-              <FlatList
-                data={userPets}
-                renderItem={renderPetItem}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.petsListContent}
-              />
+            {userPets && userPets.length > 0 ? (
+              <FlatList
+                data={userPets}
+                renderItem={renderPetItem}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.petsListContent}
+              />
             ) : (
               <View style={styles.noPetsContainer}>
                 <Ionicons name="information-circle-outline" size={width * 0.1} color={COLORS.white} />

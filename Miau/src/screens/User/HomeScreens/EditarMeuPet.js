@@ -21,6 +21,11 @@ import PetBackground from '../assets/FotosMeuPet/PetBackground.png';
 import FotoPerfilBack from '../assets/FotosMeuPet/FotoPerfilBack.png';
 import * as ImagePicker from "expo-image-picker";
 import { usePet } from "../NavigationUser/PetContext";
+import { useUser } from "../NavigationUser/UserContext"; // Necessário para pegar o email do dono
+import { auth, db } from "../../../../firebaseConfig";
+import { doc, setDoc, updateDoc, collection } from "firebase/firestore";
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 import UploadCarteirinha from '../assets/FotosMeuPet/UploadCarteirinha.png';
 import * as DocumentPicker from "expo-document-picker";
@@ -54,16 +59,17 @@ const COLORS = {
 
 export default function EditarMeuPet() {
   const navigation = useNavigation();
- const { petData, setPetData } = usePet();
+   const { petData, setPetData, pet1Id, setPet1Id } = usePet();
+  const { userData } = useUser();
 
-const [nome, setNome] = useState(petData.nome);
-const [idade, setIdade] = useState(petData.idade);
-const [peso, setPeso] = useState(petData.peso);
-const [cor, setCor] = useState(petData.cor);
-const [raca, setRaca] = useState(petData.raca);
-const [sexo, setSexo] = useState(petData.sexo);
-const [especie, setEspecie] = useState(petData.especie);
-const [image, setImage] = useState(petData.image || require('../assets/FotosMeuPet/UpdatePic.png'));
+const [nome, setNome] = useState(petData?.nome || '');
+const [idade, setIdade] = useState(petData?.idade || '');
+const [peso, setPeso] = useState(petData?.peso || '');
+const [cor, setCor] = useState(petData?.cor || '');
+const [raca, setRaca] = useState(petData?.raca || '');
+const [sexo, setSexo] = useState(petData?.sexo || 'Macho'); // Valor padrão para Radio Option
+const [especie, setEspecie] = useState(petData?.especie || 'Cachorro'); // Valor padrão
+const [image, setImage] = useState(petData?.image || require('../assets/FotosMeuPet/UpdatePic.png'));
    
 const pickImage = async ()=>{ 
 let result = await ImagePicker.launchImageLibraryAsync({
@@ -88,6 +94,70 @@ if (!result.canceled) {
   if (!fontsLoaded) {
     return null;
   }
+
+const handleSavePet = async () => {
+    if (!auth.currentUser || !userData?.email) {
+        alert("Erro de autenticação: Usuário não logado ou email não encontrado.");
+        return;
+    }
+
+    // 1. Dados do pet a serem salvos
+    const petDetails = {
+        nome,
+        idade,
+        peso,
+        cor,
+        raca,
+        sexo,
+        especie,
+        // image: image, // Ignorando a imagem conforme solicitado
+        carteirinha: petData?.carteirinha || null, 
+        email_usuario: userData.email, // Linka o pet ao usuário
+        // Você pode adicionar um timestamp de atualização aqui: updatedAt: new Date(),
+    };
+
+    try {
+        let currentPetId = pet1Id; // Usa o ID existente do contexto
+
+        if (currentPetId) {
+            // Caso 1: O pet JÁ EXISTE (pet1Id está no contexto), apenas atualiza
+            console.log("Atualizando pet existente com ID:", currentPetId);
+            const petDocRef = doc(db, "pets", currentPetId);
+            await updateDoc(petDocRef, petDetails);
+            
+        } else {
+            // Caso 2: É o PRIMEIRO registro (pet1Id é nulo), PRECISA CRIAR E VINCULAR
+            
+            // 1. Gera um ID único e utiliza-o como ID do documento
+            currentPetId = uuidv4(); 
+            const petDocRef = doc(db, "pets", currentPetId);
+            
+            // 2. Cria o documento do pet na coleção 'pets'
+            console.log("Criando novo pet com ID:", currentPetId);
+            await setDoc(petDocRef, petDetails);
+            
+            // 3. Atualiza o ID na coleção 'usuarios' para 'pet1Id'
+            const userDocRef = doc(db, "usuarios", auth.currentUser.uid);
+            await updateDoc(userDocRef, { pet1Id: currentPetId });
+            
+            // 4. Atualiza o ID no contexto (importante para futuras edições)
+            setPet1Id(currentPetId); 
+        }
+
+        // 3. Atualiza o contexto local com os novos dados
+        // (Isso fará MeuPet.js recarregar os dados corretos)
+        setPetData({ id: currentPetId, ...petDetails });
+        
+        alert("Perfil do pet salvo com sucesso!");
+        navigation.navigate('MeuPet');
+        
+    } catch (error) {
+        // Loga o erro exato no console para ajudar na depuração
+        console.error("Erro ao salvar pet no Firebase:", error);
+        // Exibe o alerta genérico que você viu na imagem
+        alert("Erro ao salvar perfil do pet. Tente novamente.");
+    }
+};
 
   return (
     <ScrollView style={styles.scroll}>
@@ -249,18 +319,13 @@ Continuar editando</Text>
 
             </View>
 
-          {/* Botão Salvar */}
-          <TouchableOpacity style={styles.saveButton} onPress={() => {setPetData({
-      nome,
-      idade,
-      peso,
-      cor,
-      raca,
-      sexo,
-      especie,
-      image,}); navigation.navigate('MeuPet');}}>
-            <Text style={styles.saveText}>Salvar</Text>
-          </TouchableOpacity>
+          {/* Botão Salvar */}
+          <TouchableOpacity 
+                style={styles.saveButton} 
+                onPress={handleSavePet}> {/* Chamando a função Firebase */}
+            <Text style={styles.saveText}>Salvar</Text>
+          </TouchableOpacity>
+
         </View>
       </SafeAreaView>
     </ScrollView>
