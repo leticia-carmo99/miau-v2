@@ -197,7 +197,7 @@ const imagePet = petData?.image || FotoPerfilCao;
         <View style={styles.vacineView}>
           <Text style={styles.vacineTitle}>Carteira de Vacinação</Text>
           <TouchableOpacity style={styles.carteiraPdfButton}>
-            <Text style={styles.carteiraPdfTitle}>carteirinhaluna.pdf </Text>
+            <Text style={styles.carteiraPdfTitle}>carteirinhatoto.pdf </Text>
           </TouchableOpacity>
         </View>
 
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     flexWrap: 'wrap', // quebra linha se não couber
-    padding: 10,
+    padding: 20,
   },
   card: {
     backgroundColor: '#fff',
@@ -352,6 +352,7 @@ const styles = StyleSheet.create({
     color: COLORS.blogTextGray,
     textAlign: 'center',
     fontFamily: 'JosefinSans_700Bold',
+    marginBottom: 10
   },
   vacineView: {
     marginTop: 20,

@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 35,
+    paddingVertical: 50,
     paddingBottom: 5,
   },
   scrollableOrangeSection: {

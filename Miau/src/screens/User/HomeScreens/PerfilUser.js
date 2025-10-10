@@ -24,6 +24,14 @@ import {
 } from '@expo-google-fonts/josefin-sans';
 import { Nunito_700Bold, Nunito_400Regular } from '@expo-google-fonts/nunito';
 
+// cuidar disso depooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooois 
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'Text strings must be rendered within a <Text> component.',
+  'VirtualizedLists should never be nested inside plain ScrollViews with the same orientation',
+]);
+
 const { width, height } = Dimensions.get('window');
 
 const COLORS = {
@@ -172,10 +180,7 @@ const saveChanges = async () => {
   );
 
   const renderPetItem = ({ item }) => (
-   <TouchableOpacity
-      style={styles.petCard}
-      onPress={() => navigation.navigate('MeuPet', { petId: item.id })} // Alterei para 'MeuPet' se essa for a tela de detalhes
-    >
+  <TouchableOpacity style={styles.petCard} onPress={() => navigation.navigate('MeuPet', { petId: item.id })}>
       <View style={styles.petInfo}>
   <View style={styles.petRow1}>
         <Text style={styles.petName}>{item.nome}</Text> 
@@ -363,7 +368,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
     paddingHorizontal: width * 0.03,
-    paddingTop: width * 0.08,
+    paddingTop: width * 0.03,
   },
   back: {
     height: width * 0.08,
@@ -398,10 +403,11 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   userNameHeader: {
-    fontSize: width * 0.07,
+    fontSize: width * 0.09,
     fontFamily: 'JosefinSans_700Bold',
     color: COLORS.white,
     marginLeft: width * 0.06,
+    marginBottom: width * 0.05
   },
   userDetailsSection: {
     paddingHorizontal: width * 0.08,
@@ -553,7 +559,8 @@ const styles = StyleSheet.create({
     elevation: 2,
     height: width * 0.25,
     justifyContent: 'center',
-    paddingTop: width * 0.04
+    paddingTop: width * 0.01,
+    paddingHorizontal: width * 0.1
   },
   petInfo:{
 flexDirection: 'column'
@@ -566,6 +573,7 @@ alignItems: 'center',
     fontSize: width * 0.07,
     fontWeight: 'bold',
     color: COLORS.darkGray,
+    marginRight: width * 0.03
   },
   petDetailsRow: {
     flexDirection: 'row',
@@ -610,14 +618,13 @@ alignItems: 'center',
   editIcon: {
     backgroundColor: COLORS.primaryOrange,
     borderRadius: 20,
-    padding: 8,
+    padding: 12,
     alignSelf: 'flex-end',
     margin: width * 0.03,
     alignItems: 'center',
     justifyContent: 'center',
   },
   editText: {
-    width: width * 0.2,
     height: width * 0.06,
     color: COLORS.white,
     fontFamily: 'Nunito_700Bold',

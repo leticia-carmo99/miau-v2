@@ -352,18 +352,19 @@ const styles = StyleSheet.create({
   },
     modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    width: '100%',
-    height: '100%'
+    width:'100%',
+    height: '100%',
   },
   modalContent: {
     width: 300,
     padding: 20,
     backgroundColor: "#fff",
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: "center", 
+    borderWidth: 1,
+    borderColor: COLORS.blogTextGray
   },
   modalText: {
     marginBottom: 20,
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
   discardButtonText: {
     color: "#fff",
     fontFamily: 'JosefinSans_700Bold',
-    fontSize: width * 0.06,
+    fontSize: width * 0.05,
   },
     saveAltButton: {
     paddingVertical: width * 0.05,
@@ -405,7 +406,7 @@ const styles = StyleSheet.create({
   saveAltButtonText: {
     color: COLORS.blogTextGray,
     fontFamily: 'JosefinSans_700Bold',
-    fontSize: width * 0.06,
+    fontSize: width * 0.05,
   },
   menuView: {
     height: width * 0.4,

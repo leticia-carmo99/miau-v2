@@ -40,6 +40,7 @@ export default function WelcomeScreen({ navigation }) {
         >
           <Text style={styles.buttonText}>Avançar</Text>
         </TouchableOpacity>
+        <View style={styles.inferior}/>
       </ImageBackground>
     </SafeAreaView>
   );
@@ -91,13 +92,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: -2, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
+    zIndex: 4,
+    paddingBottom: width * 0.15
   },
   buttonText: {
     color: '#3C2B5E',
-    fontSize: width * 0.045,
+    fontSize: width * 0.05,
     fontWeight: '600',
   },
+  inferior:{
+    zIndex: 6,
+    backgroundColor: 'white',
+    height: width * 0.12,
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  }
 });
 
 
