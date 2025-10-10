@@ -21,10 +21,10 @@ export default function CadUser() {
   const [mostrarConfirma, setMostrarConfirma] = useState(false);
 
   const [nome, setNome] = useState('');
-const [cpfCnpj, setCpfCnpj] = useState('');
-const [email, setEmail] = useState('');
-const [senha, setSenha] = useState('');
- const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
 
 const handleNext = () => {
     const initialData = { nome, cpfCnpj, email, senha };
@@ -62,7 +62,7 @@ const handleNext = () => {
           placeholder="CPF ou CNPJ:"
           keyboardType="numeric"
           placeholderTextColor="#999"
-            value={cpfCnpj}
+          value={cpfCnpj}
   onChangeText={setCpfCnpj}
         />
         <TextInput
@@ -70,7 +70,7 @@ const handleNext = () => {
           placeholder="E-mail:"
           keyboardType="email-address"
           placeholderTextColor="#999"
-            value={email}
+          value={email}
   onChangeText={setEmail}
         />
 
@@ -80,7 +80,7 @@ const handleNext = () => {
             placeholder="Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarSenha}
-              value={senha}
+            value={senha}
   onChangeText={setSenha}
           />
           <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
