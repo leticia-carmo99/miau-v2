@@ -21,11 +21,18 @@ const VERMELHO = '#E83F5B';
 
 export default function FormONG1() {
   const navigation = useNavigation();
-  const route = useRoute();
+ const route = useRoute();
 
-  const allFormData = route.params?.allFormData || {};
+// Dados trazidos da navegação anterior (CadONG.js) ou de edição (allFormData)
+const allFormData = route.params?.allFormData || {};
+const paramsFromCadONG = route.params; // Dados: nome, cep, email, senha
 
-  const initialFormData = allFormData.ong1 || {
+
+const initialFormData = allFormData.ong1 || {
+  nomeResponsavel: paramsFromCadONG?.nome || '', 
+  emailContato: paramsFromCadONG?.email || '',
+  cep: paramsFromCadONG?.cep || '', 
+  senha: paramsFromCadONG?.senha || '', 
     nomeOng: '',
     cnpjCpf: '',
     nomeResponsavel: '',

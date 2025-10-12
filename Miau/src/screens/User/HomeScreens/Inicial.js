@@ -7,6 +7,10 @@ import Menu from '../NavigationUser/MenuV1.js';
 import * as ImagePicker from "expo-image-picker"; // para trocar foto
 import { useUser } from "../NavigationUser/UserContext";
 
+import { collection, getDocs } from 'firebase/firestore';
+// Assumindo que você tem o arquivo de configuração do Firebase acessível aqui
+import { db } from "../../../../firebaseConfig"; 
+
 
 import {
   useFonts,
@@ -48,32 +52,6 @@ const COLORS = {
   blogTextGray: '#737373',
 };
 
-const blogPosts = [
-  {
-    id: '1',
-    type: 'dog',
-    imageSource: BlogCao,
-    description: 'Seu cachorro come grama?',
-    subtitle: 'Entenda os motivos e quando se preocupar.',
-    date: '21.06.2023',
-  },
-  {
-    id: '2',
-    type: 'dog',
-    imageSource: BlogCao,
-    description: 'Latindo demais?',
-    subtitle: 'Dicas para toda ansiedade ou só energia acumulada.',
-    date: '21.06.2023',
-  },
-  {
-    id: '3',
-    type: 'cat',
-    imageSource: BlogGato,
-    description: 'Gato miando de madrugada?',
-    subtitle: 'Entenda os motivos e como resolver.',
-    date: '21.06.2023',
-  },
-];
 
 const establishments = [
   {
@@ -159,6 +137,9 @@ const services = [
 export default function Inicial() {
   const navigation = useNavigation();
   
+  // 💡 NOVO ESTADO PARA ARMAZENAR OS BLOGS DO FIREBASE
+  const [blogPostsState, setBlogPostsState] = useState([]);
+  const [isLoadingBlogs, setIsLoadingBlogs] = useState(true);
 
   const [fontsLoaded] = useFonts({
     Nunito_400Regular,
@@ -166,6 +147,41 @@ export default function Inicial() {
   });
 
   const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([]);
+
+  // 💡 NOVO useEffect para buscar os blogs do Firestore
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        const blogCollectionRef = collection(db, 'blog');
+        const snapshot = await getDocs(blogCollectionRef);
+        const fetchedBlogs = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const isCat = data.tipo && (data.tipo.toLowerCase() === 'cat' || data.tipo.toLowerCase() === 'gato');
+          const postType = isCat ? 'cat' : 'dog'; // Mapeia para a string 'cat' ou 'dog' que seu componente usa
+          const postImage = isCat ? BlogGato : BlogCao;
+
+          // Mapeando campos do Firestore para a estrutura esperada pelo seu renderBlogPost
+          return {
+            id: doc.id, // ID do documento
+            description: data.titulo || 'Sem título', 
+            subtitle: data.subtitulo || 'Sem subtítulo',
+            date: data.data || '00.00.0000', 
+            type: postType, 
+            imageSource: postImage,
+            ...data
+          };
+        });
+        setBlogPostsState(fetchedBlogs);
+      } catch (error) {
+        console.error("Erro ao buscar posts do blog:", error);
+      } finally {
+        setIsLoadingBlogs(false);
+      }
+    };
+
+    fetchBlogPosts();
+  }, []);
+
 
   useEffect(() => {
     // prevenir flicker do splash
@@ -183,21 +199,21 @@ export default function Inicial() {
   }
 
   const renderBlogPost = ({ item }) => (
-    <TouchableOpacity
-      style={styles.blogCard} key={item.id} 
-      onPress={() => navigation.navigate('BlogDetalhesUser', {post: item})}
-    >
-      <View style={[styles.blogImageContainer, { backgroundColor: item.type === 'dog' ? COLORS.primaryOrange : COLORS.primaryPurple }]}>
-        <Image source={item.imageSource} style={styles.blogImage} />
-      </View>
-      <View style={[styles.blogTextContent, { backgroundColor: item.type === 'dog' ? COLORS.lightOrange : COLORS.lightPurple }]}>
-        <View>
-          <Text style={styles.blogTitle}>{item.description}</Text>
-          <Text style={styles.blogDescription}>{item.subtitle}</Text>
-        </View>
-        <Text style={styles.blogDate}>{item.date}</Text>
-      </View>
-    </TouchableOpacity>
+    <TouchableOpacity
+      style={styles.blogCard} key={item.id} 
+      onPress={() => navigation.navigate('BlogDetalhesUser', {post: item})}
+    >
+      <View style={[styles.blogImageContainer, { backgroundColor: item.type === 'dog' ? COLORS.primaryOrange : COLORS.primaryPurple }]}>
+        <Image source={item.imageSource} style={styles.blogImage} />
+      </View>
+      <View style={[styles.blogTextContent, { backgroundColor: item.type === 'dog' ? COLORS.lightOrange : COLORS.lightPurple }]}>
+        <View>
+          <Text style={styles.blogTitle}>{item.description}</Text>
+          <Text style={styles.blogDescription}>{item.subtitle}</Text>
+        </View>
+        <Text style={styles.blogDate}>{item.date}</Text>
+      </View>
+  </TouchableOpacity>
   );
 
   const renderEstablishment = ({ item }) => (
@@ -325,16 +341,21 @@ export default function Inicial() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>BLOG</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('BlogListScreen')}>
-              <Text style={styles.seeMoreText}>Ver mais</Text>
-             </TouchableOpacity>
-          </View>
-          <FlatList
-            data={blogPosts}
-            renderItem={renderBlogPost}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.blogListContent}/>
+            <TouchableOpacity onPress={() => navigation.navigate('BlogUser')}>
+              <Text style={styles.seeMoreText}>Ver mais</Text>
+             </TouchableOpacity>
+          </View>
+          {/* 💡 ATUALIZADO: Usando o novo estado blogPostsState */}
+          {isLoadingBlogs ? (
+            <Text style={styles.loadingText}>Carregando blogs...</Text>
+          ) : (
+            <FlatList
+              data={blogPostsState.slice(0, 3)} 
+              renderItem={renderBlogPost}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.blogListContent}/>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -874,4 +895,10 @@ const styles = StyleSheet.create({
     marginBottom: width * 0.015,
     height: '60%',
   },
+  loadingText: {
+    textAlign: 'center',
+    fontSize: width * 0.04,
+    color: COLORS.mediumGray,
+    paddingVertical: width * 0.05,
+  },
 });

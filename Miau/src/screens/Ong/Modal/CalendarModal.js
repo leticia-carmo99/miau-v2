@@ -23,7 +23,6 @@ const CalendarModal = ({ isVisible, onClose, onSelectDate }) => {
   const handleDayPress = (day) => {
     const selected = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     const isoDate = selected.toISOString();
-    // Formato de exibição alterado para DIA e MÊS
     const displayDate = selected.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',

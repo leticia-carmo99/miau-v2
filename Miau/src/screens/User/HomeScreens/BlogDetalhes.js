@@ -68,8 +68,6 @@ export default function BlogDetalhes() {
   const content =
     post?.content ||
     `Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. \n \n It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.`;
-  const headerImage =
-    post?.header || 'https://cdn.awsli.com.br/998/998959/produto/189681099/s706-fu3d8l6e0g.jpg';  
   const subtitle = post?.subtitle ||'Lorem Ipsum is simply dummy text';
 
 
@@ -97,7 +95,6 @@ export default function BlogDetalhes() {
       <View style={styles.headerView}>
                   <Text style={styles.blogTitle}>{title}</Text>
                   <Text style={styles.blogSubtitle}>{subtitle}</Text>
-        <Image source={headerImage} style={styles.headerImage}/>
         </View>
 
                 <View style={styles.blogContainer}>
@@ -167,6 +164,7 @@ const styles = StyleSheet.create({
     color: COLORS.darkPurple,
     marginBottom: 15,
     marginHorizontal: width * 0.04,
+    alignSelf: 'flex-start'
   },
     blogSubtitle: {
     fontFamily: 'JosefinSans_400Regular',

@@ -26,7 +26,7 @@ export default function LoginUser({ navigation }) {
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
 
-  // ... dentro do seu componente LoginUser
+ // ... dentro do seu componente LoginUser
 
 const handleLogin = async () => {
   if (user === '' || pass === '') {
@@ -35,30 +35,48 @@ const handleLogin = async () => {
   }
 
   try {
-    // 1. Encontre a ONG no Firestore usando o nome (assumindo que seja o email)
-    const ongRef = collection(db, "ONG");
-    const q = query(ongRef, where("email", "==", user)); // Usa 'user' como email
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      Alert.alert("Erro", "ONG não encontrada. Verifique o nome/email.");
-      return;
-    }
-
-    // 2. Tente fazer o login com o Firebase Auth
+    // 1. Tente fazer o login no Firebase Auth (Verifica email e senha)
     const auth = getAuth();
-    await signInWithEmailAndPassword(auth, user, pass);
+    const userCredential = await signInWithEmailAndPassword(auth, user, pass);
+    const loggedInUser = userCredential.user;
 
-    // 3. Login bem-sucedido, navega para a tela principal
-    Alert.alert("Sucesso!", "Login realizado com sucesso.");
-    navigation.navigate('TabsOng');
+    // 2. Login bem-sucedido no Auth. Agora, verifica se este usuário é uma ONG
+    //    na coleção 'ongs', usando o UID para ser mais eficiente e seguro.
+    //    (NOTE: Coleção 'ongs' está em minúsculas, conforme suas imagens).
+    const docRef = doc(db, "ongs", loggedInUser.uid); 
+    const docSnap = await getDoc(docRef);
 
+    if (docSnap.exists()) {
+        // 3. Documento da ONG encontrado! O usuário é uma ONG.
+        
+        // Se você tiver um campo "tipoInstituicao: 'ONG'" no Firestore,
+        // é bom verificar. Se você tiver certeza que SÓ ONGs estão nessa coleção, 
+        // a verificação 'docSnap.exists()' já é suficiente.
+        
+        // (O contexto OngContext irá buscar e carregar os dados agora)
+        Alert.alert("Sucesso!", "Login de ONG realizado com sucesso.");
+        navigation.navigate('TabsOng');
+    } else {
+        // 4. O login funcionou, mas o UID não foi encontrado na coleção 'ongs'.
+        //    Isso significa que é um usuário comum tentando logar na tela da ONG.
+        
+        // Desloga o usuário para que ele não fique logado sem contexto de ONG
+        await auth.signOut(); 
+        
+        Alert.alert(
+            "Acesso Negado", 
+            "Essa conta não está cadastrada na área de ONGs. Por favor, use a tela de login de Usuário Comum."
+        );
+    }
   } catch (error) {
     console.error("Erro ao fazer login:", error.code, error.message);
-    let errorMessage = "Erro ao fazer login. Verifique suas credenciais.";
+    let errorMessage = "Erro ao fazer login. Verifique seu e-mail e senha.";
+    
+    // Mapeamento de erros do Auth para mensagens amigáveis
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
       errorMessage = "E-mail ou senha inválidos.";
     }
+    
     Alert.alert("Erro de Login", errorMessage);
   }
 };
@@ -80,7 +98,7 @@ const handleLogin = async () => {
 
         <TextInput
           style={styles.input}
-          placeholder="Nome da ONG:"
+          placeholder="E-mail da ONG:"
           placeholderTextColor="#AAA"
           value={user}
           onChangeText={setUser}

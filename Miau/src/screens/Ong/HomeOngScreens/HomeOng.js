@@ -13,7 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 
-
 import {
   useFonts,
   JosefinSans_400Regular,

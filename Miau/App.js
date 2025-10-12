@@ -104,6 +104,7 @@ import PerfilAdocaoPetOng from './src/screens/Ong/HomeOngScreens/PerfilAdocaoPet
 import FormularioAdocaoOng from './src/screens/Ong/HomeOngScreens/FormularioAdocao';
 import PerfilOngOng from './src/screens/Ong/HomeOngScreens/PerfilOng';
 import SobreAPPOng from './src/screens/Ong/HomeOngScreens/SobreAPP';
+import { OngProvider } from './src/screens/Ong/NavigationOng/OngContext';
 
 
 // Novas importações para About Us da ONG
@@ -194,6 +195,7 @@ function PersonStack() {
 // --- Stack ONG (sem provider por enquanto) ---
 function OngStack() {
   return (
+    <OngProvider>
     <Stack.Navigator screenOptions={{ headerShown: false }}>
             {/* Telas ONG iniciais */}
       <Stack.Screen name="LoginOng" component={LoginOng} />
@@ -223,6 +225,7 @@ function OngStack() {
       <Stack.Screen name="SobreAPPOng" component={SobreAPPOng} />
       {/* Outras telas ONG específicas */}
     </Stack.Navigator>
+    </OngProvider>
   );
 }
 
