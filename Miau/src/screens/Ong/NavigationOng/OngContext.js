@@ -9,6 +9,7 @@ const OngContext = createContext();
 
 export const OngProvider = ({ children }) => {
   const [ongData, setOngData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Escuta o estado de login do Firebase Auth
@@ -48,7 +49,7 @@ export const OngProvider = ({ children }) => {
             siteOficial: "",
             telefoneContato: "Nenhum número inserido ainda",
             cidade: "Não Informada",
-            estado: "Não Informado",
+            estado: "Não Informado"
             // Adicione aqui todos os campos que sua ONG deve ter, com valores padrão
           });
         }
@@ -56,13 +57,14 @@ export const OngProvider = ({ children }) => {
         // Se não houver usuário logado, limpa o estado
         setOngData(null);
       }
+      setIsLoading(false); // <--- FINALIZA o carregamento
     });
 
     return () => unsubscribe();
   }, []);
 
   return (
-    <OngContext.Provider value={{ ongData, setOngData }}>
+    <OngContext.Provider value={{ ongData, setOngData, isLoading, setIsLoading }}>
       {children}
     </OngContext.Provider>
   );

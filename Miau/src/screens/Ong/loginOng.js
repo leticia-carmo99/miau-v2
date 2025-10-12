@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Importações do Firebase
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, doc, getDocs, getDoc } from "firebase/firestore";
 import { db } from "../../../firebaseConfig"; 
 
 const { width, height } = Dimensions.get('window');

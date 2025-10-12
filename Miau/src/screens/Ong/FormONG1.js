@@ -28,34 +28,37 @@ const allFormData = route.params?.allFormData || {};
 const paramsFromCadONG = route.params; // Dados: nome, cep, email, senha
 
 
-const initialFormData = allFormData.ong1 || {
-  nomeResponsavel: paramsFromCadONG?.nome || '', 
-  emailContato: paramsFromCadONG?.email || '',
-  cep: paramsFromCadONG?.cep || '', 
-  senha: paramsFromCadONG?.senha || '', 
-    nomeOng: '',
+  const initialFormData = allFormData.ong1 || {
+    nomeOng: paramsFromCadONG?.nome || '', 
+    emailContato: paramsFromCadONG?.email || '',
+    cep: paramsFromCadONG?.cep || '', 
+    senha: paramsFromCadONG?.senha || '', 
     cnpjCpf: '',
     nomeResponsavel: '',
-    emailContato: '',
     telefoneContato: '',
     rua: '',
     numero: '',
     bairro: '',
     cidade: '',
     estado: '',
-    cep: '',
     redesSociais: '',
     siteOficial: '',
   };
 
-
-
   const [formData, setFormData] = useState(initialFormData);
   const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    setFormData(initialFormData);
-  }, [allFormData.ong1]);
+useEffect(() => {
+  const combinedData = {
+      ...initialFormData,
+      nomeOng: paramsFromCadONG?.nome || initialFormData.nomeOng,
+      emailContato: paramsFromCadONG?.email || initialFormData.emailContato,
+      senha: paramsFromCadONG?.senha || initialFormData.senha,
+      cep: paramsFromCadONG?.cep || initialFormData.cep,
+  };
+  setFormData(combinedData);
+}, [allFormData.ong1, paramsFromCadONG]); 
+
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -139,6 +142,7 @@ const initialFormData = allFormData.ong1 || {
               keyboardType="email-address"
               value={formData.emailContato}
               onChangeText={(text) => handleChange('emailContato', text)}
+              editable={!paramsFromCadONG?.email}
             />
           </Field>
 
@@ -207,6 +211,7 @@ const initialFormData = allFormData.ong1 || {
                 keyboardType="numeric"
                 value={formData.cep}
                 onChangeText={(text) => handleChange('cep', text)}
+                editable={!paramsFromCadONG?.cep} 
               />
             </Field>
             <Field label="Estado" required containerStyle={styles.half}>

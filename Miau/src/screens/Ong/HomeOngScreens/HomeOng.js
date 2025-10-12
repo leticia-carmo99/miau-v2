@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { useOng } from '../NavigationOng/OngContext'; 
 
 import {
   useFonts,
@@ -33,7 +34,7 @@ const Colors = {
 export default function HomeOng() {
   const navigation = useNavigation();
   const [currentDate, setCurrentDate] = useState(new Date());
-
+  const { ongData, isLoading } = useOng();
   
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
@@ -89,8 +90,12 @@ export default function HomeOng() {
   }
 
   
-  if (!fontsLoaded) {
-    return null;
+  if (!fontsLoaded || isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Carregando dados da ONG...</Text>
+      </View>
+    );
   }
 
   return (
@@ -105,7 +110,7 @@ export default function HomeOng() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.profileButton}
-            onPress={() => navigation.navigate('PerfilOng')}>
+            onPress={() => navigation.navigate('PerfilOngOng')}>
             <Image source={require('../Images/foto-user-branco.png')} style={{ width: width * 0.12, height: width * 0.12, resizeMode: 'contain',}} />
           </TouchableOpacity>
         </View>
@@ -116,7 +121,7 @@ export default function HomeOng() {
         <View style={styles.scrollableOrangeSection}>
           <View style={styles.welcomeSection}>
             <Text style={styles.welcomeText}>Bem-vindo,</Text>
-            <Text style={styles.ongName}>Patinhas Felizes</Text>
+            <Text style={styles.ongName}>{ongData?.nomeOng || 'ONG'}</Text>
           </View>
           <Text style={styles.adoptionSubtitle}>Coloque para adoção!</Text>
           <View style={styles.petButtonsContainer}>

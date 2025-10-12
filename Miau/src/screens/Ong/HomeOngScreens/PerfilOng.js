@@ -17,7 +17,9 @@ import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
-
+import { auth, db } from "../../../../firebaseConfig";
+import { useOng } from "../NavigationOng/OngContext";
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 import {
   useFonts,
@@ -61,20 +63,8 @@ const PerfilOng = () => {
   const navigation = useNavigation();
   const [isEditing, setIsEditing] = useState(false);
   const [initialOngData, setInitialOngData] = useState({});
-  const [ongData, setOngData] = useState({
-    sobre: '',
-    diasAbertos: {},
-    horarioInicio: '08:00',
-    horarioFim: '22:00',
-    email: '',
-    telefone: '',
-    instagram: '',
-    facebook: '',
-    endereco: {},
-    fotos: [],
-    headerImage: null,
-    logoImage: null,
-  });
+  	const [isLoading, setIsLoading] = useState(true);
+const { ongData: contextOngData,  setOngData, isLoading: contextIsLoading } = useOng(); 
 
   // ADICIONADO: Carregamento das fontes
   const [fontsLoaded] = useFonts({
@@ -90,46 +80,63 @@ const PerfilOng = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
+useEffect(() => {
+    // Se ainda estiver carregando no contexto, espera.
+    if (contextIsLoading) {
+        return;
+    }
+    
+    
+    // Pega o UID do contexto, se existir
+    const currentUserId = contextOngData?.uid;
+    
+    if (!db || !currentUserId) {
+        // Se a ONG não foi encontrada no contexto (contextOngData é null) ou
+        // se o Firestore não está pronto, usa o fallback.
+        console.warn("ONG não autenticada/encontrada no contexto. Usando modo de visualização padrão.");
+        setIsLoading(false);
+        return; 
+    }
 
-  useEffect(() => {
-    const fetchedData = {
-      sobre:
-        "Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s.",
-      diasAbertos: {
-        segunda: true,
-        terca: true,
-        quarta: true,
-        quinta: true,
-        sexta: true,
-        sabado: false,
-        domingo: false,
-      },
-      horarioInicio: '08:00',
-      horarioFim: '22:00',
-      email: 'petscantoro@gmail.com',
-      telefone: '+55 11 99262-4521',
-      instagram: '@petx.official',
-      facebook: '@oficialpetz',
-      endereco: {
-        rua: 'Rua das Palmeiras',
-        numero: '123',
-        bairro: 'Jardim Central',
-        cidade: 'Taboão da Serra',
-        cep: '06850-000',
-      },
-      fotos: [
-        require('../Images/exemplo1.png'),
-        require('../Images/Exemplo2.png'),
-        require('../Images/Exemplo3.png'),
-        require('../Images/Exemplo4.png'),
-        require('../Images/Exemplo5.png'),
-      ],
-      headerImage: require('../Images/FundoPatinhasUnidas.png'),
-      logoImage: require('../Images/LogoPatinhasUnidas.png'),
-    };
-    setOngData(fetchedData);
-    setInitialOngData(fetchedData);
-  }, []);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    // Linha 100/101 (Onde o erro provavelmente ocorre)
+const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/ongProfile/profileDoc`); 
+
+
+    const unsubscribe = onSnapshot(docRef, (docSnapshot) => {
+        const fetchedData = docSnapshot.exists() ? docSnapshot.data() : {};
+        
+        // Mapeia os dados do banco, usando require() como fallback se o campo estiver vazio
+        const currentOngData = {
+            sobre: fetchedData.sobre || '',
+            diasAbertos: fetchedData.diasAbertos || {},
+            horarioInicio: fetchedData.horarioInicio || '08:00',
+            horarioFim: fetchedData.horarioFim || '22:00',
+            email: fetchedData.email || '',
+            telefone: fetchedData.telefone || '',
+            instagram: fetchedData.instagram || '',
+            facebook: fetchedData.facebook || '',
+            endereco: fetchedData.endereco || {},
+            fotos: [], // Ignorando fotos por enquanto, conforme solicitado
+            // Se o dado do Firestore for uma string URI, use-o. Se for nulo, use o 'require'.
+            headerImage: fetchedData.headerImage || require('../Images/FundoPatinhasUnidas.png'),
+            logoImage: fetchedData.logoImage || require('../Images/LogoPatinhasUnidas.png'),
+        };
+
+        // Atualiza o estado apenas se não estiver editando ou se for a carga inicial
+        setOngData(currentOngData);
+        setInitialOngData(currentOngData); 
+        setIsLoading(false); // Dados carregados ou iniciais definidos.
+
+    }, (error) => {
+        console.error("Erro ao escutar o perfil:", error);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+}, [contextOngData?.uid]); 
+
+
 
   const openImageModal = (image) => {
     setSelectedImage(image);
@@ -186,18 +193,56 @@ const PerfilOng = () => {
     }
   };
 
-  const handleSaveChanges = () => {
-    if (timeError) {
-      Alert.alert(
-        'Erro',
-        'Por favor, corrija o formato do horário antes de salvar.'
-      );
-      return;
-    }
-    setInitialOngData(ongData);
-    setIsGalleryExpanded(true);
-    setIsEditing(false);
-  };
+const handleSaveChanges = async () => { 
+  const currentUserId = contextOngData?.uid;
+    if (!db || !currentUserId) {
+      Alert.alert('Erro', 'O banco de dados não está pronto. Tente novamente.');
+      return;
+    }
+
+    if (timeError) {
+      Alert.alert(
+        'Erro',
+        'Por favor, corrija o formato do horário antes de salvar.'
+      );
+      return;
+    }
+
+    // Prepara os dados. Apenas URIs de imagem (string) são salvas. 
+    // O require() não é serializável.
+    const dataToSave = {
+      sobre: ongData.sobre,
+      diasAbertos: ongData.diasAbertos,
+      horarioInicio: ongData.horarioInicio,
+      horarioFim: ongData.horarioFim,
+      email: ongData.email,
+      telefone: ongData.telefone,
+      instagram: ongData.instagram,
+      facebook: ongData.facebook,
+      endereco: ongData.endereco,
+      // Salva a URI da imagem, se for uma string válida (vindo do ImagePicker)
+      headerImage: typeof ongData.headerImage === 'string' ? ongData.headerImage : null,
+      logoImage: typeof ongData.logoImage === 'string' ? ongData.logoImage : null,
+      fotos: [], // Mantemos vazio por enquanto
+    };
+
+    try {
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+      // 3. Uso correto do ID na construção do docRef
+      const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/ongProfile/profileDoc`);
+
+      // setDoc com merge: true atualiza ou cria o documento.
+      await setDoc(docRef, dataToSave, { merge: true });
+
+      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
+      setIsGalleryExpanded(true);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Erro ao salvar o perfil:', error);
+      Alert.alert('Erro', 'Não foi possível salvar as alterações. Tente novamente.');
+    }
+  };
 
   const handleCancelEdit = () => {
     setOngData(initialOngData);
@@ -260,6 +305,14 @@ const PerfilOng = () => {
   if (!fontsLoaded) {
     return null;
   }
+
+  if (isLoading || !userId) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Carregando perfil...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -963,7 +1016,18 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  errorText: { color: 'red', textAlign: 'center', marginBottom: 10 },
+  errorText: { color: 'red', textAlign: 'center', marginBottom: 10 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: COLORS.primaryPurple,
+    fontFamily: 'Nunito_700Bold', 
+  },
 });
 
 export default PerfilOng;

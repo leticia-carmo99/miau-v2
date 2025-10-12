@@ -68,14 +68,14 @@ export default function RevisaoONG3() {
         setIsLoading(false);
         return;
     }
+    let userUid = null;
+    let userCredential = null; // <-- NOVIDADE: Criar variável para a credencial de Auth
 
-    let userUid = null;
-    try {
-        // 1. PASSO CRÍTICO: CRIAR O USUÁRIO NO FIREBASE AUTHENTICATION
-        const auth = getAuth();
-        const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-        userUid = userCredential.user.uid; // O UID é o ID único do usuário no Auth
-
+    try {
+        // 1. PASSO CRÍTICO: CRIAR O USUÁRIO NO FIREBASE AUTHENTICATION
+        const auth = getAuth();
+        userCredential = await createUserWithEmailAndPassword(auth, email, senha); // <-- ATUALIZADO: Salva a credencial
+        userUid = userCredential.user.uid; // O UID é o ID único do usuário no Auth
         // 2. CONVERTER IMAGENS E MONTAR OS DADOS
         
         // Seus passos de conversão de imagem...
@@ -100,31 +100,27 @@ export default function RevisaoONG3() {
             fotoFachadaEspaco: fotoFachadaEspacoBase64,
             documentoResponsavel: documentoResponsavelBase64,
             logoInstituicao: logoInstituicaoBase64,
-            
-            // Remova a senha do objeto que vai para o Firestore!
-            senha: undefined 
+          
         };
-        
-        // 3. SALVAR NO FIRESTORE USANDO O UID COMO ID DO DOCUMENTO
-        // Isso garante que o login funcione, pois o login buscará o documento com este UID.
-        await setDoc(doc(db, 'ongs', userUid), finalData);
-        
-        // Se o seu app tem análise, mantenha essa mensagem.
-        Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve. Você pode logar agora.");
-        navigation.navigate('FinalizacaoONG', { allFormData: finalData });
 
-    } catch (error) {
-        // Se a criação do usuário no Auth falhar (ex: e-mail já em uso), o Firebase devolve um erro.
-        console.error('Erro ao finalizar o cadastro:', error);
+        delete finalData.senha;
         
-        let errorMessage = `Não foi possível finalizar o cadastro: ${error.message}`;
-        if (error.code === 'auth/email-already-in-use') {
-            errorMessage = 'O e-mail informado já está em uso. Por favor, faça login ou use outro e-mail.';
-        } else if (error.code === 'auth/weak-password') {
-             errorMessage = 'A senha é muito fraca. Escolha uma senha com pelo menos 6 caracteres.';
-        }
-
-        Alert.alert('Erro', errorMessage);
+        // 3. SALVAR NO FIRESTORE USANDO O UID COMO ID DO DOCUMENTO
+        // Adicionamos um try/catch específico para este passo
+        try {
+          await setDoc(doc(db, 'ongs', userUid), finalData);
+        } catch (firestoreError) {
+          console.error('ERRO CRÍTICO AO SALVAR NO FIRESTORE:', firestoreError);
+          // Se o Firestore falhar, é crucial DELETAR o usuário criado no Auth
+          if (userCredential && userCredential.user) {
+            await userCredential.user.delete();
+          }
+          // Lançamos um novo erro para o bloco catch externo capturar e alertar o usuário
+          throw new Error(`Falha de Permissão no Firestore. Verifique suas REGRAS DE SEGURANÇA ou conexão. Erro: ${firestoreError.message}`);
+        }
+        
+        // Se o seu app tem análise, mantenha essa mensagem.
+        Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve. Você pode logar agora.");
         
         // Se o erro foi no Auth, limpa o Auth para que o usuário não fique 'parcialmente' cadastrado.
         if (userUid) {

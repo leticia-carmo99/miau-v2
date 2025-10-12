@@ -18,6 +18,7 @@ import EventoOng from '../HomeOngScreens/EventoOng';
 import PerfilAdocaoPet from '../HomeOngScreens/PerfilAdocaoPet';
 import PerfilOng from '../HomeOngScreens/PerfilOng';
 import SobreAPP from '../HomeOngScreens/SobreAPP';
+import { useOng } from './OngContext';
 
 import MainAppTabs from './MainTabsOng'; // <- ajuste path se necessário
 
@@ -34,6 +35,7 @@ const Colors = {
 };
 
 function CustomDrawerContent(props) {
+  const { ongData } = useOng();
   return (
     <DrawerContentScrollView
       {...props}
@@ -41,10 +43,10 @@ function CustomDrawerContent(props) {
     >
       <TouchableOpacity
         style={styles.profileSection}
-        onPress={() => props.navigation.navigate('PerfilOng')}
+        onPress={() => props.navigation.navigate('PerfilOngOng')}
       >
         <View style={styles.avatarPlaceholder} />
-        <Text style={styles.profileName}>ONG</Text>
+        <Text style={styles.profileName}>{ongData?.nomeOng || 'ONG'}</Text>
         <Text style={styles.profileLink}>Ver perfil</Text>
       </TouchableOpacity>
 
