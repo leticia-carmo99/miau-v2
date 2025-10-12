@@ -17,7 +17,7 @@ import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
-import { auth, db } from "../../../../firebaseConfig";
+import { db } from "../../../../firebaseConfig";
 import { useOng } from "../NavigationOng/OngContext";
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
@@ -61,10 +61,24 @@ const Checkbox = ({ label, isSelected, onValueChange }) => (
 
 const PerfilOng = () => {
   const navigation = useNavigation();
-  const [isEditing, setIsEditing] = useState(false);
-  const [initialOngData, setInitialOngData] = useState({});
-  	const [isLoading, setIsLoading] = useState(true);
-const { ongData: contextOngData,  setOngData, isLoading: contextIsLoading } = useOng(); 
+  const [isEditing, setIsEditing] = useState(false);
+  // O estado inicial DEVE ser o contexto assim que ele estiver pronto
+  const { ongData: contextOngData, setOngData, isLoading: contextIsLoading } = useOng(); 
+  
+  // Estado local para edição, inicializado com os dados do contexto
+  // Você está usando setInitialOngData nas funções de cancelamento, então precisamos de um estado local
+  const [ongDataLocal, setOngDataLocal] = useState(contextOngData || {}); 
+  const [initialOngData, setInitialOngData] = useState(contextOngData || {});
+  const [isLoading, setIsLoading] = useState(contextIsLoading);
+
+  // Use useEffect para carregar os dados do contexto para o estado local, UMA ÚNICA VEZ
+  useEffect(() => {
+    if (!contextIsLoading && contextOngData) {
+      setOngDataLocal(contextOngData);
+      setInitialOngData(contextOngData);
+      setIsLoading(false);
+    }
+  }, [contextIsLoading, contextOngData]);
 
   // ADICIONADO: Carregamento das fontes
   const [fontsLoaded] = useFonts({
@@ -79,62 +93,6 @@ const { ongData: contextOngData,  setOngData, isLoading: contextIsLoading } = us
   const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-
-useEffect(() => {
-    // Se ainda estiver carregando no contexto, espera.
-    if (contextIsLoading) {
-        return;
-    }
-    
-    
-    // Pega o UID do contexto, se existir
-    const currentUserId = contextOngData?.uid;
-    
-    if (!db || !currentUserId) {
-        // Se a ONG não foi encontrada no contexto (contextOngData é null) ou
-        // se o Firestore não está pronto, usa o fallback.
-        console.warn("ONG não autenticada/encontrada no contexto. Usando modo de visualização padrão.");
-        setIsLoading(false);
-        return; 
-    }
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    // Linha 100/101 (Onde o erro provavelmente ocorre)
-const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/ongProfile/profileDoc`); 
-
-
-    const unsubscribe = onSnapshot(docRef, (docSnapshot) => {
-        const fetchedData = docSnapshot.exists() ? docSnapshot.data() : {};
-        
-        // Mapeia os dados do banco, usando require() como fallback se o campo estiver vazio
-        const currentOngData = {
-            sobre: fetchedData.sobre || '',
-            diasAbertos: fetchedData.diasAbertos || {},
-            horarioInicio: fetchedData.horarioInicio || '08:00',
-            horarioFim: fetchedData.horarioFim || '22:00',
-            email: fetchedData.email || '',
-            telefone: fetchedData.telefone || '',
-            instagram: fetchedData.instagram || '',
-            facebook: fetchedData.facebook || '',
-            endereco: fetchedData.endereco || {},
-            fotos: [], // Ignorando fotos por enquanto, conforme solicitado
-            // Se o dado do Firestore for uma string URI, use-o. Se for nulo, use o 'require'.
-            headerImage: fetchedData.headerImage || require('../Images/FundoPatinhasUnidas.png'),
-            logoImage: fetchedData.logoImage || require('../Images/LogoPatinhasUnidas.png'),
-        };
-
-        // Atualiza o estado apenas se não estiver editando ou se for a carga inicial
-        setOngData(currentOngData);
-        setInitialOngData(currentOngData); 
-        setIsLoading(false); // Dados carregados ou iniciais definidos.
-
-    }, (error) => {
-        console.error("Erro ao escutar o perfil:", error);
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-}, [contextOngData?.uid]); 
 
 
 
@@ -162,7 +120,7 @@ const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/ongProfile/pro
     if (!result.canceled) {
       if (allowsMultipleSelection && result.assets) {
         const newImageUris = result.assets.map((asset) => asset.uri);
-        setOngData((prev) => ({
+        setOngDataLocal((prev) => ({
           ...prev,
           fotos: [...prev.fotos, ...newImageUris],
         }));
@@ -221,16 +179,14 @@ const handleSaveChanges = async () => {
       facebook: ongData.facebook,
       endereco: ongData.endereco,
       // Salva a URI da imagem, se for uma string válida (vindo do ImagePicker)
-      headerImage: typeof ongData.headerImage === 'string' ? ongData.headerImage : null,
-      logoImage: typeof ongData.logoImage === 'string' ? ongData.logoImage : null,
+      headerImage: typeof ongDataLocal.headerImage === 'string' ? ongDataLocal.headerImage : null,
+      logoImage: typeof ongDataLocal.logoImage === 'string' ? ongDataLocal.logoImage : null,
       fotos: [], // Mantemos vazio por enquanto
     };
 
-    try {
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        
+    try {       
       // 3. Uso correto do ID na construção do docRef
-      const docRef = doc(db, `artifacts/${appId}/users/${currentUserId}/ongProfile/profileDoc`);
+ const docRef = doc(db, 'ongs', currentUserId);
 
       // setDoc com merge: true atualiza ou cria o documento.
       await setDoc(docRef, dataToSave, { merge: true });
@@ -245,24 +201,24 @@ const handleSaveChanges = async () => {
   };
 
   const handleCancelEdit = () => {
-    setOngData(initialOngData);
+    setOngDataLocal(initialOngData); 
     setIsGalleryExpanded(true);
     setIsEditing(false);
   };
 
   const handleInputChange = (field, value, subField = null) => {
     if (subField) {
-      setOngData((prev) => ({
+      setOngDataLocal((prev) => ({
         ...prev,
         [field]: { ...prev[field], [subField]: value },
       }));
     } else {
-      setOngData((prev) => ({ ...prev, [field]: value }));
+      setOngDataLocal((prev) => ({ ...prev, [field]: value }));
     }
   };
 
   const handleCheckboxChange = (day) => {
-    setOngData((prev) => ({
+    setOngDataLocal((prev) => ({
       ...prev,
       diasAbertos: { ...prev.diasAbertos, [day]: !prev.diasAbertos[day] },
     }));
@@ -283,17 +239,17 @@ const handleSaveChanges = async () => {
       { key: 'domingo', short: 'Dom' },
     ];
 
-    const openDays = days.filter((day) => ongData.diasAbertos[day.key]);
+    const openDays = days.filter((day) => ongDataLocal.diasAbertos[day.key]);
 
     if (openDays.length === 0) return 'Fechado';
     if (openDays.length === 7) return 'Todos os dias';
 
     if (
-      ongData.diasAbertos.segunda &&
-      ongData.diasAbertos.terca &&
-      ongData.diasAbertos.quarta &&
-      ongData.diasAbertos.quinta &&
-      ongData.diasAbertos.sexta &&
+      ongDataLocal.diasAbertos.segunda &&
+      ongDataLocal.diasAbertos.terca &&
+      ongDataLocal.diasAbertos.quarta &&
+      ongDataLocal.diasAbertos.quinta &&
+      ongDataLocal.diasAbertos.sexta &&
       openDays.length === 5
     ) {
       return 'Segunda a Sexta';
@@ -306,13 +262,14 @@ const handleSaveChanges = async () => {
     return null;
   }
 
-  if (isLoading || !userId) {
+  if (isLoading || !contextOngData?.uid) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Carregando perfil...</Text>
       </View>
     );
   }
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -339,7 +296,7 @@ const handleSaveChanges = async () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}>
         <ImageBackground
-          source={ongData.headerImage}
+          source={ongDataLocal.headerImage}
           style={styles.headerBackground}>
           <View style={styles.headerOverlay} />
           <TouchableOpacity
@@ -348,8 +305,8 @@ const handleSaveChanges = async () => {
             <Feather name="menu" size={width * 0.12} color='#FFFFFF'/>
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <TouchableOpacity onPress={() => openImageModal(ongData.logoImage)}>
-              <Image source={ongData.logoImage} style={styles.ongLogo} />
+            <TouchableOpacity onPress={() => openImageModal(ongDataLocal.logoImage)}>
+              <Image source={ongDataLocal.logoImage} style={styles.ongLogo} />
             </TouchableOpacity>
             <Text style={styles.ongNameHeader}>Patinhas Unidas</Text>
             <Text style={styles.enderecoOng}>Jardim das Esmeraldas, SP</Text>
@@ -393,37 +350,37 @@ const handleSaveChanges = async () => {
             <View style={styles.checkboxGroup}>
               <Checkbox
                 label="Segunda-feira"
-                isSelected={ongData.diasAbertos.segunda}
+                isSelected={ongDataLocal.diasAbertos.segunda}
                 onValueChange={() => handleCheckboxChange('segunda')}
               />
               <Checkbox
                 label="Terça-feira"
-                isSelected={ongData.diasAbertos.terca}
+                isSelected={ongDataLocal.diasAbertos.terca}
                 onValueChange={() => handleCheckboxChange('terca')}
               />
               <Checkbox
                 label="Quarta-feira"
-                isSelected={ongData.diasAbertos.quarta}
+                isSelected={ongDataLocal.diasAbertos.quarta}
                 onValueChange={() => handleCheckboxChange('quarta')}
               />
               <Checkbox
                 label="Quinta-feira"
-                isSelected={ongData.diasAbertos.quinta}
+                isSelected={ongDataLocal.diasAbertos.quinta}
                 onValueChange={() => handleCheckboxChange('quinta')}
               />
               <Checkbox
                 label="Sexta-feira"
-                isSelected={ongData.diasAbertos.sexta}
+                isSelected={ongDataLocal.diasAbertos.sexta}
                 onValueChange={() => handleCheckboxChange('sexta')}
               />
               <Checkbox
                 label="Sábado"
-                isSelected={ongData.diasAbertos.sabado}
+                isSelected={ongDataLocal.diasAbertos.sabado}
                 onValueChange={() => handleCheckboxChange('sabado')}
               />
               <Checkbox
                 label="Domingo"
-                isSelected={ongData.diasAbertos.domingo}
+                isSelected={ongDataLocal.diasAbertos.domingo}
                 onValueChange={() => handleCheckboxChange('domingo')}
               />
             </View>
@@ -432,7 +389,7 @@ const handleSaveChanges = async () => {
             <View style={styles.timeInputsContainer}>
               <TextInput
                 style={styles.timeInput}
-                value={ongData.horarioInicio}
+                value={ongDataLocal.horarioInicio}
                 onChangeText={(text) => handleTimeChange('horarioInicio', text)}
                 keyboardType="numeric"
                 maxLength={5}
@@ -440,7 +397,7 @@ const handleSaveChanges = async () => {
               <Ionicons name="time-outline" size={24} color={COLORS.orange} />
               <TextInput
                 style={styles.timeInput}
-                value={ongData.horarioFim}
+                value={ongDataLocal.horarioFim}
                 onChangeText={(text) => handleTimeChange('horarioFim', text)}
                 keyboardType="numeric"
                 maxLength={5}
@@ -454,7 +411,7 @@ const handleSaveChanges = async () => {
             <TextInput
               style={[styles.textInput, styles.textArea]}
               multiline
-              value={ongData.sobre}
+              value={ongDataLocal.sobre}
               onChangeText={(text) => handleInputChange('sobre', text)}
             />
 
@@ -462,14 +419,14 @@ const handleSaveChanges = async () => {
             <TextInput
               style={styles.textInput}
               placeholder="E-mail"
-              value={ongData.email}
+              value={ongDataLocal.email}
               onChangeText={(text) => handleInputChange('email', text)}
             />
             <TextInput
               style={styles.textInput}
               placeholder="Telefone"
               keyboardType="phone-pad"
-              value={ongData.telefone}
+              value={ongDataLocal.telefone}
               onChangeText={(text) => handleInputChange('telefone', text)}
             />
 
@@ -482,7 +439,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={styles.textInput}
                 placeholder="Página no Instagram"
-                value={ongData.instagram}
+                value={ongDataLocal.instagram}
                 onChangeText={(text) => handleInputChange('instagram', text)}
               />
             </View>
@@ -494,7 +451,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={styles.textInput}
                 placeholder="Página no Facebook"
-                value={ongData.facebook}
+                value={ongDataLocal.facebook}
                 onChangeText={(text) => handleInputChange('facebook', text)}
               />
             </View>
@@ -504,7 +461,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 placeholder="Rua"
-                value={ongData.endereco.rua}
+                value={ongDataLocal.endereco.rua}
                 onChangeText={(text) =>
                   handleInputChange('endereco', text, 'rua')
                 }
@@ -512,7 +469,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={[styles.textInput, { width: 80, marginLeft: 10 }]}
                 placeholder="Número"
-                value={ongData.endereco.numero}
+                value={ongDataLocal.endereco.numero}
                 onChangeText={(text) =>
                   handleInputChange('endereco', text, 'numero')
                 }
@@ -522,7 +479,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 placeholder="Bairro"
-                value={ongData.endereco.bairro}
+                value={ongDataLocal.endereco.bairro}
                 onChangeText={(text) =>
                   handleInputChange('endereco', text, 'bairro')
                 }
@@ -530,7 +487,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={[styles.textInput, { width: 120, marginLeft: 10 }]}
                 placeholder="Cidade"
-                value={ongData.endereco.cidade}
+                value={ongDataLocal.endereco.cidade}
                 onChangeText={(text) =>
                   handleInputChange('endereco', text, 'cidade')
                 }
@@ -540,7 +497,7 @@ const handleSaveChanges = async () => {
               style={styles.textInput}
               placeholder="CEP"
               keyboardType="numeric"
-              value={ongData.endereco.cep}
+              value={ongDataLocal.endereco.cep}
               onChangeText={(text) =>
                 handleInputChange('endereco', text, 'cep')
               }
@@ -573,9 +530,9 @@ const handleSaveChanges = async () => {
                 </TouchableOpacity>
               </View>
               <Text style={styles.hoursText}>{`${formatOpenDays()} | ${
-                ongData.horarioInicio
-              } às ${ongData.horarioFim}`}</Text>
-              <Text style={styles.sectionContent}>{ongData.sobre}</Text>
+                ongDataLocal.horarioInicio
+              } às ${ongDataLocal.horarioFim}`}</Text>
+              <Text style={styles.sectionContent}>{ongDataLocal.sobre}</Text>
             </View>
             <View style={styles.contactSectionWrapper}>
               <Image
@@ -588,18 +545,18 @@ const handleSaveChanges = async () => {
                 resizeMode="stretch">
                 <View style={styles.contactContent}>
                   <Text style={styles.contactTitle}>Contato</Text>
-                  <Text style={styles.contactText}>{ongData.email}</Text>
-                  <Text style={styles.contactText}>{ongData.telefone}</Text>
+                  <Text style={styles.contactText}>{ongDataLocal.email}</Text>
+                  <Text style={styles.contactText}>{ongDataLocal.telefone}</Text>
                   <Text style={styles.socialTitle}>Redes Sociais</Text>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{ongData.instagram}</Text>
+                    <Text style={styles.socialText}>{ongDataLocal.instagram}</Text>
                     <Image
                       source={require('../Images/Instagram.png')}
                       style={styles.socialIconImage}
                     />
                   </View>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{ongData.facebook}</Text>
+                    <Text style={styles.socialText}>{ongDataLocal.facebook}</Text>
                     <Image
                       source={require('../Images/Facebook.png')}
                       style={styles.socialIconImage}
@@ -617,13 +574,13 @@ const handleSaveChanges = async () => {
               <Text
                 style={
                   styles.addressText
-                }>{`${ongData.endereco.rua}, ${ongData.endereco.numero} - ${ongData.endereco.bairro}, ${ongData.endereco.cidade}`}</Text>
+                }>{`${ongDataLocal.endereco.rua}, ${ongDataLocal.endereco.numero} - ${ongDataLocal.endereco.bairro}, ${ongDataLocal.endereco.cidade}`}</Text>
             </View>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>FOTOS</Text>
               <View style={styles.photoGrid}>
                 {isGalleryExpanded ? (
-                  ongData.fotos.map((foto, index) => (
+                  ongDataLocal.fotos.map((foto, index) => (
                     <TouchableOpacity
                       key={index}
                       style={styles.photo}
@@ -637,7 +594,7 @@ const handleSaveChanges = async () => {
                   ))
                 ) : (
                   <>
-                    {ongData.fotos.slice(0, 4).map((foto, index) => (
+                    {ongDataLocal.fotos.slice(0, 4).map((foto, index) => (
                       <TouchableOpacity
                         key={index}
                         style={styles.photo}
@@ -649,17 +606,17 @@ const handleSaveChanges = async () => {
                         />
                       </TouchableOpacity>
                     ))}
-                    {ongData.fotos.length > 4 && (
+                    {ongDataLocal.fotos.length > 4 && (
                       <TouchableOpacity
                         onPress={() => setIsGalleryExpanded(true)}
                         style={styles.photo}>
                         <ImageBackground
-                          source={renderImageSource(ongData.fotos[4])}
+                          source={renderImageSource(ongDataLocal.fotos[4])}
                           style={styles.fullSize}
                           imageStyle={{ borderRadius: 10 }}>
                           <View style={styles.photoOverlay}>
                             <Text style={styles.photoOverlayText}>
-                              Ver mais {ongData.fotos.length - 4}
+                              Ver mais {ongDataLocal.fotos.length - 4}
                             </Text>
                           </View>
                         </ImageBackground>
