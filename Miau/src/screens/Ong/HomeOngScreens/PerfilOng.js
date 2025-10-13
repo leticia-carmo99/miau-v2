@@ -302,7 +302,7 @@ const handleSaveChanges = async () => {
           style={styles.headerBackground}>
           <View style={styles.headerOverlay} />
           <TouchableOpacity
-            onPress={navigation.dispatch(DrawerActions.openDrawer())}
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
             style={styles.menuButton}>
             <Feather name="menu" size={width * 0.12} color='#FFFFFF'/>
           </TouchableOpacity>
@@ -310,7 +310,7 @@ const handleSaveChanges = async () => {
             <TouchableOpacity onPress={() => openImageModal(ongDataLocal.logoImage)}>
               <Image source={renderImageSource(ongDataLocal.logoImage || DEFAULT_LOGO)} style={styles.ongLogo} />
             </TouchableOpacity>
-            <Text style={styles.ongNameHeader}>Patinhas Unidas</Text>
+            <Text style={styles.ongNameHeader}>{ongDataLocal?.nomeOng || 'ONG'}</Text>
             <Text style={styles.enderecoOng}>Jardim das Esmeraldas, SP</Text>
           </View>
         </ImageBackground>

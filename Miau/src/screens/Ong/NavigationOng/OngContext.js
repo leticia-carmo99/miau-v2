@@ -14,7 +14,6 @@ const DEFAULT_ONG_DATA = {
   instagram: "", // Campo usado no PerfilOng.js para edição de redes sociais
   facebook: "", // Campo usado no PerfilOng.js para edição de redes sociais
   emailContato: "", // Campo da imagem no console (se for diferente de 'email')
-  telefoneContato: "", // Campo da imagem no console (se for diferente de 'telefone')
   siteOficial: "", // URL do site
  
   // Campos de Perfil Detalhado (Usados no PerfilOng.js)
@@ -77,20 +76,21 @@ export const OngProvider = ({ children }) => {
         // 1. Começa com os valores padrão para garantir que todos os campos existam.
         // 2. Sobrescreve com os dados lidos do Firestore (fetchedData).
         // 3. Adiciona o UID.
-        const consolidatedData = {
+        let consolidatedData = {
           ...DEFAULT_ONG_DATA,
           ...fetchedData,
           uid: user.uid,
         };
 
-        // Corrigir e garantir que objetos/arrays não sejam sobrescritos por null ou undefined
-        // Se os dados do Firestore tiverem campos nulos para objetos/arrays, 
-        // garante que use o valor padrão (ex: {} ou [])
-       consolidatedData.endereco = {
-            ...DEFAULT_ONG_DATA.endereco,
-            ...fetchedData.endereco, // Garante que o endereço do Firestore sobrescreva apenas seus campos
-        };
-        consolidatedData.diasAbertos = consolidatedData.diasAbertos || DEFAULT_ONG_DATA.diasAbertos;
+
+        consolidatedData.endereco = {
+            ...DEFAULT_ONG_DATA.endereco,
+            ...fetchedData.endereco,
+        };
+        consolidatedData.diasAbertos = {
+            ...DEFAULT_ONG_DATA.diasAbertos,
+            ...fetchedData.diasAbertos,
+        };
         consolidatedData.regioesAtuacao = consolidatedData.regioesAtuacao || DEFAULT_ONG_DATA.regioesAtuacao;
         consolidatedData.fotos = consolidatedData.fotos || DEFAULT_ONG_DATA.fotos;
 
