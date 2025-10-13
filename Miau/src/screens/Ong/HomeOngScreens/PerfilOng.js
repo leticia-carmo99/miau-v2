@@ -20,6 +20,8 @@ import { Feather } from '@expo/vector-icons';
 import { db } from "../../../../firebaseConfig";
 import { useOng } from "../NavigationOng/OngContext";
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
+const DEFAULT_HEADER = require('../Images/FundoPatinhasUnidas.png'); // Crie estas imagens
+const DEFAULT_LOGO = require('../Images/LogoPatinhasUnidas.png');
 
 import {
   useFonts,
@@ -169,19 +171,19 @@ const handleSaveChanges = async () => {
     // Prepara os dados. Apenas URIs de imagem (string) são salvas. 
     // O require() não é serializável.
     const dataToSave = {
-      sobre: ongData.sobre,
-      diasAbertos: ongData.diasAbertos,
-      horarioInicio: ongData.horarioInicio,
-      horarioFim: ongData.horarioFim,
-      email: ongData.email,
-      telefone: ongData.telefone,
-      instagram: ongData.instagram,
-      facebook: ongData.facebook,
-      endereco: ongData.endereco,
-      // Salva a URI da imagem, se for uma string válida (vindo do ImagePicker)
+      sobre: ongDataLocal.sobre,
+      diasAbertos: ongDataLocal.diasAbertos,
+      horarioInicio: ongDataLocal.horarioInicio,
+      horarioFim: ongDataLocal.horarioFim,
+      email: ongDataLocal.email,
+      telefone: ongDataLocal.telefone,
+      instagram: ongDataLocal.instagram,
+      facebook: ongDataLocal.facebook,
+      endereco: ongDataLocal.endereco,
+
       headerImage: typeof ongDataLocal.headerImage === 'string' ? ongDataLocal.headerImage : null,
       logoImage: typeof ongDataLocal.logoImage === 'string' ? ongDataLocal.logoImage : null,
-      fotos: [], // Mantemos vazio por enquanto
+      fotos: ongDataLocal.fotos || [],
     };
 
     try {       
@@ -296,7 +298,7 @@ const handleSaveChanges = async () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}>
         <ImageBackground
-          source={ongDataLocal.headerImage}
+          source={renderImageSource(ongDataLocal.headerImage || DEFAULT_HEADER)}
           style={styles.headerBackground}>
           <View style={styles.headerOverlay} />
           <TouchableOpacity
@@ -306,7 +308,7 @@ const handleSaveChanges = async () => {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={() => openImageModal(ongDataLocal.logoImage)}>
-              <Image source={ongDataLocal.logoImage} style={styles.ongLogo} />
+              <Image source={renderImageSource(ongDataLocal.logoImage || DEFAULT_LOGO)} style={styles.ongLogo} />
             </TouchableOpacity>
             <Text style={styles.ongNameHeader}>Patinhas Unidas</Text>
             <Text style={styles.enderecoOng}>Jardim das Esmeraldas, SP</Text>

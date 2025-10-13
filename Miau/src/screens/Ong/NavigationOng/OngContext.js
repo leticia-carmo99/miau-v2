@@ -37,10 +37,14 @@ const DEFAULT_ONG_DATA = {
   fotos: [], // Array de URIs (string) para a galeria
  
   // Campos do Console do Firestore (imagem inicial)
-  bairro: "",
-  cep: "",
-  cidade: "",
-  estado: "",
+  endereco: {
+    rua: "",
+    numero: "",
+    bairro: "",
+    cidade: "",
+    estado: "", // Você tem este campo no código original
+    cep: "",
+  },
   cnpjCpf: "",
   comprovanteCNPJouEstatuto: "",
   dataCadastro: "",
@@ -82,6 +86,10 @@ export const OngProvider = ({ children }) => {
         // Corrigir e garantir que objetos/arrays não sejam sobrescritos por null ou undefined
         // Se os dados do Firestore tiverem campos nulos para objetos/arrays, 
         // garante que use o valor padrão (ex: {} ou [])
+       consolidatedData.endereco = {
+            ...DEFAULT_ONG_DATA.endereco,
+            ...fetchedData.endereco, // Garante que o endereço do Firestore sobrescreva apenas seus campos
+        };
         consolidatedData.diasAbertos = consolidatedData.diasAbertos || DEFAULT_ONG_DATA.diasAbertos;
         consolidatedData.regioesAtuacao = consolidatedData.regioesAtuacao || DEFAULT_ONG_DATA.regioesAtuacao;
         consolidatedData.fotos = consolidatedData.fotos || DEFAULT_ONG_DATA.fotos;
