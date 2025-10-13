@@ -212,8 +212,8 @@ function OngStack() {
       <Stack.Screen name="AboutUsO3" component={AboutUsO3} />
       <Stack.Screen name="FinalizacaoONG" component={FinalizacaoONG} />
       
-      <Stack.Screen name="TabsOng" component={TabsOng} />
       <Stack.Screen name="MainDrawerOng" component={MainDrawerOng} />
+      <Stack.Screen name="TabsOng" component={TabsOng} />
       <Stack.Screen name="AddAdocaoPetOng" component={AddAdocaoPetOng} />
       <Stack.Screen name="FormularioAdocaoOng" component={FormularioAdocaoOng} />
       <Stack.Screen name="ChatOngOng" component={ChatOngOng} />

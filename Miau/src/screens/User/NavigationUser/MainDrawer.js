@@ -51,7 +51,7 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
     try {
         await signOut(auth);
         setUserData(null);
-        navigation.navigate('SplashScreen'); 
+        navigation.navigate('InitialStack', { screen: 'Welcome' }); 
     } catch (error) {
         console.error("Erro ao fazer logout:", error);
     }
