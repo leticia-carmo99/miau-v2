@@ -15,8 +15,6 @@ const DEFAULT_ONG_DATA = {
   facebook: "", // Campo usado no PerfilOng.js para edição de redes sociais
   emailContato: "", // Campo da imagem no console (se for diferente de 'email')
   siteOficial: "", // URL do site
- 
-  // Campos de Perfil Detalhado (Usados no PerfilOng.js)
   sobre: "", // Biografia da ONG
   horarioInicio: "08:00",
   horarioFim: "22:00",
@@ -29,13 +27,9 @@ const DEFAULT_ONG_DATA = {
     sabado: false,
     domingo: false,
   },
-
-  // Campos de Imagem (URIs ou require()s)
   headerImage: null, // Será a URI (string) do Firestore, ou null
   logoImage: null, // Será a URI (string) do Firestore, ou null
   fotos: [], // Array de URIs (string) para a galeria
- 
-  // Campos do Console do Firestore (imagem inicial)
   endereco: {
     rua: "",
     numero: "",
@@ -50,8 +44,6 @@ const DEFAULT_ONG_DATA = {
   documentoResponsavel: "",
   espacoFisicoVisitacao: "não", // Para sim/não (booleano ou string 'sim'/'não')
   especiesAtendidas: "Não Informado", // Ex: "Cães, Gatos" (string)
-
-  // Outros campos que podem existir (do seu código antigo)
   tipoInstituicao: "ONG",
   regioesAtuacao: [], // Array de strings ou objetos
   numAnimaisAcolhidos: "0",
@@ -73,9 +65,6 @@ export const OngProvider = ({ children }) => {
           fetchedData = docSnap.data();
         }
 
-        // 1. Começa com os valores padrão para garantir que todos os campos existam.
-        // 2. Sobrescreve com os dados lidos do Firestore (fetchedData).
-        // 3. Adiciona o UID.
         let consolidatedData = {
           ...DEFAULT_ONG_DATA,
           ...fetchedData,

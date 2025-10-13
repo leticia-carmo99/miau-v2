@@ -64,20 +64,24 @@ const Checkbox = ({ label, isSelected, onValueChange }) => (
 const PerfilOng = () => {
   const navigation = useNavigation();
   const [isEditing, setIsEditing] = useState(false);
-  // O estado inicial DEVE ser o contexto assim que ele estiver pronto
   const { ongData: contextOngData, setOngData, isLoading: contextIsLoading } = useOng(); 
-  
-  // Estado local para edição, inicializado com os dados do contexto
-  // Você está usando setInitialOngData nas funções de cancelamento, então precisamos de um estado local
-  const [ongDataLocal, setOngDataLocal] = useState(contextOngData || {}); 
-  const [initialOngData, setInitialOngData] = useState(contextOngData || {});
+  const [ongDataLocal, setOngDataLocal] = useState(null); 
+  const [initialOngData, setInitialOngData] = useState(null);
   const [isLoading, setIsLoading] = useState(contextIsLoading);
 
   // Use useEffect para carregar os dados do contexto para o estado local, UMA ÚNICA VEZ
   useEffect(() => {
     if (!contextIsLoading && contextOngData) {
-      setOngDataLocal(contextOngData);
-      setInitialOngData(contextOngData);
+      const safeOngData = {
+        ...contextOngData,
+        diasAbertos: contextOngData.diasAbertos || {}, // Garante que é um objeto
+        endereco: contextOngData.endereco || {}, // Garante que é um objeto
+        fotos: contextOngData.fotos || [], // Garante que é um array
+        horarioInicio: contextOngData.horarioInicio || '00:00',
+        horarioFim: contextOngData.horarioFim || '00:00',
+      };
+      setOngDataLocal(safeOngData);
+      setInitialOngData(safeOngData);
       setIsLoading(false);
     }
   }, [contextIsLoading, contextOngData]);
@@ -180,7 +184,6 @@ const handleSaveChanges = async () => {
       instagram: ongDataLocal.instagram,
       facebook: ongDataLocal.facebook,
       endereco: ongDataLocal.endereco,
-
       headerImage: typeof ongDataLocal.headerImage === 'string' ? ongDataLocal.headerImage : null,
       logoImage: typeof ongDataLocal.logoImage === 'string' ? ongDataLocal.logoImage : null,
       fotos: ongDataLocal.fotos || [],
