@@ -239,7 +239,7 @@ export default function MapaServicos() {
             <Text style={styles.categoryText}>Petshops</Text>
           </View>
 </TouchableOpacity>
-<TouchableOpacity onPress={() => navigation.navigate('MapaServicosUser')}>
+<TouchableOpacity>
           <View style={styles.category}>
           <View style={styles.categoryPicSelected}>
             <MaterialIcons

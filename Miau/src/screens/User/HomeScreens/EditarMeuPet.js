@@ -100,6 +100,9 @@ const handleSavePet = async () => {
         alert("Erro de autenticação: Usuário não logado ou email não encontrado.");
         return;
     }
+    else {
+      navigation.goBack();
+    }
 
     // 1. Dados do pet a serem salvos
     const petDetails = {

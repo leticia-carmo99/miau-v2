@@ -6,12 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import TabsUser from './Tabs';
 import UserIcon from '../assets/FotosInicial/foto-user-roxo.png';
 import MeuPetUser from '../HomeScreens/MeuPet';
-import EventosUser from '../HomeScreens/Eventos';
 import FavoritosUser from '../HomeScreens/Favoritos';
 import SobreUser from '../HomeScreens/Sobre';
 import EditarMeuPetUser from '../HomeScreens/EditarMeuPet';
 import PerfilUser from '../HomeScreens/PerfilUser';
 import BlogUser from '../HomeScreens/Blog';
+import MapaServicosUser from '../HomeScreens/MapaServicos';
+import MapaPetshopUser from '../HomeScreens/MapaPetshop';
+import EventosUser from '../HomeScreens/Eventos';
 import { useUser } from "../NavigationUser/UserContext";
 import InicialUser from '../HomeScreens/Inicial';
 import MenuV1User from "./MenuV1";
@@ -138,7 +140,6 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
 screenOptions={{ headerShown: false, drawerStyle: { backgroundColor: 'white', width: '80%',}}}>
 <Drawer.Screen name="HomeWithTabs" component={TabsUser} />
 <Drawer.Screen name="MeuPet" component={MeuPetUser} />
-<Drawer.Screen name="Eventos" component={EventosUser} />
 <Drawer.Screen name="Dicas e Cuidados" component={BlogUser} />
 <Drawer.Screen name="Favoritos" component={FavoritosUser} />
 <Drawer.Screen name="Sobre o App" component={SobreUser} />
@@ -147,6 +148,9 @@ screenOptions={{ headerShown: false, drawerStyle: { backgroundColor: 'white', wi
 <Drawer.Screen name="PerfilTab" component={PerfilUser} />
 <Drawer.Screen name="MenuV1User" component={MenuV1User} />
 <Drawer.Screen name="InicialUser" component={InicialUser} />
+<Drawer.Screen name="Eventos" component={EventosUser}/>
+<Drawer.Screen name="MapaPetshop" component={MapaPetshopUser}/>
+<Drawer.Screen name="MapaServicos" component={MapaServicosUser}/>
 </Drawer.Navigator>
 );
 }

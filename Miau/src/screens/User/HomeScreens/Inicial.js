@@ -241,7 +241,7 @@ export default function Inicial() {
     return (
       <TouchableOpacity
         style={styles.petshopCard}
-        onPress={() => navigation.navigate('PetshopDetalhes', { petshopId: item.id })}
+        onPress={() => navigation.navigate('PetshopUser', { petshopId: item.id })}
       >
         <View style={styles.petshopLogoWrapper}>
           <Image source={item.logo} style={styles.petshopLogo} />
@@ -270,7 +270,7 @@ export default function Inicial() {
   const renderService = ({ item }) => (
     <TouchableOpacity
       style={styles.serviceCard}
-      onPress={() => navigation.navigate('ServicoDetalhes', { serviceId: item.id })}
+      onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}
     >
       <Image source={{ uri: item.image }} style={styles.serviceImage} />
       <Text style={styles.serviceName}>{item.name}</Text>
@@ -278,7 +278,7 @@ export default function Inicial() {
       <Text style={styles.serviceLocation}>{item.location}</Text>
       <TouchableOpacity
         style={styles.serviceButton}
-        onPress={() => navigation.navigate('PerfilCuidador', { cuidadorId: item.id })}>
+        onPress={() => navigation.navigate('ServicoUser', { cuidadorId: item.id })}>
         <Text style={styles.serviceButtonText}>Ver perfil</Text>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -318,7 +318,7 @@ export default function Inicial() {
             <View style={styles.adoptOptions}>
               <TouchableOpacity
                 style={styles.adoptOption}
-                onPress={() => navigation.navigate('Adote')}
+                onPress={() => navigation.navigate('AdoteUser')}
               >
                 <Image
                   source={AdicionarCachorro}
@@ -327,7 +327,7 @@ export default function Inicial() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.adoptOption}
-                onPress={() => navigation.navigate('Adote')}
+                onPress={() => navigation.navigate('AdoteUser')}
               >
                 <Image
                   source={AdicionarGato}
@@ -378,7 +378,7 @@ export default function Inicial() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Pet-shops</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('PetshopsListScreen')}>
+            <TouchableOpacity onPress={() => navigation.navigate('MapaPetshopUser')}>
               <Text style={styles.seeMoreText}>Ver mais</Text>
             </TouchableOpacity>
           </View>
@@ -394,7 +394,7 @@ export default function Inicial() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Serviços</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('ServicosListScreen')}>
+            <TouchableOpacity onPress={() => navigation.navigate('MapaServicosUser')}>
               <Text style={styles.seeMoreText}>Ver mais</Text>
             </TouchableOpacity>
           </View>
@@ -414,7 +414,7 @@ export default function Inicial() {
             source={RoxoEvento}
             style={styles.eventBannerBackground}/>
         <TouchableOpacity
-          onPress={() => navigation.navigate('EventoDetalhes')}
+          onPress={() => navigation.navigate('EventosUser')}
         >
 
           <View style={styles.eventCard}>

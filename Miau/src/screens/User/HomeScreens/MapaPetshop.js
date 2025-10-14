@@ -205,7 +205,7 @@ export default function MapaPetshop() {
 
     {/* Categorias */}
     <View style={styles.row}>
-      <TouchableOpacity onPress={() => navigation.navigate('MapaPetshopUser')}>
+      <TouchableOpacity>
         <View style={styles.category}>
           <View style={styles.categoryPicSelected}>
             <MaterialIcons name="store" size={width * 0.12} color="#fff" />

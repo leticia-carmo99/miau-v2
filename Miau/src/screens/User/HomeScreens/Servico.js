@@ -165,7 +165,7 @@ const nota = 4.5;
       <View style={styles.head}>
       <View style={styles.headInfos}>
 
-      <Text style={styles.headTitle}>{data.nome}</Text>
+      <Text style={styles.headTitle}>{data.nome || 'Nicolas Cunha'}</Text>
       <View style={{flexDirection: 'row'}}>
 <StarRating rating={nota} />
             <Text style={styles.headRating}>4,5</Text></View>
