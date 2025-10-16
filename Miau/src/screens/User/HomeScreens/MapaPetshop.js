@@ -11,9 +11,11 @@ import {
   Alert,
   Image,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import WebView from 'react-native-webview';
 
 import {
   useFonts,
@@ -38,6 +40,8 @@ const COLORS = {
   redHeart: '#FF6347',
   blogTextGray: '#737373',
 };
+import MapHtmlModule from '../../../../assets/map_data.js';
+
 export default function MapaPetshop() {
    const navigation = useNavigation();
   const [search, setSearch] = useState('');
@@ -50,8 +54,9 @@ export default function MapaPetshop() {
     longitudeDelta: 0.05,
   });
 
-  const mapRef = useRef(null);
+
   const translateY = useRef(new Animated.Value(height * 0.5)).current;
+  const webViewRef = useRef(null);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -120,6 +125,14 @@ export default function MapaPetshop() {
     }
   }, [search]);
 
+    useEffect(() => {
+    if (webViewRef.current) {
+        // Usa o script para atualizar o Leaflet dentro do WebView
+        webViewRef.current.injectJavaScript(moveMapScript(region));
+    }
+  }, [region]); 
+
+
   // Buscar CEP
   const handleCepSearch = async () => {
     if (cep.length < 8) return;
@@ -135,14 +148,13 @@ export default function MapaPetshop() {
 
       // Fallback (aqui seria ideal usar Google Geocoding)
       const newRegion = {
-        latitude: -23.55,
-        longitude: -46.63,
+        latitude: -23.55 + (Math.random() - 0.5) * 0.01, 
+        longitude: -46.63 + (Math.random() - 0.5) * 0.01,
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
       };
 
       setRegion(newRegion);
-      mapRef.current.animateToRegion(newRegion, 1000);
     } catch (e) {
       Alert.alert('Erro', 'Não foi possível buscar o CEP');
     }
@@ -155,11 +167,79 @@ export default function MapaPetshop() {
   if (!fontsLoaded) {
     return null;
   }
+
+const centerCoord = { lat: region.latitude, lon: region.longitude };
+
+// 2. Função para injetar o JavaScript que inicializa o mapa Leaflet
+const generateMapScript = (data, center) => `
+  (function() {
+    if (typeof L === 'undefined' || document.getElementById('map')._leaflet_id) {
+        return; 
+    }
+    const petshops = ${JSON.stringify(petshop)};
+    const initialCenter = [${center.lat}, ${center.lon}];
+    const zoomLevel = 12; 
+    
+    const map = L.map('map').setView(initialCenter, zoomLevel);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const CustomIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">P</div>',
+        iconSize: [30, 30], 
+        iconAnchor: [15, 30], 
+    });
+
+    petshops.forEach(p => {
+        L.marker([p.lat, p.lon], { icon: CustomIcon })
+         .addTo(map)
+         .bindPopup('<b>' + p.name + '</b><br>' + p.description + '<br>Distância: ' + p.distance);
+    });
+  })();
+  true;
+`;
+
+// 3. Script para mover o mapa quando a região for alterada (ex: busca por CEP)
+const moveMapScript = (newCenter) => `
+  (function() {
+      if (typeof L !== 'undefined' && document.getElementById('map')._leaflet_id) {
+          const map = document.getElementById('map')._leaflet_id ? L.getMap('map') : null;
+          if (map) {
+              map.flyTo([${newCenter.latitude}, ${newCenter.longitude}], 14, {
+                  duration: 1.5 
+              });
+          }
+      }
+  })();
+  true;
+`;
+const mapHtmlContent = MapHtmlModule;
+
   return (
     <View style={styles.container}>
       {/* MAPA */}
 
-<Image source={{uri: 'https://admin.cnnbrasil.com.br/wp-content/uploads/sites/12/2024/02/google-maps-e1707316052388.png?w=1200&h=900&crop=1'}} style={styles.map}/>
+<View style={styles.mapContainer}>
+        <WebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+source={{ html: mapHtmlContent }}
+          style={styles.map}
+          // Injeta o JS para inicializar o mapa Leaflet APÓS o HTML carregar
+          onLoadEnd={() => {
+            webViewRef.current.injectJavaScript(generateMapScript(petshop, centerCoord));
+          }}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          allowFileAccess={true}
+          allowUniversalAccessFromFileURLs={true}
+          mixedContentMode="always"
+        />
+      </View>
+
 
       <Animated.View
         style={[
@@ -262,8 +342,14 @@ export default function MapaPetshop() {
 /* ================== STYLES ================== */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#eee' },
+   mapContainer: {
+ flex: 1,
+    backgroundColor: COLORS.offWhite,
+  },
   map: {
-    flex: 1,
+    width: width,
+    height: height,
+    backgroundColor: COLORS.white, 
   },
   sheet: {
     position: 'absolute',
