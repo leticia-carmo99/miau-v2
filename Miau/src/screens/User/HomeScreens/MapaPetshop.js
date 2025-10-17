@@ -182,7 +182,7 @@ const generateMapScript = (data, center) => `
     
     const map = L.map('map').setView(initialCenter, zoomLevel);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
@@ -230,7 +230,11 @@ source={{ html: mapHtmlContent }}
           style={styles.map}
           // Injeta o JS para inicializar o mapa Leaflet APÓS o HTML carregar
           onLoadEnd={() => {
+            setTimeout(() => {
+        if (webViewRef.current) {
             webViewRef.current.injectJavaScript(generateMapScript(petshop, centerCoord));
+        }
+    }, 100); 
           }}
           javaScriptEnabled={true}
           domStorageEnabled={true}
