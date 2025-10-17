@@ -11,7 +11,6 @@ import {
   Alert,
   Image,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -81,6 +80,49 @@ export default function MapaPetshop() {
     })
   ).current;
 
+  const moveMapScript = (newRegion) => {
+    return `
+(function() {
+          if (typeof window.map !== 'undefined') {
+              window.map.setView([${newRegion.latitude}, ${newRegion.longitude}], window.map.getZoom());
+          }
+      })();
+      true;
+    `;
+};
+
+const addCenterMarkerScript = (newRegion) => {
+    return `
+      (function() {
+          if (typeof window.map !== 'undefined') {
+              const lat = ${newRegion.latitude};
+              const lon = ${newRegion.longitude};
+              
+              // Remove o marcador central anterior, se houver
+              if (window.centerMarker) {
+                  window.map.removeLayer(window.centerMarker);
+              }
+              
+              // O ícone padrão do Leaflet é um pouco feio, vamos criar um simples
+              const customIcon = L.divIcon({
+                  className: 'center-marker-icon',
+                  html: '<div style="background-color:#7b3aed; width:15px; height:15px; border: 3px solid white; border-radius: 50%;"></div>',
+                  iconSize: [21, 21], // Tamanho do div container
+                  iconAnchor: [10, 21], // Ponto de ancoragem (fundo do alfinete)
+                  popupAnchor: [1, -15] // Ponto para o popup
+              });
+
+              // Cria e adiciona o novo marcador central ao mapa
+              window.centerMarker = L.marker([lat, lon], { icon: customIcon })
+                  .addTo(window.map)
+                  .bindPopup("Sua Localização de Busca")
+                  .openPopup(); // Abre o popup automaticamente
+          }
+      })();
+      true;
+    `;
+};
+
 const TILE_PROVIDERS = {
     'OpenStreetMap': {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -95,7 +137,7 @@ const TILE_PROVIDERS = {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }
 };
-const MAP_PROVIDER_KEY = 'CartoDB_Positron'; // Provedor padrão
+const MAP_PROVIDER_KEY = 'CartoDB_Positron'; 
 const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStreetMap'];
 
   const petshop = [
@@ -128,7 +170,6 @@ const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStr
     },
   ];
 
-  // Filtrar conforme busca
   useEffect(() => {
     if (search.trim() === '') {
       setFiltered(petshop);
@@ -157,24 +198,114 @@ const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStr
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const json = await response.json();
 
-      if (json.erro) {
-        Alert.alert('Erro', 'CEP não encontrado!');
-        return;
+if (json.erro) {
+        Alert.alert('Erro', 'CEP não encontrado!');
+        return;
+      }
+
+      // >>> SUBSTITUA ESTA SEÇÃO A SEGUIR PELO CÓDIGO ABAIXO:
+
+const fullAddress = `${json.logradouro}, ${json.bairro}, ${json.localidade}, ${json.uf}`;
+
+// 2. Usa o Nominatim para buscar as coordenadas desse endereço
+const encodedAddress = encodeURIComponent(fullAddress);
+const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
+
+const geoResponse = await fetch(geoUrl, {
+    headers: {
+        // ESSENCIAL: Adicionar o User-Agent aqui também!
+        'User-Agent': 'PetshopApp (seuemail@seudominio.com)', // <-- USE O SEU VALOR REAL
+    }
+});
+
+if (!geoResponse.ok) {
+    throw new Error(`Erro na Geocodificação do CEP: Status HTTP ${geoResponse.status}. Verifique o User-Agent e o formato.`);
+}
+
+const geoJson = await geoResponse.json();
+
+
+      if (geoJson.length === 0) {
+        Alert.alert('Atenção', 'Endereço encontrado, mas não foi possível localizar no mapa.');
+        return;
+      }
+
+      const result = geoJson[0];
+      
+      // 3. Define a nova região do mapa
+      const newRegion = {
+        latitude: parseFloat(result.lat),
+        longitude: parseFloat(result.lon),
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      };
+
+      setRegion(newRegion);
+if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(addCenterMarkerScript(newRegion));
       }
 
-      // Fallback (aqui seria ideal usar Google Geocoding)
-      const newRegion = {
-        latitude: -23.55 + (Math.random() - 0.5) * 0.01, 
-        longitude: -46.63 + (Math.random() - 0.5) * 0.01,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      };
+    } catch (e) {
+      Alert.alert('Erro', `Não foi possível buscar o CEP: ${e.message}`);
+    }
+  };
 
-      setRegion(newRegion);
-    } catch (e) {
-      Alert.alert('Erro', 'Não foi possível buscar o CEP');
-    }
-  };
+
+// ...
+  const handleAddressSearch = async () => {
+    if (search.trim() === '') return;
+
+    // Codifica a busca para uso na URL
+    const encodedSearch = encodeURIComponent(search.trim());
+    // URL do serviço de geocodificação Nominatim
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodedSearch}&format=json&limit=1&countrycodes=br`;
+
+    try {
+      const response = await fetch(nominatimUrl, {
+          headers: {
+            'User-Agent': 'PetshopApp (seuemail@seudominio.com)', // ✅ Mantenha e personalize
+          }
+      });
+      
+      if (!response.ok) {
+        // Se a resposta HTTP não for 200 (OK), lança um erro com o status
+        throw new Error(`Status HTTP: ${response.status}. Verifique o User-Agent e o formato da URL.`);
+      }
+
+      // Tenta analisar o JSON
+      const json = await response.json();
+
+      if (json.length === 0) {
+        Alert.alert('Atenção', `Endereço "${search}" não encontrado. Tente ser mais específico.`);
+        return;
+      }
+
+      const result = json[0];
+      
+      // Verificação de sanidade para garantir que lat/lon existem
+      if (!result.lat || !result.lon) {
+        throw new Error('Dados de latitude/longitude ausentes na resposta da API.');
+      }
+      
+      // Converte as coordenadas encontradas para o formato do estado `region`
+      const newRegion = {
+        latitude: parseFloat(result.lat),
+        longitude: parseFloat(result.lon),
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      };
+
+      setRegion(newRegion);
+if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(addCenterMarkerScript(newRegion));
+        }
+
+    } catch (e) {
+      console.error("Erro na busca de endereço:", e);
+      Alert.alert('Erro', `Não foi possível buscar o endereço: ${e.message}`);
+    }
+  };
+
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -202,7 +333,7 @@ const generateMapScript = (data, center) => {
         const zoomLevel = 13; 
          
         // Inicializa o mapa
-        const map = L.map('map').setView(initialCenter, zoomLevel);
+        window.map = L.map('map').setView(initialCenter, zoomLevel);
 
         // Define o Tile Layer CartoDB Positron
         L.tileLayer('${MAP_PROVIDER.url}', {
@@ -267,7 +398,7 @@ source={{ html: mapHtmlContent }}
         if (webViewRef.current) {
             webViewRef.current.injectJavaScript(generateMapScript(petshop, centerCoord));
         }
-    }, 100); 
+    }, 300); 
           }}
           javaScriptEnabled={true}
           domStorageEnabled={true}
@@ -302,6 +433,7 @@ source={{ html: mapHtmlContent }}
         placeholderTextColor="#aaa"
         value={search}
         onChangeText={setSearch}
+        onSubmitEditing={handleAddressSearch}
       />
     </View>
 

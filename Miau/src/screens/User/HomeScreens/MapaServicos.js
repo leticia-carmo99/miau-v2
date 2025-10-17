@@ -16,6 +16,7 @@ import {
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RadioButton } from "react-native-paper";
+import WebView from 'react-native-webview';
 
 import {
   useFonts,
@@ -40,9 +41,11 @@ const COLORS = {
   redHeart: '#FF6347',
   blogTextGray: '#737373',
 };
+import MapHtmlModule from '../../../../assets/map_data.js';
+
 export default function MapaServicos() {
-  const [value, setValue] = React.useState("1");
    const navigation = useNavigation();
+     const [value, setValue] = React.useState("1");
   const [search, setSearch] = useState('');
   const [cep, setCep] = useState('');
   const [filtered, setFiltered] = useState([]);
@@ -53,8 +56,9 @@ export default function MapaServicos() {
     longitudeDelta: 0.05,
   });
 
-  const mapRef = useRef(null);
+
   const translateY = useRef(new Animated.Value(height * 0.5)).current;
+  const webViewRef = useRef(null);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -78,6 +82,67 @@ export default function MapaServicos() {
       },
     })
   ).current;
+
+  const moveMapScript = (newRegion) => {
+    return `
+(function() {
+          if (typeof window.map !== 'undefined') {
+              window.map.setView([${newRegion.latitude}, ${newRegion.longitude}], window.map.getZoom());
+          }
+      })();
+      true;
+    `;
+};
+
+const addCenterMarkerScript = (newRegion) => {
+    return `
+      (function() {
+          if (typeof window.map !== 'undefined') {
+              const lat = ${newRegion.latitude};
+              const lon = ${newRegion.longitude};
+              
+              // Remove o marcador central anterior, se houver
+              if (window.centerMarker) {
+                  window.map.removeLayer(window.centerMarker);
+              }
+              
+              // O ícone padrão do Leaflet é um pouco feio, vamos criar um simples
+              const customIcon = L.divIcon({
+                  className: 'center-marker-icon',
+                  html: '<div style="background-color:#7b3aed; width:15px; height:15px; border: 3px solid white; border-radius: 50%;"></div>',
+                  iconSize: [21, 21], // Tamanho do div container
+                  iconAnchor: [10, 21], // Ponto de ancoragem (fundo do alfinete)
+                  popupAnchor: [1, -15] // Ponto para o popup
+              });
+
+              // Cria e adiciona o novo marcador central ao mapa
+              window.centerMarker = L.marker([lat, lon], { icon: customIcon })
+                  .addTo(window.map)
+                  .bindPopup("Sua Localização de Busca")
+                  .openPopup(); // Abre o popup automaticamente
+          }
+      })();
+      true;
+    `;
+};
+
+const TILE_PROVIDERS = {
+    'OpenStreetMap': {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    },
+    'CartoDB_Positron': {
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    'CartoDB_DarkMatter': {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }
+};
+const MAP_PROVIDER_KEY = 'CartoDB_Positron'; 
+const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStreetMap'];
+
 
   const petshop = [
     {
@@ -133,8 +198,7 @@ export default function MapaServicos() {
     },
   ];
 
-  // Filtrar conforme busca
-  useEffect(() => {
+ useEffect(() => {
     if (search.trim() === '') {
       setFiltered(petshop);
     } else {
@@ -146,6 +210,14 @@ export default function MapaServicos() {
     }
   }, [search]);
 
+    useEffect(() => {
+    if (webViewRef.current) {
+        // Usa o script para atualizar o Leaflet dentro do WebView
+        webViewRef.current.injectJavaScript(moveMapScript(region));
+    }
+  }, [region]); 
+
+
   // Buscar CEP
   const handleCepSearch = async () => {
     if (cep.length < 8) return;
@@ -154,25 +226,114 @@ export default function MapaServicos() {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const json = await response.json();
 
-      if (json.erro) {
-        Alert.alert('Erro', 'CEP não encontrado!');
-        return;
+if (json.erro) {
+        Alert.alert('Erro', 'CEP não encontrado!');
+        return;
+      }
+
+      // >>> SUBSTITUA ESTA SEÇÃO A SEGUIR PELO CÓDIGO ABAIXO:
+
+const fullAddress = `${json.logradouro}, ${json.bairro}, ${json.localidade}, ${json.uf}`;
+
+// 2. Usa o Nominatim para buscar as coordenadas desse endereço
+const encodedAddress = encodeURIComponent(fullAddress);
+const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
+
+const geoResponse = await fetch(geoUrl, {
+    headers: {
+        // ESSENCIAL: Adicionar o User-Agent aqui também!
+        'User-Agent': 'PetshopApp (seuemail@seudominio.com)', // <-- USE O SEU VALOR REAL
+    }
+});
+
+if (!geoResponse.ok) {
+    throw new Error(`Erro na Geocodificação do CEP: Status HTTP ${geoResponse.status}. Verifique o User-Agent e o formato.`);
+}
+
+const geoJson = await geoResponse.json();
+
+
+      if (geoJson.length === 0) {
+        Alert.alert('Atenção', 'Endereço encontrado, mas não foi possível localizar no mapa.');
+        return;
+      }
+
+      const result = geoJson[0];
+      
+      // 3. Define a nova região do mapa
+      const newRegion = {
+        latitude: parseFloat(result.lat),
+        longitude: parseFloat(result.lon),
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      };
+
+      setRegion(newRegion);
+if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(addCenterMarkerScript(newRegion));
       }
 
-      // Fallback (aqui seria ideal usar Google Geocoding)
-      const newRegion = {
-        latitude: -23.55,
-        longitude: -46.63,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      };
+    } catch (e) {
+      Alert.alert('Erro', `Não foi possível buscar o CEP: ${e.message}`);
+    }
+  };
 
-      setRegion(newRegion);
-      mapRef.current.animateToRegion(newRegion, 1000);
-    } catch (e) {
-      Alert.alert('Erro', 'Não foi possível buscar o CEP');
-    }
-  };
+
+// ...
+  const handleAddressSearch = async () => {
+    if (search.trim() === '') return;
+
+    // Codifica a busca para uso na URL
+    const encodedSearch = encodeURIComponent(search.trim());
+    // URL do serviço de geocodificação Nominatim
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodedSearch}&format=json&limit=1&countrycodes=br`;
+
+    try {
+      const response = await fetch(nominatimUrl, {
+          headers: {
+            'User-Agent': 'PetshopApp (seuemail@seudominio.com)', // ✅ Mantenha e personalize
+          }
+      });
+      
+      if (!response.ok) {
+        // Se a resposta HTTP não for 200 (OK), lança um erro com o status
+        throw new Error(`Status HTTP: ${response.status}. Verifique o User-Agent e o formato da URL.`);
+      }
+
+      // Tenta analisar o JSON
+      const json = await response.json();
+
+      if (json.length === 0) {
+        Alert.alert('Atenção', `Endereço "${search}" não encontrado. Tente ser mais específico.`);
+        return;
+      }
+
+      const result = json[0];
+      
+      // Verificação de sanidade para garantir que lat/lon existem
+      if (!result.lat || !result.lon) {
+        throw new Error('Dados de latitude/longitude ausentes na resposta da API.');
+      }
+      
+      // Converte as coordenadas encontradas para o formato do estado `region`
+      const newRegion = {
+        latitude: parseFloat(result.lat),
+        longitude: parseFloat(result.lon),
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      };
+
+      setRegion(newRegion);
+if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(addCenterMarkerScript(newRegion));
+        }
+
+    } catch (e) {
+      console.error("Erro na busca de endereço:", e);
+      Alert.alert('Erro', `Não foi possível buscar o endereço: ${e.message}`);
+    }
+  };
+
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -181,13 +342,101 @@ export default function MapaServicos() {
   if (!fontsLoaded) {
     return null;
   }
+
+const centerCoord = { lat: region.latitude, lon: region.longitude };
+
+// 2. Função para injetar o JavaScript que inicializa o mapa Leaflet
+// ...
+const generateMapScript = (data, center) => {
+    return `
+    (function() {
+        if (typeof L === 'undefined' || document.getElementById('map')._leaflet_id) {
+            return; 
+        }
+        
+        // Variável global na WebView para armazenar os marcadores
+        window.activeMarkers = [];
+        
+        const initialCenter = [${center.lat}, ${center.lon}];
+        const zoomLevel = 13; 
+         
+        // Inicializa o mapa
+        window.map = L.map('map').setView(initialCenter, zoomLevel);
+
+        // Define o Tile Layer CartoDB Positron
+        L.tileLayer('${MAP_PROVIDER.url}', {
+            attribution: '${MAP_PROVIDER.attribution}',
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Função para criar o ícone customizado
+        window.getCustomIcon = (initials) => L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">' + initials + '</div>',
+            iconSize: [30, 30], 
+            iconAnchor: [15, 30], 
+        });
+
+        // Função para adicionar marcadores
+        window.addMarkers = (petshops) => {
+            // Remove marcadores antigos
+            window.activeMarkers.forEach(marker => map.removeLayer(marker));
+            window.activeMarkers = [];
+
+            petshops.forEach(p => {
+                const marker = L.marker([p.lat, p.lon], { icon: window.getCustomIcon(p.logo) })
+                .addTo(map)
+                .bindPopup('<b>' + p.name + '</b><br>' + p.description + '<br>Distância: ' + p.distance);
+                
+                window.activeMarkers.push(marker);
+            });
+        };
+
+        // Adiciona os marcadores iniciais
+        window.addMarkers(${JSON.stringify(petshop)});
+    })();
+    true;
+`;
+}
+
+const updateMarkersScript = (newPetshops) => `
+  (function() {
+      if (typeof window.addMarkers === 'function') {
+          window.addMarkers(${JSON.stringify(newPetshops)});
+      }
+  })();
+  true;
+`;
+
+const mapHtmlContent = MapHtmlModule;
+
   return (
     <View style={styles.container}>
       {/* MAPA */}
-<Image source={{uri: 'https://admin.cnnbrasil.com.br/wp-content/uploads/sites/12/2024/02/google-maps-e1707316052388.png?w=1200&h=900&crop=1'}} style={styles.map}/>
+
+<View style={styles.mapContainer}>
+        <WebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+source={{ html: mapHtmlContent }}
+          style={styles.map}
+          // Injeta o JS para inicializar o mapa Leaflet APÓS o HTML carregar
+          onLoadEnd={() => {
+            setTimeout(() => {
+        if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(generateMapScript(petshop, centerCoord));
+        }
+    }, 300); 
+          }}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          allowFileAccess={true}
+          allowUniversalAccessFromFileURLs={true}
+          mixedContentMode="always"
+        />
+      </View>
 
 
-      {/* BOTTOM SHEET */}
       <Animated.View
         style={[
           styles.sheet,
@@ -202,30 +451,32 @@ export default function MapaServicos() {
     showsVerticalScrollIndicator={false}
     nestedScrollEnabled
   >
-        {/* Busca */}
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={width * 0.07} color="#7b3aed" />
-          <TextInput
-            style={styles.input}
-            placeholder="Procure aqui"
-            placeholderTextColor="#aaa"
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
 
-        {/* CEP */}
-        <View style={styles.searchBox2}>
-          <TextInput
-            style={styles.input}
-            placeholder="Insira seu CEP"
-            placeholderTextColor="#aaa"
-            keyboardType="numeric"
-            value={cep}
-            onChangeText={setCep}
-            onSubmitEditing={handleCepSearch}
-          />
-        </View>
+    {/* Busca */}
+    <View style={styles.searchBox}>
+      <Ionicons name="search" size={width * 0.07} color="#7b3aed" />
+      <TextInput
+        style={styles.input}
+        placeholder="Procure aqui"
+        placeholderTextColor="#aaa"
+        value={search}
+        onChangeText={setSearch}
+        onSubmitEditing={handleAddressSearch}
+      />
+    </View>
+
+    {/* CEP */}
+    <View style={styles.searchBox2}>
+      <TextInput
+        style={styles.input}
+        placeholder="Insira seu CEP"
+        placeholderTextColor="#aaa"
+        keyboardType="numeric"
+        value={cep}
+        onChangeText={setCep}
+        onSubmitEditing={handleCepSearch}
+      />
+    </View>
 
         <Text style={styles.title}>Mais próximos</Text>
 
@@ -370,8 +621,14 @@ export default function MapaServicos() {
 /* ================== STYLES ================== */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#eee' },
+   mapContainer: {
+ flex: 1,
+    backgroundColor: COLORS.offWhite,
+  },
   map: {
-    flex: 1,
+    width: width,
+    height: height,
+    backgroundColor: COLORS.white, 
   },
   sheet: {
     position: 'absolute',

@@ -150,7 +150,7 @@ const nota = 4.5;
     return null;
   }
   return (
-    <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{flex:1}}>
       <SafeAreaView style={styles.container}>
         <Image source={data.image} style={styles.background} />
 
@@ -271,9 +271,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.offWhite,
     borderRadius: 40,
     flex: 1,
-    zIndex: 1,
-    position: 'absolute',
-    marginTop: width * 0.8,
+    zIndex: 2,
+    position: 'relative',
     width: '100%',
   },
   head: {
