@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
@@ -96,10 +97,11 @@ export default function FormONG2() {
     };
     navigation.navigate('FormONG3', { allFormData: updatedAllFormData });
   };
+
   function Field({ label, required, children, containerStyle }) {
     return (
       <View style={[styles.fieldContainer, containerStyle]}>
-        <Text style={styles.fieldLabel}>
+        <Text style={[styles.fieldLabel, { fontFamily: 'JosefinSans_700Bold' }]}>
           {label} {required && <Text style={{ color: VERMELHO }}>*</Text>}
         </Text>
         {children}
@@ -107,56 +109,52 @@ export default function FormONG2() {
     );
   }
 
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <View style={styles.container}>
       <View style={styles.background} />
-      <Text style={styles.header}>Informações Sobre a Atuação</Text>
+      <Text style={[styles.header, { fontFamily: 'JosefinSans_700Bold' }]}>
+        Informações Sobre a Atuação
+      </Text>
       <View style={styles.cardContainer}>
         <ScrollView
           contentContainerStyle={styles.cardContent}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           {errorMessage ? (
-            <Text style={styles.errorMessage}>{errorMessage}</Text>
+            <Text style={[styles.errorMessage, { fontFamily: 'JosefinSans_400Regular' }]}>
+              {errorMessage}
+            </Text>
           ) : null}
 
           <Field label="Tipo de instituição" required>
             <View style={styles.radioGroup}>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => handleChange('tipoInstituicao', 'ONG')}>
-                <Ionicons
-                  name={
-                    formData.tipoInstituicao === 'ONG'
-                      ? 'radio-button-on'
-                      : 'radio-button-off'
-                  }
-                  size={width * 0.055}
-                  color={LARANJA}
-                />
-                <Text style={styles.radioLabel}>ONG</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() =>
-                  handleChange('tipoInstituicao', 'Abrigo independente')
-                }>
-                <Ionicons
-                  name={
-                    formData.tipoInstituicao === 'Abrigo independente'
-                      ? 'radio-button-on'
-                      : 'radio-button-off'
-                  }
-                  size={width * 0.055}
-                  color={LARANJA}
-                />
-                <Text style={styles.radioLabel}>Abrigo independente</Text>
-              </TouchableOpacity>
+              {['ONG', 'Abrigo independente'].map((tipo) => (
+                <TouchableOpacity
+                  key={tipo}
+                  style={styles.radioOption}
+                  onPress={() => handleChange('tipoInstituicao', tipo)}
+                >
+                  <Ionicons
+                    name={formData.tipoInstituicao === tipo ? 'radio-button-on' : 'radio-button-off'}
+                    size={width * 0.055}
+                    color={LARANJA}
+                  />
+                  <Text style={[styles.radioLabel, { fontFamily: 'JosefinSans_400Regular' }]}>{tipo}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </Field>
 
           <Field label="Tempo de atuação" required>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
               placeholder="Insira aqui"
               placeholderTextColor="#999"
               value={formData.tempoAtuacao}
@@ -166,7 +164,7 @@ export default function FormONG2() {
 
           <Field label="Número atual de animais acolhidos:" required>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
               placeholder="Insira aqui"
               placeholderTextColor="#999"
               keyboardType="numeric"
@@ -177,48 +175,20 @@ export default function FormONG2() {
 
           <Field label="Espécies atendidas:" required>
             <View style={styles.radioGroup}>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => handleChange('especiesAtendidas', 'Gatos')}>
-                <Ionicons
-                  name={
-                    formData.especiesAtendidas === 'Gatos'
-                      ? 'radio-button-on'
-                      : 'radio-button-off'
-                  }
-                  size={width * 0.055}
-                  color={LARANJA}
-                />
-                <Text style={styles.radioLabel}>Gatos</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => handleChange('especiesAtendidas', 'Cães')}>
-                <Ionicons
-                  name={
-                    formData.especiesAtendidas === 'Cães'
-                      ? 'radio-button-on'
-                      : 'radio-button-off'
-                  }
-                  size={width * 0.055}
-                  color={LARANJA}
-                />
-                <Text style={styles.radioLabel}>Cães</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => handleChange('especiesAtendidas', 'Ambos')}>
-                <Ionicons
-                  name={
-                    formData.especiesAtendidas === 'Ambos'
-                      ? 'radio-button-on'
-                      : 'radio-button-off'
-                  }
-                  size={width * 0.055}
-                  color={LARANJA}
-                />
-                <Text style={styles.radioLabel}>Ambos</Text>
-              </TouchableOpacity>
+              {['Gatos', 'Cães', 'Ambos'].map((tipo) => (
+                <TouchableOpacity
+                  key={tipo}
+                  style={styles.radioOption}
+                  onPress={() => handleChange('especiesAtendidas', tipo)}
+                >
+                  <Ionicons
+                    name={formData.especiesAtendidas === tipo ? 'radio-button-on' : 'radio-button-off'}
+                    size={width * 0.055}
+                    color={LARANJA}
+                  />
+                  <Text style={[styles.radioLabel, { fontFamily: 'JosefinSans_400Regular' }]}>{tipo}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </Field>
 
@@ -239,49 +209,54 @@ export default function FormONG2() {
               <TouchableOpacity
                 key={regiao}
                 style={styles.checkboxContainer}
-                onPress={() => toggleRegiaoAtuacao(regiao)}>
+                onPress={() => toggleRegiaoAtuacao(regiao)}
+              >
                 <View
                   style={[
                     styles.checkbox,
-                    formData.regioesAtuacao.includes(regiao) &&
-                      styles.checkboxSelected,
+                    formData.regioesAtuacao.includes(regiao) && styles.checkboxSelected,
                   ]}
                 />
                 <Text
                   style={[
                     styles.checkboxLabel,
+                    { fontFamily: 'JosefinSans_400Regular' },
                     formData.regioesAtuacao.includes(regiao) && {
                       color: LARANJA,
-                      fontWeight: 'bold',
+                      fontFamily: 'JosefinSans_700Bold',
                     },
-                  ]}>
+                  ]}
+                >
                   {regiao}
                 </Text>
               </TouchableOpacity>
             ))}
+
             <TouchableOpacity
               style={styles.checkboxContainer}
-              onPress={() => toggleRegiaoAtuacao('Outra')}>
+              onPress={() => toggleRegiaoAtuacao('Outra')}
+            >
               <View
                 style={[
                   styles.checkbox,
-                  formData.regioesAtuacao.includes('Outra') &&
-                    styles.checkboxSelected,
+                  formData.regioesAtuacao.includes('Outra') && styles.checkboxSelected,
                 ]}
               />
               <Text
                 style={[
                   styles.checkboxLabel,
+                  { fontFamily: 'JosefinSans_400Regular' },
                   formData.regioesAtuacao.includes('Outra') && {
                     color: LARANJA,
-                    fontWeight: 'bold',
+                    fontFamily: 'JosefinSans_700Bold',
                   },
-                ]}>
+                ]}
+              >
                 Outra:
               </Text>
               {formData.regioesAtuacao.includes('Outra') && (
                 <TextInput
-                  style={[styles.input, styles.otherInput]}
+                  style={[styles.input, styles.otherInput, { fontFamily: 'JosefinSans_400Regular' }]}
                   placeholder="Insira aqui"
                   placeholderTextColor="#999"
                   value={formData.regiaoOutra}
@@ -293,39 +268,25 @@ export default function FormONG2() {
 
           <Field label="Possui espaço físico para visitação?" required>
             <View style={styles.radioGroup}>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => handleChange('espacoFisicoVisitacao', 'Não')}>
-                <Ionicons
-                  name={
-                    formData.espacoFisicoVisitacao === 'Não'
-                      ? 'radio-button-on'
-                      : 'radio-button-off'
-                  }
-                  size={width * 0.055}
-                  color={LARANJA}
-                />
-                <Text style={styles.radioLabel}>Não</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => handleChange('espacoFisicoVisitacao', 'Sim')}>
-                <Ionicons
-                  name={
-                    formData.espacoFisicoVisitacao === 'Sim'
-                      ? 'radio-button-on'
-                      : 'radio-button-off'
-                  }
-                  size={width * 0.055}
-                  color={LARANJA}
-                />
-                <Text style={styles.radioLabel}>Sim</Text>
-              </TouchableOpacity>
+              {['Não', 'Sim'].map((resp) => (
+                <TouchableOpacity
+                  key={resp}
+                  style={styles.radioOption}
+                  onPress={() => handleChange('espacoFisicoVisitacao', resp)}
+                >
+                  <Ionicons
+                    name={formData.espacoFisicoVisitacao === resp ? 'radio-button-on' : 'radio-button-off'}
+                    size={width * 0.055}
+                    color={LARANJA}
+                  />
+                  <Text style={[styles.radioLabel, { fontFamily: 'JosefinSans_400Regular' }]}>{resp}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </Field>
 
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-            <Text style={styles.nextText}>Próximo</Text>
+            <Text style={[styles.nextText, { fontFamily: 'JosefinSans_700Bold' }]}>Próximo</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -367,8 +328,7 @@ const styles = StyleSheet.create({
     paddingBottom: height * 0.1,
   },
   header: {
-    fontSize: width * 0.07,
-    fontWeight: 'bold',
+    fontSize: width * 0.06,
     color: BRANCO,
     textAlign: 'center',
     marginBottom: height * 0.05,
@@ -380,7 +340,6 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: width * 0.0375,
-    fontWeight: 'bold',
     color: '#737373',
     marginBottom: height * 0.01,
     marginTop: height * 0.02,
@@ -431,9 +390,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   otherInput: {
-    flex: 1, // Permite que o input 'Outra' ocupe o espaço restante
-    marginLeft: width * 0.02, // Pequena margem para o input
-    height: INPUT_HEIGHT * 0.8, // Altura um pouco menor
+    flex: 1,
+    marginLeft: width * 0.02,
+    height: INPUT_HEIGHT * 0.8,
     borderRadius: width * 0.025,
     fontSize: width * 0.035,
   },
@@ -453,7 +412,6 @@ const styles = StyleSheet.create({
   nextText: {
     color: LARANJA,
     fontSize: width * 0.045,
-    fontWeight: 'bold',
   },
   errorMessage: {
     color: VERMELHO,

@@ -7,13 +7,14 @@ import {
   Dimensions, 
   ScrollView, 
   Image,
-  Alert // ✅ Importação de Alert adicionada
+  Alert
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; // ✅ Adicionar importação de Auth
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; 
 import { db } from '../../../firebaseConfig';
 import * as FileSystem from 'expo-file-system';
+import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,7 +33,13 @@ export default function RevisaoONG3() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ Função para ler o arquivo da URI e convertê-lo para Base64 (corrigida)
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
+
   const imageToBase64 = async (uri) => {
     if (!uri) return null;
     try {
@@ -43,24 +50,19 @@ export default function RevisaoONG3() {
         reader.onloadend = () => {
           resolve(reader.result.split(',')[1]);
         };
-        reader.onerror = (error) => {
-          console.error("Erro no FileReader:", error);
-          reject(new Error('Falha ao ler a imagem como Base64.'));
-        };
+        reader.onerror = (error) => reject(new Error('Falha ao ler a imagem como Base64.'));
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error('Erro ao converter imagem para Base64:', error);
       throw new Error('Falha na leitura da imagem.');
     }
   };
 
- const handleFinalize = async () => {
+  const handleFinalize = async () => {
     setIsLoading(true);
 
-    // VAMOS BUSCAR O EMAIL E A SENHA (ASSUMINDO QUE ESTÃO NO allFormData.ong1)
     const email = allFormData.ong1?.emailContato;
-    const senha = allFormData.ong1?.senha; // ⚠️ A senha deve ser passada em algum momento
+    const senha = allFormData.ong1?.senha;
     const cnpjCpf = allFormData.ong1?.cnpjCpf; 
 
     if (!email || !senha || !cnpjCpf) {
@@ -68,70 +70,50 @@ export default function RevisaoONG3() {
         setIsLoading(false);
         return;
     }
-    let userUid = null;
-    let userCredential = null; // <-- NOVIDADE: Criar variável para a credencial de Auth
 
-    try {
-        // 1. PASSO CRÍTICO: CRIAR O USUÁRIO NO FIREBASE AUTHENTICATION
-        const auth = getAuth();
-        userCredential = await createUserWithEmailAndPassword(auth, email, senha); // <-- ATUALIZADO: Salva a credencial
-        userUid = userCredential.user.uid; // O UID é o ID único do usuário no Auth
-        // 2. CONVERTER IMAGENS E MONTAR OS DADOS
-        
-        // Seus passos de conversão de imagem...
+    let userUid = null;
+    let userCredential = null;
+
+    try {
+        const auth = getAuth();
+        userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+        userUid = userCredential.user.uid;
+
         const comprovanteCNPJouEstatutoBase64 = await imageToBase64(formONG3Data.comprovanteCNPJouEstatuto);
         const fotoFachadaEspacoBase64 = await imageToBase64(formONG3Data.fotoFachadaEspaco);
         const documentoResponsavelBase64 = await imageToBase64(formONG3Data.documentoResponsavel);
         const logoInstituicaoBase64 = await imageToBase64(formONG3Data.logoInstituicao);
 
         const finalData = {
-            // ... Inclua todos os dados que estavam nas telas anteriores
             ...allFormData.ong1,
             ...allFormData.ong2,
             ...formONG3Data,
-            
-            // Campos importantes que devem ser mantidos/adicionados
-            uid: userUid, // Adiciona o UID gerado
+            uid: userUid,
             dataCadastro: new Date().toISOString(),
-            tipoInstituicao: 'ONG', // Garante o tipo para futuras verificações
-
-            // Substitui as URIs das imagens pelo Base64
+            tipoInstituicao: 'ONG',
             comprovanteCNPJouEstatuto: comprovanteCNPJouEstatutoBase64,
             fotoFachadaEspaco: fotoFachadaEspacoBase64,
             documentoResponsavel: documentoResponsavelBase64,
             logoInstituicao: logoInstituicaoBase64,
-          
         };
 
         delete finalData.senha;
-        
-        // 3. SALVAR NO FIRESTORE USANDO O UID COMO ID DO DOCUMENTO
-        // Adicionamos um try/catch específico para este passo
-        try {
-          await setDoc(doc(db, 'ongs', userUid), finalData);
-        } catch (firestoreError) {
-          console.error('ERRO CRÍTICO AO SALVAR NO FIRESTORE:', firestoreError);
-          // Se o Firestore falhar, é crucial DELETAR o usuário criado no Auth
-          if (userCredential && userCredential.user) {
-            await userCredential.user.delete();
-          }
-          // Lançamos um novo erro para o bloco catch externo capturar e alertar o usuário
-          throw new Error(`Falha de Permissão no Firestore. Verifique suas REGRAS DE SEGURANÇA ou conexão. Erro: ${firestoreError.message}`);
-        }
-        
-        // Se o seu app tem análise, mantenha essa mensagem.
-        Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve. Você pode logar agora.");
-        
-        // Se o erro foi no Auth, limpa o Auth para que o usuário não fique 'parcialmente' cadastrado.
-        if (userUid) {
-            // Implementar uma função de exclusão de usuário se o cadastro do Firestore falhar
-            // Para simplificar, vamos manter apenas o tratamento de erro.
+
+        try {
+          await setDoc(doc(db, 'ongs', userUid), finalData);
+        } catch (firestoreError) {
+          if (userCredential && userCredential.user) {
+            await userCredential.user.delete();
+          }
+          throw new Error(`Falha de Permissão no Firestore. Erro: ${firestoreError.message}`);
         }
+
+        Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve. Você pode logar agora.");
+
     } finally {
         setIsLoading(false);
     }
-};
-
+  };
 
   function ImageLine({ label, imageUri }) {
     return (
@@ -141,9 +123,7 @@ export default function RevisaoONG3() {
           <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Text style={styles.placeholderText}>
-              Nenhuma imagem selecionada
-            </Text>
+            <Text style={styles.placeholderText}>Nenhuma imagem selecionada</Text>
           </View>
         )}
       </View>
@@ -157,44 +137,24 @@ export default function RevisaoONG3() {
       <View style={styles.card}>
         <Text style={styles.subTitle}>Documentos e Imagens</Text>
 
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}>
-          <ImageLine
-            label="Comprovante de CNPJ ou Estatuto Social"
-            imageUri={formONG3Data.comprovanteCNPJouEstatuto}
-          />
-          <ImageLine
-            label="Foto da fachada ou espaço físico da instituição"
-            imageUri={formONG3Data.fotoFachadaEspaco}
-          />
-          <ImageLine
-            label="Documentos do responsável legal (RG/CPF ou CNH)"
-            imageUri={formONG3Data.documentoResponsavel}
-          />
-          <ImageLine
-            label="Logo da instituição (opcional)"
-            imageUri={formONG3Data.logoInstituicao}
-          />
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ImageLine label="Comprovante de CNPJ ou Estatuto Social" imageUri={formONG3Data.comprovanteCNPJouEstatuto} />
+          <ImageLine label="Foto da fachada ou espaço físico da instituição" imageUri={formONG3Data.fotoFachadaEspaco} />
+          <ImageLine label="Documentos do responsável legal (RG/CPF ou CNH)" imageUri={formONG3Data.documentoResponsavel} />
+          <ImageLine label="Logo da instituição (opcional)" imageUri={formONG3Data.logoInstituicao} />
         </ScrollView>
 
         <View style={styles.buttonsRow}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('FormONG3', { allFormData: allFormData })
-            }
-            style={styles.button}>
+          <TouchableOpacity onPress={() => navigation.navigate('FormONG3', { allFormData })} style={styles.button}>
             <Text style={styles.buttonText}>Editar</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.nextButton]}
-            onPress={handleFinalize}
-            disabled={isLoading}>
-            <Text style={styles.buttonText}>
-              {isLoading ? 'Finalizando...' : 'Finalizar'}
-            </Text>
-          </TouchableOpacity>
+              style={[styles.button, styles.nextButton]}
+              onPress={() => navigation.navigate('FormONG4', { allFormData })}
+>
+  <Text style={styles.buttonText}>Finalizar</Text>
+</TouchableOpacity>
         </View>
       </View>
     </View>
@@ -213,7 +173,7 @@ const styles = StyleSheet.create({
   },
   mainTitleOutsideCard: {
     fontSize: width * 0.07,
-    fontWeight: 'bold',
+    fontFamily: 'JosefinSans_700Bold',
     color: BRANCO,
     textAlign: 'center',
     marginBottom: height * 0.015,
@@ -230,16 +190,9 @@ const styles = StyleSheet.create({
     shadowRadius: width * 0.03,
     elevation: 5,
   },
-  title: { 
-    fontSize: width * 0.06,
-    fontWeight: 'bold',
-    color: ROXO, 
-    textAlign: 'center',
-    marginBottom: height * 0.01,
-  },
   subTitle: {
     fontSize: width * 0.045,
-    fontWeight: '600',
+    fontFamily: 'JosefinSans_700Bold',
     color: ROXO, 
     marginBottom: height * 0.015, 
     textAlign: 'center',
@@ -253,7 +206,7 @@ const styles = StyleSheet.create({
   },
   lineLabel: {
     fontSize: width * 0.035,
-    fontWeight: '600',
+    fontFamily: 'JosefinSans_700Bold',
     color: CINZA_TEXTO_LABEL, 
     marginBottom: height * 0.005, 
   },
@@ -274,6 +227,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: CINZA_TEXTO_PLACEHOLDER, 
     fontSize: width * 0.04,
+    fontFamily: 'JosefinSans_400Regular',
   },
   buttonsRow: {
     flexDirection: 'row',
@@ -295,7 +249,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: ROXO,
     fontSize: width * 0.04,
-    fontWeight: '600',
+    fontFamily: 'JosefinSans_700Bold',
   },
   nextButton: {
     marginLeft: width * 0.025,

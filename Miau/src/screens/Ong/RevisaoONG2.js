@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,6 +15,13 @@ export default function RevisaoONG2() {
 
   const allFormData = route.params?.allFormData || {};
   const formONG2Data = allFormData.ong2 || {};
+
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
 
   function InfoLine({ label, value }) {
     const displayValue = Array.isArray(value) && value.length > 0
@@ -84,7 +92,7 @@ const styles = StyleSheet.create({
   },
   mainTitleOutsideCard: {
     fontSize: width * 0.07,
-    fontWeight: 'bold',
+    fontFamily: 'JosefinSans_700Bold',
     color: BRANCO,
     textAlign: 'center',
     marginBottom: height * 0.02,
@@ -105,7 +113,7 @@ const styles = StyleSheet.create({
   },
   subTitle: {
     fontSize: width * 0.06,
-    fontWeight: 'bold',
+    fontFamily: 'JosefinSans_700Bold',
     color: LARANJA,
     textAlign: 'center',
     marginBottom: height * 0.03,
@@ -118,11 +126,12 @@ const styles = StyleSheet.create({
   },
   lineLabel: {
     fontSize: width * 0.035,
-    fontWeight: 'bold',
+    fontFamily: 'JosefinSans_700Bold',
     color: '#333',
   },
   lineValue: {
     fontSize: width * 0.04,
+    fontFamily: 'JosefinSans_400Regular',
     color: CINZA_TEXTO,
     marginTop: height * 0.003,
   },
@@ -146,7 +155,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: LARANJA,
     fontSize: width * 0.04,
-    fontWeight: 'bold',
+    fontFamily: 'JosefinSans_700Bold',
   },
   nextButton: {
     marginLeft: width * 0.025,
