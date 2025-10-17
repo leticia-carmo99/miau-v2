@@ -9,13 +9,13 @@ const OngContext = createContext();
 const DEFAULT_ONG_DATA = {
   uid: null,
   nomeOng: "Nova ONG",
-  email: "", // Campo usado no PerfilOng.js para edição de contato
-  telefone: "", // Campo usado no PerfilOng.js para edição de contato
-  instagram: "", // Campo usado no PerfilOng.js para edição de redes sociais
-  facebook: "", // Campo usado no PerfilOng.js para edição de redes sociais
-  emailContato: "", // Campo da imagem no console (se for diferente de 'email')
-  siteOficial: "", // URL do site
-  sobre: "", // Biografia da ONG
+  email: "miaupatinhas@gmail.com", // Campo usado no PerfilOng.js para edição de contato
+  telefone: "(11) 92821 2819", // Campo usado no PerfilOng.js para edição de contato
+  instagram: "@miaupatinhas1", // Campo usado no PerfilOng.js para edição de redes sociais
+  facebook: "@miaupatinhas1", // Campo usado no PerfilOng.js para edição de redes sociais
+  emailContato: "damaceninho3@gmail.com", // Campo da imagem no console (se for diferente de 'email')
+  siteOficial: "www.miau.patas.com", // URL do site
+  sobre: "Ajudamos animais em todo Brasil", // Biografia da ONG
   horarioInicio: "08:00",
   horarioFim: "22:00",
   diasAbertos: { // Deve ser um objeto para Checkbox funcionar

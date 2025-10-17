@@ -19,8 +19,7 @@ import PerfilAdocaoPet from '../HomeOngScreens/PerfilAdocaoPet';
 import PerfilOng from '../HomeOngScreens/PerfilOng';
 import SobreAPP from '../HomeOngScreens/SobreAPP';
 import { useOng } from './OngContext';
-
-import MainAppTabs from './MainTabsOng'; // <- ajuste path se necessário
+import MainAppTabs from './MainTabsOng';
 
 const Drawer = createDrawerNavigator();
 const { width } = Dimensions.get('window');
@@ -88,7 +87,7 @@ export default function MainDrawerOng() {
         overlayColor: 'rgba(0,0,0,0.4)',
       }}
     >
-      <Drawer.Screen name="HomeTabs" component={HomeOng}/>
+      <Drawer.Screen name="HomeTabs" component={MainAppTabs}/>
       <Drawer.Screen name="SobreAPP" component={SobreAPP} />
       <Drawer.Screen name="Configuracoes" component={() => <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}><Text>Configurações</Text></View>} />
       <Drawer.Screen name="PerfilOng" component={PerfilOng} />

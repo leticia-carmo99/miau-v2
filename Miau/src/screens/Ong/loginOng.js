@@ -35,32 +35,16 @@ const handleLogin = async () => {
   }
 
   try {
-    // 1. Tente fazer o login no Firebase Auth (Verifica email e senha)
     const auth = getAuth();
     const userCredential = await signInWithEmailAndPassword(auth, user, pass);
     const loggedInUser = userCredential.user;
-
-    // 2. Login bem-sucedido no Auth. Agora, verifica se este usuário é uma ONG
-    //    na coleção 'ongs', usando o UID para ser mais eficiente e seguro.
-    //    (NOTE: Coleção 'ongs' está em minúsculas, conforme suas imagens).
     const docRef = doc(db, "ongs", loggedInUser.uid); 
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        // 3. Documento da ONG encontrado! O usuário é uma ONG.
-        
-        // Se você tiver um campo "tipoInstituicao: 'ONG'" no Firestore,
-        // é bom verificar. Se você tiver certeza que SÓ ONGs estão nessa coleção, 
-        // a verificação 'docSnap.exists()' já é suficiente.
-        
-        // (O contexto OngContext irá buscar e carregar os dados agora)
         Alert.alert("Sucesso!", "Login de ONG realizado com sucesso.");
-        navigation.navigate('TabsOng');
+        navigation.navigate('MainDrawerOng');
     } else {
-        // 4. O login funcionou, mas o UID não foi encontrado na coleção 'ongs'.
-        //    Isso significa que é um usuário comum tentando logar na tela da ONG.
-        
-        // Desloga o usuário para que ele não fique logado sem contexto de ONG
         await auth.signOut(); 
         
         Alert.alert(
@@ -71,8 +55,6 @@ const handleLogin = async () => {
   } catch (error) {
     console.error("Erro ao fazer login:", error.code, error.message);
     let errorMessage = "Erro ao fazer login. Verifique seu e-mail e senha.";
-    
-    // Mapeamento de erros do Auth para mensagens amigáveis
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
       errorMessage = "E-mail ou senha inválidos.";
     }

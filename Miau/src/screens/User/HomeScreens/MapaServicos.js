@@ -55,11 +55,8 @@ export default function MapaServicos() {
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   });
-
-
   const translateY = useRef(new Animated.Value(height * 0.5)).current;
   const webViewRef = useRef(null);
-
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) =>
@@ -209,19 +206,13 @@ const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStr
       );
     }
   }, [search]);
-
     useEffect(() => {
     if (webViewRef.current) {
-        // Usa o script para atualizar o Leaflet dentro do WebView
         webViewRef.current.injectJavaScript(moveMapScript(region));
     }
   }, [region]); 
-
-
-  // Buscar CEP
   const handleCepSearch = async () => {
     if (cep.length < 8) return;
-
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const json = await response.json();
@@ -230,19 +221,14 @@ if (json.erro) {
         Alert.alert('Erro', 'CEP não encontrado!');
         return;
       }
-
-      // >>> SUBSTITUA ESTA SEÇÃO A SEGUIR PELO CÓDIGO ABAIXO:
-
 const fullAddress = `${json.logradouro}, ${json.bairro}, ${json.localidade}, ${json.uf}`;
 
-// 2. Usa o Nominatim para buscar as coordenadas desse endereço
 const encodedAddress = encodeURIComponent(fullAddress);
 const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
 
 const geoResponse = await fetch(geoUrl, {
     headers: {
-        // ESSENCIAL: Adicionar o User-Agent aqui também!
-        'User-Agent': 'PetshopApp (seuemail@seudominio.com)', // <-- USE O SEU VALOR REAL
+        'User-Agent': 'PetshopApp (seuemail@seudominio.com)',
     }
 });
 
@@ -259,8 +245,6 @@ const geoJson = await geoResponse.json();
       }
 
       const result = geoJson[0];
-      
-      // 3. Define a nova região do mapa
       const newRegion = {
         latitude: parseFloat(result.lat),
         longitude: parseFloat(result.lon),
@@ -337,6 +321,9 @@ if (webViewRef.current) {
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
+        JosefinSans_300Light,
+    Nunito_400Regular,
+    Nunito_700Bold,
   });
 
   if (!fontsLoaded) {

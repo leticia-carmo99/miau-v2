@@ -220,7 +220,7 @@ Aqui na nossa petshop, você encontra tudo para o bem-estar do seu pet: alimenta
             </View>
 
 <View>
-      <TouchableOpacity style={styles.chatButton} onPress={() => navigation.navigate('ChatConversa', {data})}>
+      <TouchableOpacity style={styles.chatButton} onPress={() => navigation.navigate('ChatConversaUser', {data})}>
       <Text style={styles.chatButtonText}>Ir para o chat</Text>
       </TouchableOpacity>
 </View>

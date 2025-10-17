@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FontAwesome } from "@expo/vector-icons";
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Back from '../assets/FotosInicial/Back.png';
 
 // You can import supported modules from npm
 import { Card } from 'react-native-paper';
@@ -35,6 +36,7 @@ import {
 } from '@expo-google-fonts/nunito';
 const { width, height } = Dimensions.get('window');
 const SNAP_POINTS = [height * 0.25, height * 0.65]; // fechado e aberto
+import WebView from 'react-native-webview';
 
 const COLORS = {
   primaryOrange: '#FFAB36',
@@ -52,6 +54,7 @@ const COLORS = {
   blogTextGray: '#737373',
   darkPurple: '#3C2B5E',
 };
+import MapHtmlModule from '../../../../assets/map_data.js';
 
 const allImages = [
   { id: "1", uri: "https://diskmadeiras.com.br/wp-content/uploads/2024/06/MDF-CINZA-URBANO-MATT-SOFT-06MM-1-FACE-EUCATEX.jpg" },
@@ -72,6 +75,7 @@ export default function Petshop() {
   const [search, setSearch] = useState('');
   const [cep, setCep] = useState('');
   const [filtered, setFiltered] = useState([]);
+    const webViewRef = useRef(null);
   const [region, setRegion] = useState({
     latitude: -23.55052,
     longitude: -46.633308,
@@ -105,6 +109,77 @@ export default function Petshop() {
     })
   ).current;
 
+    const moveMapScript = (newRegion) => {
+    return `
+(function() {
+          if (typeof window.map !== 'undefined') {
+              window.map.setView([${newRegion.latitude}, ${newRegion.longitude}], window.map.getZoom());
+          }
+      })();
+      true;
+    `;
+};
+
+const addCenterMarkerScript = (newRegion) => {
+    return `
+      (function() {
+          if (typeof window.map !== 'undefined') {
+              const lat = ${newRegion.latitude};
+              const lon = ${newRegion.longitude};
+              
+              // Remove o marcador central anterior, se houver
+              if (window.centerMarker) {
+                  window.map.removeLayer(window.centerMarker);
+              }
+              
+              // O ícone padrão do Leaflet é um pouco feio, vamos criar um simples
+              const customIcon = L.divIcon({
+                  className: 'center-marker-icon',
+                  html: '<div style="background-color:#7b3aed; width:15px; height:15px; border: 3px solid white; border-radius: 50%;"></div>',
+                  iconSize: [21, 21], // Tamanho do div container
+                  iconAnchor: [10, 21], // Ponto de ancoragem (fundo do alfinete)
+                  popupAnchor: [1, -15] // Ponto para o popup
+              });
+
+              // Cria e adiciona o novo marcador central ao mapa
+              window.centerMarker = L.marker([lat, lon], { icon: customIcon })
+                  .addTo(window.map)
+                  .bindPopup("Sua Localização de Busca")
+                  .openPopup(); // Abre o popup automaticamente
+          }
+      })();
+      true;
+    `;
+};
+
+const TILE_PROVIDERS = {
+    'OpenStreetMap': {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    },
+    'CartoDB_Positron': {
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    'CartoDB_DarkMatter': {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }
+};
+const MAP_PROVIDER_KEY = 'CartoDB_Positron'; 
+const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStreetMap'];
+
+  const petshop = [
+    {
+      id: 'p1',
+      name: 'Petz',
+      logo: require('../assets/FotosInicial/petz.png'),
+      distance: '0.4 km',
+      description: 'Pet shop',
+      lat: -23.55,
+      lon: -46.63,
+    },
+  ];
   const [selectedIndex, setSelectedIndex] = useState(null); // null = modal fechado
 
   const previewImages = allImages.slice(0, 4);
@@ -190,12 +265,27 @@ const StarRating = ({ rating, maxStars = 5 }) => {
 
 const nota = 4.5;
 
-
+ useEffect(() => {
+    if (search.trim() === '') {
+      setFiltered(petshop);
+    } else {
+      setFiltered(
+        petshop.filter((item) =>
+          item.name.toLowerCase().includes(search.toLowerCase())
+        )
+      );
+    }
+  }, [search]);
+    useEffect(() => {
+    if (webViewRef.current) {
+        webViewRef.current.injectJavaScript(moveMapScript(region));
+    }
+  }, [region]); 
  const [favorited, setFavorited] = useState(false) 
-    const [fontsLoaded] = useFonts({
+  const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
-    JosefinSans_300Light,
+        JosefinSans_300Light,
     Nunito_400Regular,
     Nunito_700Bold,
   });
@@ -203,10 +293,96 @@ const nota = 4.5;
   if (!fontsLoaded) {
     return null;
   }
+
+  const mapHtmlContent = MapHtmlModule;
+
+const centerCoord = { lat: region.latitude, lon: region.longitude };
+
+// 2. Função para injetar o JavaScript que inicializa o mapa Leaflet
+// ...
+const generateMapScript = (data, center) => {
+    return `
+    (function() {
+        if (typeof L === 'undefined' || document.getElementById('map')._leaflet_id) {
+            return; 
+        }
+        
+        // Variável global na WebView para armazenar os marcadores
+        window.activeMarkers = [];
+        
+        const initialCenter = [${center.lat}, ${center.lon}];
+        const zoomLevel = 13; 
+         
+        // Inicializa o mapa
+        window.map = L.map('map').setView(initialCenter, zoomLevel);
+
+        // Define o Tile Layer CartoDB Positron
+        L.tileLayer('${MAP_PROVIDER.url}', {
+            attribution: '${MAP_PROVIDER.attribution}',
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Função para criar o ícone customizado
+        window.getCustomIcon = (initials) => L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">' + initials + '</div>',
+            iconSize: [30, 30], 
+            iconAnchor: [15, 30], 
+        });
+
+        // Função para adicionar marcadores
+        window.addMarkers = (petshops) => {
+            // Remove marcadores antigos
+            window.activeMarkers.forEach(marker => map.removeLayer(marker));
+            window.activeMarkers = [];
+
+            petshops.forEach(p => {
+                const marker = L.marker([p.lat, p.lon], { icon: window.getCustomIcon(p.logo) })
+                .addTo(map)
+                .bindPopup('<b>' + p.name + '</b><br>' + p.description + '<br>Distância: ' + p.distance);
+                
+                window.activeMarkers.push(marker);
+            });
+        };
+
+        // Adiciona os marcadores iniciais
+        window.addMarkers(${JSON.stringify(petshop)});
+    })();
+    true;
+`;
+}
+
+
   return (
         <View style={styles.container}>
-<Image source={{uri: 'https://admin.cnnbrasil.com.br/wp-content/uploads/sites/12/2024/02/google-maps-e1707316052388.png?w=1200&h=900&crop=1'}} style={styles.map}/>
 
+<View style={styles.mapContainer}>
+        <WebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+source={{ html: mapHtmlContent }}
+          style={styles.map}
+          // Injeta o JS para inicializar o mapa Leaflet APÓS o HTML carregar
+          onLoadEnd={() => {
+            setTimeout(() => {
+        if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(generateMapScript(petshop, centerCoord));
+        }
+    }, 300); 
+          }}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          allowFileAccess={true}
+          allowUniversalAccessFromFileURLs={true}
+          mixedContentMode="always"
+        />
+      </View>
+
+        <View style={styles.menuView}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Image source={Back} style={styles.back} />
+          </TouchableOpacity>
+        </View>
 
       <Animated.View
         style={[
@@ -356,8 +532,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.offWhite,
   },
-    map: {
-    flex: 1,
+  mapContainer: {
+ flex: 1,
+    backgroundColor: COLORS.offWhite,
+  },
+  map: {
+    width: width,
+    height: height,
+    backgroundColor: COLORS.white, 
+  },
+    back: {
+    height: width * 0.1,
+    width: width * 0.1,
+    padding: width * 0.1,
+    marginRight: width * 0.65,
+  },
+  menuView: {
+    height: width * 0.4,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'absolute',
   },
   sheet: {
     position: 'absolute',

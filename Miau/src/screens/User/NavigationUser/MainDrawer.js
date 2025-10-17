@@ -14,6 +14,8 @@ import BlogUser from '../HomeScreens/Blog';
 import MapaServicosUser from '../HomeScreens/MapaServicos';
 import MapaPetshopUser from '../HomeScreens/MapaPetshop';
 import EventosUser from '../HomeScreens/Eventos';
+import Adote from '../HomeScreens/Adote';
+import BlogDetalhes from '../HomeScreens/BlogDetalhes';
 import { useUser } from "../NavigationUser/UserContext";
 import InicialUser from '../HomeScreens/Inicial';
 import MenuV1User from "./MenuV1";
@@ -151,6 +153,8 @@ screenOptions={{ headerShown: false, drawerStyle: { backgroundColor: 'white', wi
 <Drawer.Screen name="Eventos" component={EventosUser}/>
 <Drawer.Screen name="MapaPetshop" component={MapaPetshopUser}/>
 <Drawer.Screen name="MapaServicos" component={MapaServicosUser}/>
+<Drawer.Screen name="Adote" component={Adote}/>
+<Drawer.Screen name="BlogDetalhes" component={BlogDetalhes}/>
 </Drawer.Navigator>
 );
 }

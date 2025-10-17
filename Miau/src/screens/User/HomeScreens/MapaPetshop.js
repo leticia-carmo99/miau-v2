@@ -184,16 +184,13 @@ const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStr
 
     useEffect(() => {
     if (webViewRef.current) {
-        // Usa o script para atualizar o Leaflet dentro do WebView
         webViewRef.current.injectJavaScript(moveMapScript(region));
     }
   }, [region]); 
 
 
-  // Buscar CEP
-  const handleCepSearch = async () => {
+const handleCepSearch = async () => {
     if (cep.length < 8) return;
-
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const json = await response.json();
@@ -202,104 +199,69 @@ if (json.erro) {
         Alert.alert('Erro', 'CEP não encontrado!');
         return;
       }
-
-      // >>> SUBSTITUA ESTA SEÇÃO A SEGUIR PELO CÓDIGO ABAIXO:
-
 const fullAddress = `${json.logradouro}, ${json.bairro}, ${json.localidade}, ${json.uf}`;
-
-// 2. Usa o Nominatim para buscar as coordenadas desse endereço
 const encodedAddress = encodeURIComponent(fullAddress);
 const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
-
 const geoResponse = await fetch(geoUrl, {
     headers: {
-        // ESSENCIAL: Adicionar o User-Agent aqui também!
-        'User-Agent': 'PetshopApp (seuemail@seudominio.com)', // <-- USE O SEU VALOR REAL
+        'User-Agent': 'PetshopApp (seuemail@seudominio.com)',
     }
 });
-
 if (!geoResponse.ok) {
     throw new Error(`Erro na Geocodificação do CEP: Status HTTP ${geoResponse.status}. Verifique o User-Agent e o formato.`);
 }
-
 const geoJson = await geoResponse.json();
-
-
       if (geoJson.length === 0) {
         Alert.alert('Atenção', 'Endereço encontrado, mas não foi possível localizar no mapa.');
         return;
       }
-
       const result = geoJson[0];
-      
-      // 3. Define a nova região do mapa
       const newRegion = {
         latitude: parseFloat(result.lat),
         longitude: parseFloat(result.lon),
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
       };
-
       setRegion(newRegion);
 if (webViewRef.current) {
           webViewRef.current.injectJavaScript(addCenterMarkerScript(newRegion));
       }
-
     } catch (e) {
       Alert.alert('Erro', `Não foi possível buscar o CEP: ${e.message}`);
     }
   };
-
-
-// ...
   const handleAddressSearch = async () => {
     if (search.trim() === '') return;
-
-    // Codifica a busca para uso na URL
     const encodedSearch = encodeURIComponent(search.trim());
-    // URL do serviço de geocodificação Nominatim
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodedSearch}&format=json&limit=1&countrycodes=br`;
-
     try {
       const response = await fetch(nominatimUrl, {
           headers: {
-            'User-Agent': 'PetshopApp (seuemail@seudominio.com)', // ✅ Mantenha e personalize
+            'User-Agent': 'PetshopApp (seuemail@seudominio.com)',
           }
-      });
-      
+      }); 
       if (!response.ok) {
-        // Se a resposta HTTP não for 200 (OK), lança um erro com o status
         throw new Error(`Status HTTP: ${response.status}. Verifique o User-Agent e o formato da URL.`);
       }
-
-      // Tenta analisar o JSON
       const json = await response.json();
-
       if (json.length === 0) {
         Alert.alert('Atenção', `Endereço "${search}" não encontrado. Tente ser mais específico.`);
         return;
       }
-
       const result = json[0];
-      
-      // Verificação de sanidade para garantir que lat/lon existem
       if (!result.lat || !result.lon) {
         throw new Error('Dados de latitude/longitude ausentes na resposta da API.');
       }
-      
-      // Converte as coordenadas encontradas para o formato do estado `region`
       const newRegion = {
         latitude: parseFloat(result.lat),
         longitude: parseFloat(result.lon),
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
       };
-
       setRegion(newRegion);
 if (webViewRef.current) {
             webViewRef.current.injectJavaScript(addCenterMarkerScript(newRegion));
         }
-
     } catch (e) {
       console.error("Erro na busca de endereço:", e);
       Alert.alert('Erro', `Não foi possível buscar o endereço: ${e.message}`);
@@ -316,9 +278,6 @@ if (webViewRef.current) {
   }
 
 const centerCoord = { lat: region.latitude, lon: region.longitude };
-
-// 2. Função para injetar o JavaScript que inicializa o mapa Leaflet
-// ...
 const generateMapScript = (data, center) => {
     return `
     (function() {
@@ -392,7 +351,6 @@ const mapHtmlContent = MapHtmlModule;
           originWhitelist={['*']}
 source={{ html: mapHtmlContent }}
           style={styles.map}
-          // Injeta o JS para inicializar o mapa Leaflet APÓS o HTML carregar
           onLoadEnd={() => {
             setTimeout(() => {
         if (webViewRef.current) {

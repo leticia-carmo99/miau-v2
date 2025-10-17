@@ -255,9 +255,9 @@ export default function Inicial() {
             <Text style={styles.petshopDistanceText}> • {item.distance}</Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => toggleFavorite(item.favoriteId)}>
+        <TouchableOpacity>
           <Ionicons
-            name={isFavorited ? "heart" : "heart-outline"}
+            name={"heart-outline"}
             size={width * 0.06}
             color={COLORS.primaryOrange}
             style={styles.petshopHeartIcon}
