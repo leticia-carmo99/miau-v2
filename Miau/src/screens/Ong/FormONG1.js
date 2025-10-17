@@ -21,12 +21,10 @@ const VERMELHO = '#E83F5B';
 
 export default function FormONG1() {
   const navigation = useNavigation();
- const route = useRoute();
+  const route = useRoute();
 
-// Dados trazidos da navegação anterior (CadONG.js) ou de edição (allFormData)
-const allFormData = route.params?.allFormData || {};
-const paramsFromCadONG = route.params; // Dados: nome, cep, email, senha
-
+  const allFormData = route.params?.allFormData || {};
+  const paramsFromCadONG = route.params;
 
   const initialFormData = allFormData.ong1 || {
     nomeOng: paramsFromCadONG?.nome || '', 
@@ -48,17 +46,16 @@ const paramsFromCadONG = route.params; // Dados: nome, cep, email, senha
   const [formData, setFormData] = useState(initialFormData);
   const [errorMessage, setErrorMessage] = useState('');
 
-useEffect(() => {
-  const combinedData = {
+  useEffect(() => {
+    const combinedData = {
       ...initialFormData,
       nomeOng: paramsFromCadONG?.nome || initialFormData.nomeOng,
       emailContato: paramsFromCadONG?.email || initialFormData.emailContato,
       senha: paramsFromCadONG?.senha || initialFormData.senha,
       cep: paramsFromCadONG?.cep || initialFormData.cep,
-  };
-  setFormData(combinedData);
-}, [allFormData.ong1, paramsFromCadONG]); 
-
+    };
+    setFormData(combinedData);
+  }, [allFormData.ong1, paramsFromCadONG]); 
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -262,7 +259,8 @@ function Field({ label, required, children, containerStyle }) {
   return (
     <View style={[styles.fieldContainer, containerStyle]}>
       <Text style={styles.fieldLabel}>
-        {label} {required && <Text style={{ color: VERMELHO }}>*</Text>}
+        <Text style={styles.fieldLabelText}>{label}</Text>
+        {required && <Text style={styles.asterisk}> *</Text>}
       </Text>
       {children}
     </View>
@@ -303,22 +301,28 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: width * 0.07,
-    fontWeight: 'bold',
     color: BRANCO,
     textAlign: 'center',
     marginBottom: height * 0.05,
     position: 'relative',
     top: '10%',
+    fontFamily: 'JosefinSans_700Bold',
   },
   fieldContainer: {
     marginBottom: height * 0.018,
   },
   fieldLabel: {
-    fontSize: width * 0.0375,
-    fontWeight: 'bold',
-    color: '#737373',
     marginBottom: height * 0.01,
     marginTop: height * 0.02,
+  },
+  fieldLabelText: {
+    fontSize: width * 0.0375,
+    color: '#737373',
+    fontFamily: 'JosefinSans_400Regular',
+  },
+  asterisk: {
+    color: '#E83F5B',
+    fontFamily: 'JosefinSans_400Regular',
   },
   input: {
     width: '100%',
@@ -328,6 +332,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.04,
     fontSize: width * 0.04,
     color: '#333',
+    fontFamily: 'JosefinSans_400Regular',
   },
   row: {
     flexDirection: 'row',
@@ -352,7 +357,7 @@ const styles = StyleSheet.create({
   nextText: {
     color: ROXO,
     fontSize: width * 0.045,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito_700Bold',
   },
   errorMessage: {
     color: VERMELHO,
@@ -360,5 +365,6 @@ const styles = StyleSheet.create({
     marginTop: height * 0.01,
     marginBottom: height * 0.02,
     fontSize: width * 0.035,
+    fontFamily: 'JosefinSans_400Regular',
   },
 });

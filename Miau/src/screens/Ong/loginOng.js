@@ -11,10 +11,11 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 
 // Importações do Firebase
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, doc, getDocs, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../firebaseConfig"; 
 
 const { width, height } = Dimensions.get('window');
@@ -26,60 +27,64 @@ export default function LoginUser({ navigation }) {
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
 
- // ... dentro do seu componente LoginUser
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
 
-const handleLogin = async () => {
-  if (user === '' || pass === '') {
-    Alert.alert("Erro", "Por favor, preencha todos os campos.");
-    return;
-  }
 
-  try {
-    const auth = getAuth();
-    const userCredential = await signInWithEmailAndPassword(auth, user, pass);
-    const loggedInUser = userCredential.user;
-    const docRef = doc(db, "ongs", loggedInUser.uid); 
-    const docSnap = await getDoc(docRef);
+  const handleLogin = async () => {
+    if (user === '' || pass === '') {
+      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      return;
+    }
 
-    if (docSnap.exists()) {
+    try {
+      const auth = getAuth();
+      const userCredential = await signInWithEmailAndPassword(auth, user, pass);
+      const loggedInUser = userCredential.user;
+
+      const docRef = doc(db, "ongs", loggedInUser.uid); 
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
         Alert.alert("Sucesso!", "Login de ONG realizado com sucesso.");
-        navigation.navigate('MainDrawerOng');
-    } else {
+        navigation.navigate('TabsOng');
+      } else {
         await auth.signOut(); 
-        
         Alert.alert(
-            "Acesso Negado", 
-            "Essa conta não está cadastrada na área de ONGs. Por favor, use a tela de login de Usuário Comum."
+          "Acesso Negado", 
+          "Essa conta não está cadastrada na área de ONGs. Por favor, use a tela de login de Usuário Comum."
         );
+      }
+    } catch (error) {
+      console.error("Erro ao fazer login:", error.code, error.message);
+      let errorMessage = "Erro ao fazer login. Verifique seu e-mail e senha.";
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        errorMessage = "E-mail ou senha inválidos.";
+      }
+      Alert.alert("Erro de Login", errorMessage);
     }
-  } catch (error) {
-    console.error("Erro ao fazer login:", error.code, error.message);
-    let errorMessage = "Erro ao fazer login. Verifique seu e-mail e senha.";
-    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-      errorMessage = "E-mail ou senha inválidos.";
-    }
-    
-    Alert.alert("Erro de Login", errorMessage);
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
       <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={28} color="#fff" />
       </TouchableOpacity>
-      <View style={styles.topPurple} />
 
+      <View style={styles.topPurple} />
       <Image
         source={require('../../assets/gatoPreto1.png')}
         style={styles.catImage}
         resizeMode="contain"
       />
+
       <View style={styles.card}>
-        <Text style={styles.title}>Login</Text>
+        <Text style={[styles.title, { fontFamily: 'JosefinSans_700Bold' }]}>Login</Text>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="E-mail da ONG:"
           placeholderTextColor="#AAA"
           value={user}
@@ -90,7 +95,12 @@ const handleLogin = async () => {
           <TextInput
             style={[
               styles.input,
-              { flex: 1, marginBottom: 0, paddingRight: 10 },
+              {
+                flex: 1,
+                marginBottom: 0,
+                paddingRight: 10,
+                fontFamily: 'JosefinSans_400Regular',
+              },
             ]}
             placeholder="Senha:"
             placeholderTextColor="#AAA"
@@ -98,7 +108,6 @@ const handleLogin = async () => {
             value={pass}
             onChangeText={setPass}
           />
-
           <TouchableOpacity
             style={styles.eyeBtn}
             onPress={() => setShowPass((v) => !v)}>
@@ -111,18 +120,21 @@ const handleLogin = async () => {
         </View>
 
         <TouchableOpacity style={styles.enterBtn} onPress={handleLogin}>
-          <Text style={styles.enterText}>Entrar</Text>
+          <Text style={[styles.enterText, { fontFamily: 'JosefinSans_700Bold' }]}>Entrar</Text>
         </TouchableOpacity>
 
         <View style={styles.divider}>
           <View style={styles.line} />
-          <Text style={styles.or}>ou</Text>
+          <Text style={[styles.or, { fontFamily: 'JosefinSans_400Regular' }]}>ou</Text>
           <View style={styles.line} />
         </View>
 
         <TouchableOpacity onPress={() => navigation.navigate('CadOng')}>
-          <Text style={styles.footerText}>
-            Não tem uma conta? <Text style={styles.footerLink}>Cadastrar</Text>
+          <Text style={[styles.footerText, { fontFamily: 'JosefinSans_400Regular' }]}>
+            Não tem uma conta?{' '}
+            <Text style={[styles.footerLink, { fontFamily: 'JosefinSans_700Bold' }]}>
+              Cadastrar
+            </Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -156,10 +168,10 @@ const styles = StyleSheet.create({
   },
   catImage: {
     position: 'absolute',
-    top: TOP_HEIGHT - height * 0.004,
     alignSelf: 'center',
-    width: width * 1,
+    width: width * 0.9,
     height: height * 0.22,
+    top: height * 0.363, // 🔹 deixa o gato logo acima do card branco
     zIndex: 2,
   },
   card: {
@@ -171,13 +183,12 @@ const styles = StyleSheet.create({
     backgroundColor: WHITE,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
-    paddingTop: height * 0.075,
+    paddingTop: height * 0.05,
     paddingHorizontal: width * 0.1,
     alignItems: 'center',
   },
   title: {
     fontSize: 27,
-    fontWeight: '700',
     color: PURPLE,
     marginBottom: height * 0.035,
   },
@@ -200,11 +211,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingHorizontal: 20,
   },
-
   eyeBtn: {
     marginLeft: 10,
   },
-
   enterBtn: {
     width: '100%',
     backgroundColor: WHITE,
@@ -216,13 +225,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 1, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 4.65,
-    // Andoid
     elevation: 9,
   },
   enterText: {
     color: PURPLE,
     fontSize: 16,
-    fontWeight: '600',
   },
   divider: {
     flexDirection: 'row',

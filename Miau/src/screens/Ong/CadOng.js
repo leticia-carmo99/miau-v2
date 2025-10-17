@@ -11,6 +11,12 @@ import {
 } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import {
+  useFonts,
+  JosefinSans_400Regular,
+  JosefinSans_700Bold,
+} from '@expo-google-fonts/josefin-sans';
+import { Nunito_700Bold } from '@expo-google-fonts/nunito';
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
@@ -19,7 +25,14 @@ const TOP_HEIGHT = height * 0.001;
 export default function CadOng() {
   const navigation = useNavigation();
 
-  // Estados para os dados do formulário
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+    Nunito_700Bold,
+  });
+
+ 
+
   const [nome, setNome] = useState('');
   const [cep, setCep] = useState('');
   const [email, setEmail] = useState('');
@@ -28,9 +41,7 @@ export default function CadOng() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirma, setMostrarConfirma] = useState(false);
 
-  // Função para validar e navegar para a próxima tela
   const irParaProximaTela = () => {
-    // Validação básica
     if (!nome || !cep || !email || !senha || !confirmaSenha) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos.');
       return;
@@ -39,9 +50,6 @@ export default function CadOng() {
       Alert.alert('Erro', 'As senhas não coincidem.');
       return;
     }
-    // Você pode adicionar mais validações aqui (ex: formato de e-mail, complexidade da senha)
-
-    // Passa os dados para a próxima tela como parâmetros
     navigation.navigate('FormONG1', {
       nome,
       cep,
@@ -67,17 +75,19 @@ export default function CadOng() {
           <Icon name="arrow-back" size={28} color={LARANJA} />
         </TouchableOpacity>
 
-        <Text style={styles.titulo}>Cadastro</Text>
+        <Text style={[styles.titulo, { fontFamily: 'JosefinSans_700Bold' }]}>
+          Cadastro
+        </Text>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="Nome da ONG/Abrigo"
           placeholderTextColor="#999"
           value={nome}
           onChangeText={setNome}
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="CEP:"
           keyboardType="numeric"
           placeholderTextColor="#999"
@@ -85,7 +95,7 @@ export default function CadOng() {
           onChangeText={setCep}
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="E-mail:"
           keyboardType="email-address"
           placeholderTextColor="#999"
@@ -95,7 +105,7 @@ export default function CadOng() {
 
         <View style={styles.senhaContainer}>
           <TextInput
-            style={styles.senhaInput}
+            style={[styles.senhaInput, { fontFamily: 'JosefinSans_400Regular' }]}
             placeholder="Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarSenha}
@@ -113,7 +123,7 @@ export default function CadOng() {
 
         <View style={styles.senhaContainer}>
           <TextInput
-            style={styles.senhaInput}
+            style={[styles.senhaInput, { fontFamily: 'JosefinSans_400Regular' }]}
             placeholder="Confirmar Senha:"
             placeholderTextColor={LARANJA}
             secureTextEntry={!mostrarConfirma}
@@ -130,7 +140,9 @@ export default function CadOng() {
         </View>
 
         <TouchableOpacity style={styles.botao} onPress={irParaProximaTela}>
-          <Text style={styles.botaoTexto}>Próximo</Text>
+          <Text style={[styles.botaoTexto, { fontFamily: 'Nunito_700Bold' }]}>
+            Próximo
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -182,7 +194,6 @@ const styles = StyleSheet.create({
   },
   titulo: {
     fontSize: width * 0.06,
-    fontWeight: 'bold',
     color: LARANJA,
     marginBottom: height * 0.05,
   },
@@ -195,7 +206,7 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.02,
     fontSize: 16,
     color: '#333',
-    zIndex: 3
+    zIndex: 3,
   },
   senhaContainer: {
     width: '100%',
@@ -212,7 +223,7 @@ const styles = StyleSheet.create({
   senhaInput: {
     flex: 1,
     fontSize: width * 0.035,
-    color: 'rgba(255, 171, 54, 0.6)', 
+    color: 'rgba(255, 171, 54, 0.6)',
   },
   botao: {
     width: '100%',
@@ -230,6 +241,5 @@ const styles = StyleSheet.create({
   botaoTexto: {
     color: LARANJA,
     fontSize: width * 0.04,
-    fontWeight: 'bold',
   },
 });
