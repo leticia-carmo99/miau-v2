@@ -73,11 +73,14 @@ export default function DadosEnviados({ navigation }) {
               <TouchableOpacity style={styles.modalButtonOk} onPress={handleConfirm}>
                 <Text style={styles.modalButtonTextOk}>OK</Text>
               </TouchableOpacity>
+              
             </View>
           </View>
         </View>
       </Modal>
+      <View style={styles.inferior}/>
     </View>
+    
   );
 }
 
@@ -185,4 +188,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  inferior:{
+    zIndex: 6,
+    backgroundColor: 'white',
+    height: width * 0.12,
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  }
 });
