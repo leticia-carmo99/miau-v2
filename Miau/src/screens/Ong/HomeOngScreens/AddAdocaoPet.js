@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import {
 import { useNavigation, DrawerActions, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Feather } from '@expo/vector-icons';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth } from "../../../../firebaseConfig";
+import { db } from "../../../../firebaseConfig";
 
 import { useFonts } from 'expo-font';
 import {
@@ -71,26 +74,58 @@ const AddAdocaoPet = () => {
   const route = useRoute();
   const { tipoInicial } = route.params || {};
   const [tipoAnimal, setTipoAnimal] = useState(tipoInicial || 'gato');
-
+  const [ongId, setOngId] = useState(null);
+  const [loading, setLoading] = useState(true); 
 
   const [pets, setPets] = useState([]);
-  const currentData = pets.filter((pet) => pet.type === tipoAnimal);
+const currentData = pets.filter((pet) => pet.especie?.toLowerCase() === tipoAnimal);
 
   const handleAnimalPress = (animal) => {
-    navigation.navigate('PerfilAdocaoPet', { pet: animal });
+    navigation.navigate('PerfilAdocaoPetOng', { pet: animal });
   };
 
-  const handleAddPet = () => {
-    navigation.navigate('FormularioAdocao', {
-      tipoAnimal,
-      onGoBack: (novoPet) => {
-        setPets((currentPets) => [...currentPets, novoPet]);
-      },
-    });
-  };
+const handleAddPet = () => {
+    navigation.navigate('FormularioAdocaoOng', {
+      tipoAnimal,
+    });
+  };
 
   const themeColor =
     tipoAnimal === 'gato' ? Colors.primaryOrange : Colors.primaryPurple;
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('Usuário não autenticado.');
+      setLoading(false);
+      return;
+    }
+    const currentOngId = user.uid;
+    setOngId(currentOngId);
+    const petsRef = collection(db, 'petsong');
+    const q = query(petsRef, where('ownerId', '==', currentOngId));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedPets = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        fetchedPets.push({
+          id: doc.id,
+          name: data.nome,
+          age: data.idade,
+          gender: data.sexo === 'Macho' ? 'Male' : 'Female', 
+          especie: data.especie,
+          raca: data.raca,
+          petImageUri: data.petImageUri,
+        });
+      });
+      setPets(fetchedPets);
+      setLoading(false);
+    }, (error) => {
+      console.error("Erro ao buscar pets:", error);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
 
   const [fontsLoaded] = useFonts({
@@ -101,7 +136,13 @@ const AddAdocaoPet = () => {
     Nunito_700Bold,
   });
 
-  if (!fontsLoaded) return null;
+if (!fontsLoaded || loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Carregando seus pets...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -407,6 +448,17 @@ const styles = StyleSheet.create({
     fontFamily: 'JosefinSans_400Regular',
   },
   emptyImage: { width: 80, height: 80, resizeMode: 'contain', opacity: 0.6 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: Colors.primaryPurple,
+    fontFamily: 'JosefinSans_700Bold',
+  },
 });
 
 export default AddAdocaoPet;

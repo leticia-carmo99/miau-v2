@@ -15,7 +15,9 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
-
+import { collection, addDoc } from 'firebase/firestore';
+import { auth } from "../../../../firebaseConfig";
+import { db } from "../../../../firebaseConfig";
 
 import {
   useFonts,
@@ -60,6 +62,8 @@ const RadioButtonGroup = ({ label, options, selected, onSelect }) => (
 const FormularioAdocao = ({ route }) => {
   const navigation = useNavigation();
   const { tipoAnimal, onGoBack } = route.params || {};
+  const [ongId, setOngId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const [nome, setNome] = useState('');
   const [especie, setEspecie] = useState(null);
@@ -81,11 +85,17 @@ const FormularioAdocao = ({ route }) => {
     Nunito_700Bold,
   });
 
-  useEffect(() => {
+useEffect(() => {
+    if (auth.currentUser) {
+      setOngId(auth.currentUser.uid);
+    } else {
+      Alert.alert('Erro de Acesso', 'É necessário estar logado como ONG para adicionar um pet.');
+      navigation.goBack();
+    }
     if (tipoAnimal) {
-      setEspecie(tipoAnimal === 'gato' ? 'Gato' : 'Cachorro');
-    }
-  }, [tipoAnimal]);
+      setEspecie(tipoAnimal === 'gato' ? 'Gato' : 'Cachorro');
+    }
+  }, [tipoAnimal, navigation]);
 
   const pickImage = async (setImageUri) => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -100,34 +110,45 @@ const FormularioAdocao = ({ route }) => {
     }
   };
 
-  const handleSave = () => {
+
+const handleSave = async () => {
     setAttemptedSubmit(true);
-
+    if (!ongId) {
+        Alert.alert('Erro', 'O ID da ONG não foi carregado. Tente recarregar a tela.');
+        return;
+    }
     if (!nome || !especie || !sexo || !idade || !raca || !porte || !cor || !petImageUri || !vaccineImageUri) {
-      Alert.alert('Campos Incompletos', 'Por favor, preencha todos os campos obrigatórios (*).');
-      return;
+        Alert.alert('Campos Incompletos', 'Por favor, preencha todos os campos obrigatórios (*).');
+        return;
     }
-
+    setLoading(true); 
     const novoPet = {
-      id: `pet_${Date.now()}`,
-      name: nome,
-      age: idade,
-      gender: sexo === 'Macho' ? 'Male' : 'Female',
-      type: especie === 'Gato' ? 'gato' : 'cao',
-      raca,
-      porte,
-      cor,
-      descricao,
-      infoGerais,
-      petImageUri,
-      vaccineImageUri,
+        nome,
+        idade,
+        sexo: sexo === 'Macho' ? 'Macho' : 'Fêmea',
+        especie: especie === 'Gato' ? 'Gato' : 'Cachorro',
+        raca,
+        porte,
+        cor,
+        descricao,
+        infoGerais,
+        ownerId: ongId, 
+        petImageUri, 
+        vaccineImageUri,
+        createdAt: new Date().toISOString(),
     };
-
-    if (onGoBack) {
-      onGoBack(novoPet);
+    try {
+        await addDoc(collection(db, 'petsong'), novoPet);
+        Alert.alert('Sucesso!', `O pet ${nome} foi adicionado para adoção com sucesso!`);
+        navigation.goBack();
+    } catch (error) {
+        console.error("Erro ao adicionar pet: ", error);
+        Alert.alert('Erro', 'Não foi possível salvar o pet. Verifique sua conexão e regras do Firestore.');
+    } finally {
+        setLoading(false); 
     }
-    navigation.goBack();
-  };
+};
+
 
   if (!fontsLoaded) {
     return null;
@@ -226,9 +247,13 @@ const FormularioAdocao = ({ route }) => {
         </View>
 
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={[styles.button, styles.salvarButton]} onPress={handleSave}>
-            <Text style={styles.buttonText}>Salvar</Text>
-          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.button, styles.salvarButton]} 
+            onPress={handleSave}
+            disabled={loading} // <-- ADICIONADO
+          >
+            <Text style={styles.buttonText}>{loading ? 'Salvando...' : 'Salvar'}</Text> {/* <-- ALTERADO */}
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
