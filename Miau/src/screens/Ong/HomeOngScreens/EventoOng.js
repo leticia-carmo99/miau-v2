@@ -226,7 +226,7 @@ const CalendarScreen = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.profileButton}
-            onPress={() => navigation.navigate('PerfilOng')}
+            onPress={() => navigation.navigate('PerfilOngOng')}
           >
             <Image source={require('../Images/foto-user-branco.png')} style={{ width: width * 0.12, height: width * 0.12, resizeMode: 'contain',}} />
           </TouchableOpacity>

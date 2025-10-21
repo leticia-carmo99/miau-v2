@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { auth } from "../../../../firebaseConfig";
 import { db } from "../../../../firebaseConfig";
 
@@ -64,6 +64,8 @@ const FormularioAdocao = ({ route }) => {
   const { tipoAnimal, onGoBack } = route.params || {};
   const [ongId, setOngId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [petId, setPetId] = useState(petParaEdicao ? petParaEdicao.id : null);
+  const { petParaEdicao } = route.params || {};
 
   const [nome, setNome] = useState('');
   const [especie, setEspecie] = useState(null);
@@ -86,16 +88,30 @@ const FormularioAdocao = ({ route }) => {
   });
 
 useEffect(() => {
-    if (auth.currentUser) {
-      setOngId(auth.currentUser.uid);
-    } else {
-      Alert.alert('Erro de Acesso', 'É necessário estar logado como ONG para adicionar um pet.');
-      navigation.goBack();
-    }
-    if (tipoAnimal) {
-      setEspecie(tipoAnimal === 'gato' ? 'Gato' : 'Cachorro');
-    }
-  }, [tipoAnimal, navigation]);
+    if (auth.currentUser) {
+      setOngId(auth.currentUser.uid);
+    } else {
+      Alert.alert('Erro de Acesso', 'É necessário estar logado como ONG para adicionar um pet.');
+      navigation.goBack();
+    }
+    if (petParaEdicao) {
+      setPetId(petParaEdicao.id);
+      setNome(petParaEdicao.name || '');
+      setEspecie(petParaEdicao.especie || (tipoAnimal === 'gato' ? 'Gato' : 'Cachorro')); 
+      setSexo(petParaEdicao.gender === 'Macho' ? 'Macho' : 'Fêmea');
+      setRaca(petParaEdicao.raca || '');
+      setPorte(petParaEdicao.porte || null);
+      setCor(petParaEdicao.cor || '');
+      setIdade(petParaEdicao.age || '');
+      setDescricao(petParaEdicao.descricao || '');
+      setInfoGerais(petParaEdicao.infoGerais || '');
+      setPetImageUri(petParaEdicao.petImageUri || null);
+      setVaccineImageUri(petParaEdicao.vaccineImageUri || null);
+
+    } else if (tipoAnimal) {
+      setEspecie(tipoAnimal === 'gato' ? 'Gato' : 'Cachorro');
+    }
+}, [navigation, petParaEdicao, tipoAnimal]);
 
   const pickImage = async (setImageUri) => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -104,14 +120,12 @@ useEffect(() => {
       aspect: [4, 3],
       quality: 1,
     });
-
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
     }
   };
 
-
-const handleSave = async () => {
+  const handleSave = async () => {
     setAttemptedSubmit(true);
     if (!ongId) {
         Alert.alert('Erro', 'O ID da ONG não foi carregado. Tente recarregar a tela.');
@@ -122,10 +136,10 @@ const handleSave = async () => {
         return;
     }
     setLoading(true); 
-    const novoPet = {
-        nome,
-        idade,
-        sexo: sexo === 'Macho' ? 'Macho' : 'Fêmea',
+    const petData = {
+        name: nome,
+        age: idade,
+        gender: sexo === 'Macho' ? 'Macho' : 'Fêmea',
         especie: especie === 'Gato' ? 'Gato' : 'Cachorro',
         raca,
         porte,
@@ -135,15 +149,26 @@ const handleSave = async () => {
         ownerId: ongId, 
         petImageUri, 
         vaccineImageUri,
-        createdAt: new Date().toISOString(),
     };
     try {
-        await addDoc(collection(db, 'petsong'), novoPet);
-        Alert.alert('Sucesso!', `O pet ${nome} foi adicionado para adoção com sucesso!`);
+        if (petId) {
+            const petRef = doc(db, 'petsong', petId);
+            await updateDoc(petRef, {
+                ...petData,
+                updatedAt: new Date().toISOString(),
+            });
+            Alert.alert('Sucesso!', `O pet ${nome} foi atualizado com sucesso!`);
+        } else {
+            await addDoc(collection(db, 'petsong'), {
+                ...petData,
+                createdAt: new Date().toISOString(),
+            });
+            Alert.alert('Sucesso!', `O pet ${nome} foi adicionado para adoção com sucesso!`);
+        }
         navigation.goBack();
     } catch (error) {
-        console.error("Erro ao adicionar pet: ", error);
-        Alert.alert('Erro', 'Não foi possível salvar o pet. Verifique sua conexão e regras do Firestore.');
+        console.error(`Erro ao ${petId ? 'atualizar' : 'adicionar'} pet: `, error);
+        Alert.alert('Erro', `Não foi possível ${petId ? 'salvar a atualização' : 'adicionar o pet'}. Verifique sua conexão e regras do Firestore.`);
     } finally {
         setLoading(false); 
     }
@@ -172,7 +197,7 @@ const handleSave = async () => {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.pageTitle}>Adicione um pet para adoção</Text>
+          <Text style={styles.pageTitle}>{petId ? 'Editar perfil do pet' : 'Adicione um pet para adoção'}</Text>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>

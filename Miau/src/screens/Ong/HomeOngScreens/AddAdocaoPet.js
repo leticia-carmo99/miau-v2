@@ -10,7 +10,6 @@ import {
   Image,
 } from 'react-native';
 import { useNavigation, DrawerActions, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { Feather } from '@expo/vector-icons';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth } from "../../../../firebaseConfig";
@@ -116,6 +115,12 @@ const handleAddPet = () => {
           especie: data.especie,
           raca: data.raca,
           petImageUri: data.petImageUri,
+          cor: data.cor,
+          porte: data.porte,
+          infoGerais: data.infoGerais,
+          descricao: data.descricao,
+          ongid: data.ownerId,
+          vaccineImageUri: data.vaccineImageUri,
         });
       });
       setPets(fetchedPets);
@@ -155,7 +160,7 @@ if (!fontsLoaded || loading) {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.profileButton}
-            onPress={() => navigation.navigate('PerfilOng')}>
+            onPress={() => navigation.navigate('PerfilOngOng')}>
             <Image source={require('../Images/foto-user-branco.png')} style={{ width: width * 0.12, height: width * 0.12, resizeMode: 'contain',}} />
           </TouchableOpacity>
         </View>

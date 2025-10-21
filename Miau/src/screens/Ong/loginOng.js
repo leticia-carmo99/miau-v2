@@ -49,7 +49,7 @@ export default function LoginUser({ navigation }) {
 
       if (docSnap.exists()) {
         Alert.alert("Sucesso!", "Login de ONG realizado com sucesso.");
-        navigation.navigate('TabsOng');
+        navigation.navigate('MainDrawerOng');
       } else {
         await auth.signOut(); 
         Alert.alert(

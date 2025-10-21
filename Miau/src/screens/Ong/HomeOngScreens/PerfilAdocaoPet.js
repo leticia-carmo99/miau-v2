@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,8 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Feather } from '@expo/vector-icons';
-
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../../firebaseConfig';
 
 import {
   useFonts,
@@ -34,14 +35,6 @@ const Colors = {
   textLight: '#BDBDBD',
   primaryOrange: '#FFAB36',
   bubbleBackground: '#FFFFFF',
-};
-
-
-const fixedOngData = {
-    id: '123-abc-456',
-    name: 'Associação Patinhas Unidas de Parintins',
-    telefone: '(92) 992624521',
-    logo: require('../Images/LogoPatinhasUnidas.png')
 };
 
 
@@ -68,6 +61,9 @@ const PerfilPetAdocao = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
+  const [ongData, setOngData] = useState(null);
+  const [loadingOng, setLoadingOng] = useState(true);
+
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -77,6 +73,37 @@ const PerfilPetAdocao = () => {
   });
 
   const { pet } = route.params || {};
+
+useEffect(() => {
+    const fetchOngData = async () => {
+      if (!pet || !pet.ongid) { // CORREÇÃO 1: Usar pet.ongid
+        setLoadingOng(false);
+        return;
+      }
+
+      // CORREÇÃO 2: Usar pet.ongid para referenciar o documento
+      const ongRef = doc(db, 'ongs', pet.ongid); 
+      try {
+        const docSnap = await getDoc(ongRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setOngData({
+            id: docSnap.id,
+            name: data.nomeOng,         
+            telefone: data.telefoneContato,     // Seu campo de telefone/número
+            logo: data.logoInstituicao, 
+          });
+        } else {
+          console.log("ONG não encontrada para o ID:", pet.ongid);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados da ONG:", error);
+      } finally {
+        setLoadingOng(false);
+      }
+    };
+    fetchOngData();
+  }, [pet]);
 
   if (!fontsLoaded) {
     return null; 
@@ -98,7 +125,7 @@ const PerfilPetAdocao = () => {
   }
 
 
-  const petParaExibicao = { ...pet, ong: fixedOngData };
+  const petParaExibicao = { ...pet, ong: ongData || { name: 'ONG Indisponível', telefone: '...', logo: null } };
   return <PerfilPetComponent pet={petParaExibicao} />;
 };
 
@@ -151,7 +178,7 @@ const PerfilPetComponent = ({ pet }) => {
                 <View style={styles.bannerWrapper}>
                   <View style={styles.ongContainer}>
                     <Image
-                      source={pet.ong.logo}
+                      source={pet.ong.logo ? { uri: pet.ong.logo } : require('../Images/LogoPatinhasUnidas.png')}
                       style={styles.ongLogo}
                     />
                     <View style={styles.ongBanner}>
@@ -186,7 +213,7 @@ const PerfilPetComponent = ({ pet }) => {
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.editButton}>
+                <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('FormularioAdocaoOng', { petParaEdicao: pet })}>
                   <Text style={styles.editButtonText}>Editar</Text>
                 </TouchableOpacity>
               </View>
