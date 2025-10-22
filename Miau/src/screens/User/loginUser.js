@@ -8,12 +8,16 @@ import {
   StyleSheet,
   Dimensions,
   Image,
-  Alert
+  Alert,
+  // 💡 Importei ScrollView para manter a consistência com telas irmãs se a intenção for usá-lo,
+  // mas o componente principal continua sendo View. 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../firebaseConfig"; // Importe apenas o que precisa
 import { useUser } from "./NavigationUser/UserContext";
+// 💡 AS FONTES JÁ ESTAVAM IMPORTADAS
+import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 
 
 const { width, height } = Dimensions.get('window');
@@ -23,16 +27,31 @@ const CARD_HEIGHT = height * 0.6;
 export default function LoginUser({ navigation }) {
   const { userData, setUserData } = useUser();
   const [showPass, setShowPass] = useState(false);
-   const [email, setEmail] = useState('');
-  const [user, setUser] = useState('');
+  const [email, setEmail] = useState('');
+  // ⚠️ Removi o estado `user` que não estava sendo usado e causava aviso
   const [pass, setPass] = useState('');
 
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
+
+  // Retorna nulo ou um loader enquanto as fontes carregam
+  if (!fontsLoaded) {
+    return <SafeAreaView style={styles.safe} />;
+  }
+
+
   const handleLogin = async () => {
+    // 💡 Adicionando validação de campo vazio (boa prática)
+    if (email === '' || pass === '') {
+      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       
-      // Se o login for bem-sucedido, o UserContext detecta a mudança
-      // e o app já terá os dados corretos.
       navigation.navigate('MainDrawerUser')
 
     } catch (error) {
@@ -41,8 +60,8 @@ export default function LoginUser({ navigation }) {
       let errorMessage = "Erro no login. Tente novamente.";
       if (error.code === 'auth/invalid-email') {
         errorMessage = 'O email informado é inválido.';
-      } else if (error.code === 'auth/user-not-found') {
-        errorMessage = 'Este usuário não está cadastrado.';
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        errorMessage = 'E-mail ou senha inválidos.';
       } else if (error.code === 'auth/wrong-password') {
         errorMessage = 'Senha incorreta.';
       }
@@ -64,21 +83,29 @@ export default function LoginUser({ navigation }) {
         resizeMode="contain"
       />
       <View style={styles.card}>
-        <Text style={styles.title}>Login</Text>
+        {/* 💡 FONTE APLICADA (Bold) */}
+        <Text style={[styles.title, { fontFamily: 'JosefinSans_700Bold' }]}>Login</Text>
 
         <TextInput
-          style={styles.input}
+          // 💡 FONTE APLICADA (Regular)
+          style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="Email:"
           placeholderTextColor="#AAA"
           value={email}
           onChangeText={setEmail}
+          keyboardType="email-address"
         />
 
         <View style={styles.passWrapper}>
           <TextInput
             style={[
               styles.input,
-              { flex: 1, marginBottom: 0, paddingRight: 10 },
+              { 
+                flex: 1, 
+                marginBottom: 0, 
+                paddingRight: 10,
+                fontFamily: 'JosefinSans_400Regular' // 💡 FONTE APLICADA (Regular)
+              },
             ]}
             placeholder="Senha:"
             placeholderTextColor="#AAA"
@@ -99,18 +126,23 @@ export default function LoginUser({ navigation }) {
         </View>
 
         <TouchableOpacity style={styles.enterBtn} onPress={handleLogin}>
-          <Text style={styles.enterText}>Entrar</Text>
+          {/* 💡 FONTE APLICADA (Bold) */}
+          <Text style={[styles.enterText, { fontFamily: 'JosefinSans_700Bold' }]}>Entrar</Text>
         </TouchableOpacity>
 
         <View style={styles.divider}>
           <View style={styles.line} />
-          <Text style={styles.or}>ou</Text>
+          {/* 💡 FONTE APLICADA (Regular) */}
+          <Text style={[styles.or, { fontFamily: 'JosefinSans_400Regular' }]}>ou</Text>
           <View style={styles.line} />
         </View>
 
         <TouchableOpacity onPress={() => navigation.navigate('CadUser')}>
-          <Text style={styles.footerText}>
-            Não tem uma conta? <Text style={styles.footerLink}>Cadastrar</Text>
+          {/* 💡 FONTE APLICADA (Regular) */}
+          <Text style={[styles.footerText, { fontFamily: 'JosefinSans_400Regular' }]}>
+            Não tem uma conta? 
+            {/* 💡 FONTE APLICADA (Bold) */}
+            <Text style={[styles.footerLink, { fontFamily: 'JosefinSans_700Bold' }]}>Cadastrar</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -118,7 +150,7 @@ export default function LoginUser({ navigation }) {
   );
 }
 
-const PURPLE = '#6E4BAF';
+const PURPLE = '#6A57D2';
 const WHITE = '#FFF';
 
 const styles = StyleSheet.create({
@@ -144,10 +176,11 @@ const styles = StyleSheet.create({
   },
   catImage: {
     position: 'absolute',
-    top: TOP_HEIGHT - height * 0.004,
     alignSelf: 'center',
-    width: width * 1,
+    width: width * 0.9,
     height: height * 0.22,
+
+    top: height * 0.4 - (height * 0.035 / 1), 
     zIndex: 2,
   },
   card: {
@@ -159,15 +192,14 @@ const styles = StyleSheet.create({
     backgroundColor: WHITE,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
-    paddingTop: height * 0.075,
+    paddingTop: height * 0.05,
     paddingHorizontal: width * 0.1,
     alignItems: 'center',
   },
   title: {
     fontSize: 27,
-    fontWeight: '700',
     color: PURPLE,
-    marginBottom: height * 0.025,
+    marginBottom: height * 0.03,
   },
   input: {
     width: '100%',
@@ -180,14 +212,14 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   passWrapper: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  width: '100%',
-  marginBottom: height * 0.025,
-  backgroundColor: '#F7F7F7',
-  borderRadius: 30,
-  paddingHorizontal: 20,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: height * 0.025,
+    backgroundColor: '#F7F7F7',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+  },
 
   eyeBtn: {
     marginLeft: 10,

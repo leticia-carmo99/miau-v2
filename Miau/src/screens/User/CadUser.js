@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+// 💡 IMPORTAÇÕES DE FONTES ADICIONADAS
+import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
+
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../../firebaseConfig";
@@ -29,6 +32,17 @@ export default function CadUser() {
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [tipoUsuario, setTipoUsuario] = useState('comum'); // Estado para o tipo de usuário
+
+  // 💡 HOOK DE FONTES ADICIONADO
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    // Retorna uma View simples enquanto as fontes carregam
+    return <View style={{ flex: 1, backgroundColor: LARANJA }} />; 
+  }
 
   const handleCadastro = async () => {
     // 1. Validação simples para senhas
@@ -58,7 +72,7 @@ export default function CadUser() {
       Alert.alert("Sucesso!", "Seu cadastro foi realizado com sucesso!");
       
       // Navega para a tela principal (o UserContext já vai ter os dados)
-          navigation.navigate('AboutUs1');
+      navigation.navigate('AboutUs1');
 
     } catch (error) {
       // Lidar com erros do Firebase
@@ -90,18 +104,21 @@ export default function CadUser() {
         <Icon name="arrow-back" size={28} color={LARANJA} />
       </TouchableOpacity>
 
-      <Text style={styles.titulo}>Cadastro</Text>
+      {/* 💡 FONTE APLICADA */}
+      <Text style={[styles.titulo, { fontFamily: 'JosefinSans_700Bold' }]}>Cadastro</Text>
 
       {/* Inputs devem vir depois da imagem para renderizar acima */}
       <TextInput
-        style={styles.input}
+        // 💡 FONTE APLICADA
+        style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
         placeholder="Usuário:"
         placeholderTextColor="#999"
         value={nome}
         onChangeText={setNome}
       />
       <TextInput
-        style={styles.input}
+        // 💡 FONTE APLICADA
+        style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
         placeholder="CPF:"
         keyboardType="numeric"
         placeholderTextColor="#999"
@@ -109,7 +126,8 @@ export default function CadUser() {
         onChangeText={setCpf}
       />
       <TextInput
-        style={styles.input}
+        // 💡 FONTE APLICADA
+        style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
         placeholder="E-mail:"
         keyboardType="email-address"
         placeholderTextColor="#999"
@@ -119,7 +137,8 @@ export default function CadUser() {
 
       <View style={styles.senhaContainer}>
         <TextInput
-          style={styles.senhaInput}
+          // 💡 FONTE APLICADA
+          style={[styles.senhaInput, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="Senha:"
           placeholderTextColor={LARANJA}
           secureTextEntry={!mostrarSenha}
@@ -137,7 +156,8 @@ export default function CadUser() {
 
       <View style={styles.senhaContainer}>
         <TextInput
-          style={styles.senhaInput}
+          // 💡 FONTE APLICADA
+          style={[styles.senhaInput, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="Confirmar Senha:"
           placeholderTextColor={LARANJA}
           secureTextEntry={!mostrarConfirma} 
@@ -156,7 +176,8 @@ export default function CadUser() {
       </View>
 
       <TouchableOpacity style={styles.botao} onPress={handleCadastro}>
-        <Text style={styles.botaoTexto}>Cadastrar</Text>
+        {/* 💡 FONTE APLICADA */}
+        <Text style={[styles.botaoTexto, { fontFamily: 'JosefinSans_700Bold' }]}>Cadastrar</Text>
       </TouchableOpacity>
     </View>
   </View>
@@ -234,11 +255,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     height: height * 0.07,
   },
- senhaInput: {
-  flex: 1,
-  fontSize: width * 0.035,
-  color: '#333', // Mude para uma cor escura, como preto ou cinza escuro
-},
+  senhaInput: {
+    flex: 1,
+    fontSize: width * 0.035,
+    color: '#333', // Mude para uma cor escura, como preto ou cinza escuro
+  },
   botao: {
     width: '100%',
     backgroundColor: '#FFF',

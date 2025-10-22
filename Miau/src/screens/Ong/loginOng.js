@@ -171,7 +171,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: width * 0.9,
     height: height * 0.22,
-    top: height * 0.363, // 🔹 deixa o gato logo acima do card branco
+
+    top: height * 0.4 - (height * 0.035 / 1), 
     zIndex: 2,
   },
   card: {
@@ -188,9 +189,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 27,
+    fontSize: 29,
     color: PURPLE,
-    marginBottom: height * 0.035,
+    marginBottom: height * 0.03,
   },
   input: {
     width: '100%',
