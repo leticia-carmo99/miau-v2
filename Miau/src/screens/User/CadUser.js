@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-// 💡 IMPORTAÇÕES DE FONTES ADICIONADAS
 import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -104,12 +103,12 @@ export default function CadUser() {
         <Icon name="arrow-back" size={28} color={LARANJA} />
       </TouchableOpacity>
 
-      {/* 💡 FONTE APLICADA */}
+    
       <Text style={[styles.titulo, { fontFamily: 'JosefinSans_700Bold' }]}>Cadastro</Text>
 
-      {/* Inputs devem vir depois da imagem para renderizar acima */}
+     
       <TextInput
-        // 💡 FONTE APLICADA
+
         style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
         placeholder="Usuário:"
         placeholderTextColor="#999"
@@ -117,7 +116,7 @@ export default function CadUser() {
         onChangeText={setNome}
       />
       <TextInput
-        // 💡 FONTE APLICADA
+      
         style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
         placeholder="CPF:"
         keyboardType="numeric"
@@ -126,7 +125,7 @@ export default function CadUser() {
         onChangeText={setCpf}
       />
       <TextInput
-        // 💡 FONTE APLICADA
+
         style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
         placeholder="E-mail:"
         keyboardType="email-address"
@@ -137,7 +136,7 @@ export default function CadUser() {
 
       <View style={styles.senhaContainer}>
         <TextInput
-          // 💡 FONTE APLICADA
+   
           style={[styles.senhaInput, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="Senha:"
           placeholderTextColor={LARANJA}
@@ -156,7 +155,7 @@ export default function CadUser() {
 
       <View style={styles.senhaContainer}>
         <TextInput
-          // 💡 FONTE APLICADA
+     
           style={[styles.senhaInput, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="Confirmar Senha:"
           placeholderTextColor={LARANJA}
@@ -176,7 +175,7 @@ export default function CadUser() {
       </View>
 
       <TouchableOpacity style={styles.botao} onPress={handleCadastro}>
-        {/* 💡 FONTE APLICADA */}
+   
         <Text style={[styles.botaoTexto, { fontFamily: 'JosefinSans_700Bold' }]}>Cadastrar</Text>
       </TouchableOpacity>
     </View>
@@ -258,7 +257,7 @@ const styles = StyleSheet.create({
   senhaInput: {
     flex: 1,
     fontSize: width * 0.035,
-    color: '#333', // Mude para uma cor escura, como preto ou cinza escuro
+    color: '#333', 
   },
   botao: {
     width: '100%',
