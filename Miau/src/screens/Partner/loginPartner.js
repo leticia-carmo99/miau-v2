@@ -37,7 +37,7 @@ export default function LoginUser({ navigation }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Nome do comércio/Empresa:"
+          placeholder="E-mail do prestador ou empresa:"
           placeholderTextColor="#AAA"
           value={user}
           onChangeText={setUser}
