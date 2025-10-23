@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Ionicons } from '@expo/vector-icons';
 
 // telas — ajuste os paths conforme seu projeto
 import HomeOng from '../HomeOngScreens/HomeOng';
@@ -21,6 +23,10 @@ import SobreAPP from '../HomeOngScreens/SobreAPP';
 import { useOng } from './OngContext';
 import MainAppTabs from './MainTabsOng';
 
+
+import { getAuth, signOut } from "firebase/auth";
+import { auth } from "../../../../firebaseConfig"; 
+
 const Drawer = createDrawerNavigator();
 const { width } = Dimensions.get('window');
 
@@ -31,10 +37,32 @@ const Colors = {
   lightGray: '#999999',
   mediumGray: '#666666',
   drawerBackground: '#F8F8F8',
+  primaryPurple: '#9156D1',
 };
 
+
+
 function CustomDrawerContent(props) {
-  const { ongData } = useOng();
+ const { ongData, setOngData } = useOng();
+ if (ongData === null) {
+   return (
+     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+       <ActivityIndicator size="large" color={Colors.primaryPurple} />
+     </View>
+   );
+}
+
+const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        setOngData(null);
+        // CORREÇÃO AQUI: Use props.navigation
+        props.navigation.navigate('InitialStack', { screen: 'SplashScreen' }); 
+    } catch (error) {
+        console.error("Erro ao fazer logout:", error);
+    }
+  };
+
   return (
     <DrawerContentScrollView
       {...props}
@@ -57,6 +85,15 @@ function CustomDrawerContent(props) {
         <DrawerItem icon="calendar-outline" label="Eventos" onPress={() => props.navigation.navigate('HomeTabs', { screen: 'EventosOngTab' })} />
         <DrawerItem icon="account-group-outline" label="Sobre o app" onPress={() => props.navigation.navigate('SobreAPP')} />
         <DrawerItem icon="cog-outline" label="Configurações" onPress={() => props.navigation.navigate('Configuracoes')} />
+
+                    {/* Botão Sair */}
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={width * 0.06} color={Colors.mediumGray} />
+            <Text style={styles.logoutButtonText}>Sair</Text>
+          </TouchableOpacity>
       </View>
     </DrawerContentScrollView>
   );
@@ -142,4 +179,19 @@ const styles = StyleSheet.create({
     color: Colors.darkGray,
     fontWeight: '500',
   },
+    logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: width * 0.035,
+    paddingHorizontal: width * 0.05,
+    marginTop: width * 0.05, // Espaçamento antes do botão Sair
+   borderTopWidth: 0.5,
+    borderTopColor: Colors.lightGray,
+  },
+  logoutButtonText: {
+    fontSize: width * 0.045,
+    marginLeft: width * 0.03,
+    color: Colors.mediumGray,
+    fontFamily: 'Nunito_400Regular', // Alterado para Nunito
+  },
 });

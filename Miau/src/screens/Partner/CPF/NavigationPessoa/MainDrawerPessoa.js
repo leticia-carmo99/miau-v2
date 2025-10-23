@@ -27,9 +27,6 @@ const COLORS = {
 function ConfiguracoesScreen() {
   return (<View style={styles.placeholderContainer}><Text style={styles.placeholderText}>Tela Configurações (Drawer)</Text></View>);
 }
-function LogoutScreen() {
-  return (<View style={styles.placeholderContainer}><Text style={styles.placeholderText}>Tela Sair (Ação de Logout)</Text></View>);
-}
 
 export default function MainDrawer() {
   const navigation = useNavigation();
@@ -75,7 +72,7 @@ const pic = personData?.logoImage || Perfil;
           {/* Botão Sair */}
           <TouchableOpacity
             style={styles.logoutButton}
-            onPress={() => props.navigation.navigate('Sair')}
+            onPress={() => navigation.navigate('InitialStack', { screen: 'SplashScreen' })}
           >
             <Ionicons name="log-out-outline" size={width * 0.06} color={COLORS.mediumGray} />
             <Text style={styles.logoutButtonText}>Sair</Text>
@@ -93,7 +90,6 @@ const pic = personData?.logoImage || Perfil;
 <Drawer.Screen name="HomeWithTabs" component={Tabs} />
 <Drawer.Screen name="Sobre o App" component={Sobre} />
 <Drawer.Screen name="Configuracoes" component={ConfiguracoesScreen} />
-<Drawer.Screen name="Sair" component={LogoutScreen} />
 </Drawer.Navigator>
   );
 }

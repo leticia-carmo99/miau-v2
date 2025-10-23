@@ -28,6 +28,7 @@ import { Nunito_700Bold, Nunito_400Regular } from '@expo-google-fonts/nunito';
 import { LogBox } from 'react-native';
 LogBox.ignoreLogs([
   'Text strings must be rendered within a <Text> component.',
+  'VirtualizedLists should never be nested inside plain ScrollViews with the same orientation',
 ]);
 
 const { width, height } = Dimensions.get('window');
