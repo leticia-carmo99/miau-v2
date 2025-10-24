@@ -38,6 +38,7 @@ import BlogDetalhesUser from './src/screens/User/HomeScreens/BlogDetalhes';
 import { UserProvider } from './src/screens/User/NavigationUser/UserContext';
 import { PetProvider } from './src/screens/User/NavigationUser/PetContext';
 import MenuV1User from './src/screens/User/NavigationUser/MenuV1';
+import EscolherPetUser from './src/screens/User/HomeScreens/EscolherPet';
 
 
 // Telas de Parceiro (Login, Cadastro)
@@ -154,6 +155,7 @@ function UsuarioStack() {
           <Stack.Screen name="PetshopUser" component={PetshopUser} />
           <Stack.Screen name="BlogDetalhesUser" component={BlogDetalhesUser} />
           <Stack.Screen name="MenuV1User" component={MenuV1User} />
+          <Stack.Screen name="EscolherPet" component={EscolherPetUser} />
         </Stack.Navigator>
       </PetProvider>
     </UserProvider>
