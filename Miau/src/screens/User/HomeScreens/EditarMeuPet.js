@@ -15,7 +15,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import PetBackground from '../assets/FotosMeuPet/PetBackground.png';
 import FotoPerfilBack from '../assets/FotosMeuPet/FotoPerfilBack.png';
@@ -23,7 +23,7 @@ import * as ImagePicker from "expo-image-picker";
 import { usePet } from "../NavigationUser/PetContext";
 import { useUser } from "../NavigationUser/UserContext"; // Necessário para pegar o email do dono
 import { auth, db } from "../../../../firebaseConfig";
-import { doc, setDoc, updateDoc, collection } from "firebase/firestore";
+import { doc, setDoc, updateDoc, collection, getDoc } from "firebase/firestore";
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -58,18 +58,24 @@ const COLORS = {
 };
 
 export default function EditarMeuPet() {
-  const navigation = useNavigation();
-   const { petData, setPetData, pet1Id, setPet1Id } = usePet();
-  const { userData } = useUser();
+const navigation = useNavigation();
+const route = useRoute();
+const { petId: petIdFromRoute } = route.params || {};
+const { petData, setPetData, pet1Id, setPet1Id } = usePet();
+const { userData } = useUser();
+const [isLoading, setIsLoading] = useState(!!petIdFromRoute);
 
-const [nome, setNome] = useState(petData?.nome || '');
-const [idade, setIdade] = useState(petData?.idade || '');
-const [peso, setPeso] = useState(petData?.peso || '');
-const [cor, setCor] = useState(petData?.cor || '');
-const [raca, setRaca] = useState(petData?.raca || '');
-const [sexo, setSexo] = useState(petData?.sexo || 'Macho'); // Valor padrão para Radio Option
-const [especie, setEspecie] = useState(petData?.especie || 'Cachorro'); // Valor padrão
-const [image, setImage] = useState(petData?.image || require('../assets/FotosMeuPet/UpdatePic.png'));
+const [nome, setNome] = useState('');
+const [idade, setIdade] = useState('');
+const [peso, setPeso] = useState('');
+const [cor, setCor] = useState('');
+const [raca, setRaca] = useState('');
+const [sexo, setSexo] = useState('Macho'); 
+const [especie, setEspecie] = useState('Cachorro');
+const [image, setImage] = useState(require('../assets/FotosMeuPet/UpdatePic.png'));
+const [currentPetDocId, setCurrentPetDocId] = useState(petIdFromRoute); // ID do documento que está sendo editado/criado
+const [isEditMode, setIsEditMode] = useState(!!petIdFromRoute);
+
    
 const pickImage = async ()=>{ 
 let result = await ImagePicker.launchImageLibraryAsync({
@@ -84,6 +90,127 @@ if (!result.canceled) {
 
     const [modalVisible, setModalVisible] = useState(false);
 
+    useEffect(() => {
+if (isEditMode && currentPetDocId) {
+      const fetchPetData = async () => {
+        try {
+          const petDocRef = doc(db, "pets", currentPetDocId);
+          const petDocSnap = await getDoc(petDocRef);
+
+          if (petDocSnap.exists()) {
+            const data = petDocSnap.data();
+            // Preenche os estados com os dados do Firebase
+            setNome(data.nome || '');
+            setIdade(data.idade || '');
+            setPeso(data.peso || '');
+            setCor(data.cor || '');
+            setRaca(data.raca || '');
+            setSexo(data.sexo || 'Macho');
+            setEspecie(data.especie || 'Cachorro');
+            // Adicionar aqui a lógica para carregar a imagem, se for um URI
+            // setImage(data.image ? { uri: data.image } : require('...')); 
+          } else {
+            console.warn("Documento do pet não encontrado:", currentPetDocId);
+            setIsEditMode(false); // Volta para o modo Cadastro se não encontrar
+          }
+        } catch (error) {
+          console.error("Erro ao buscar dados do pet para edição:", error);
+          setIsEditMode(false);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchPetData();
+    }
+    // Se for modo Cadastro, os estados permanecem vazios.
+  }, [currentPetDocId, isEditMode]);
+
+
+const handleSavePet = async () => {
+    if (!auth.currentUser || !userData?.email) {
+        alert("Erro de autenticação: Usuário não logado ou email não encontrado.");
+        return;
+    }
+    
+    // Validação simples
+    if (!nome || !raca) {
+        alert("Por favor, preencha o Nome e a Raça do pet.");
+        return;
+    }
+    
+    setIsLoading(true);
+
+    const petDetails = {
+        nome,
+        idade,
+        peso,
+        cor,
+        raca,
+        sexo,
+        especie,
+        carteirinha: null, // Manter null por enquanto
+        email_usuario: userData.email, // Linka o pet ao usuário
+    };
+
+    try {
+        let finalPetId = currentPetDocId; // Começa com o ID atual (pode ser null)
+
+        if (isEditMode) {
+            // Caso 1: EDIÇÃO
+            console.log("Atualizando pet existente com ID:", finalPetId);
+            const petDocRef = doc(db, "pets", finalPetId);
+            await updateDoc(petDocRef, petDetails);
+            
+       } else {
+    // Caso 2: CRIAÇÃO (isEditMode é false)
+    
+    finalPetId = uuidv4(); 
+    const petDocRef = doc(db, "pets", finalPetId);
+    
+    console.log("Criando novo pet com ID:", finalPetId);
+    await setDoc(petDocRef, petDetails);
+    
+    // --- Lógica de VINCULAÇÃO DE MÚLTIPLOS PETS ---
+    const userDocRef = doc(db, "usuarios", auth.currentUser.uid);
+    const userDocSnap = await getDoc(userDocRef); // Precisamos buscar o documento do usuário
+    
+    if (userDocSnap.exists()) {
+        const userDataFromDB = userDocSnap.data();
+        let nextPetSlot = 'pet1Id'; 
+        let petCount = 1;
+        
+        // Loop para encontrar o primeiro campo petNId que NÃO existe
+        while (userDataFromDB[`pet${petCount}Id`]) {
+            petCount++;
+            nextPetSlot = `pet${petCount}Id`;
+        }
+        
+        // nextPetSlot agora é o campo livre (ex: 'pet3Id')
+        
+        // Atualiza o documento do usuário com o novo ID do pet no slot livre
+        const updateObject = {};
+        updateObject[nextPetSlot] = finalPetId;
+        
+        await updateDoc(userDocRef, updateObject);
+        console.log(`Novo pet vinculado ao usuário no slot: ${nextPetSlot}`);
+        
+        // Se a app usa pet1Id, pet2Id, etc. no contexto do usuário, 
+        // você precisaria atualizar o contexto aqui (simplificando, deixaremos o usePet/useUser recarregarem, 
+        // mas setPet1Id pode ser removido se a app usar apenas o slot dinâmico)
+        // setPet1Id(finalPetId); // <--- Remova esta linha se usar a lógica de slot dinâmico
+        
+    } else {
+        throw new Error("Documento do usuário não encontrado ao vincular o pet.");
+    }
+    // --- Fim da Lógica de VINCULAÇÃO ---
+}
+    } catch (error) {
+        console.error("Erro ao salvar pet no Firebase:", error);
+        alert("Erro ao salvar perfil do pet. Tente novamente.");
+    } finally {
+        setIsLoading(false);
+    }
+};
 
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
@@ -95,72 +222,7 @@ if (!result.canceled) {
     return null;
   }
 
-const handleSavePet = async () => {
-    if (!auth.currentUser || !userData?.email) {
-        alert("Erro de autenticação: Usuário não logado ou email não encontrado.");
-        return;
-    }
-    else {
-      navigation.goBack();
-    }
 
-    // 1. Dados do pet a serem salvos
-    const petDetails = {
-        nome,
-        idade,
-        peso,
-        cor,
-        raca,
-        sexo,
-        especie,
-        // image: image, // Ignorando a imagem conforme solicitado
-        carteirinha: petData?.carteirinha || null, 
-        email_usuario: userData.email, // Linka o pet ao usuário
-        // Você pode adicionar um timestamp de atualização aqui: updatedAt: new Date(),
-    };
-
-    try {
-        let currentPetId = pet1Id; // Usa o ID existente do contexto
-
-        if (currentPetId) {
-            // Caso 1: O pet JÁ EXISTE (pet1Id está no contexto), apenas atualiza
-            console.log("Atualizando pet existente com ID:", currentPetId);
-            const petDocRef = doc(db, "pets", currentPetId);
-            await updateDoc(petDocRef, petDetails);
-            
-        } else {
-            // Caso 2: É o PRIMEIRO registro (pet1Id é nulo), PRECISA CRIAR E VINCULAR
-            
-            // 1. Gera um ID único e utiliza-o como ID do documento
-            currentPetId = uuidv4(); 
-            const petDocRef = doc(db, "pets", currentPetId);
-            
-            // 2. Cria o documento do pet na coleção 'pets'
-            console.log("Criando novo pet com ID:", currentPetId);
-            await setDoc(petDocRef, petDetails);
-            
-            // 3. Atualiza o ID na coleção 'usuarios' para 'pet1Id'
-            const userDocRef = doc(db, "usuarios", auth.currentUser.uid);
-            await updateDoc(userDocRef, { pet1Id: currentPetId });
-            
-            // 4. Atualiza o ID no contexto (importante para futuras edições)
-            setPet1Id(currentPetId); 
-        }
-
-        // 3. Atualiza o contexto local com os novos dados
-        // (Isso fará MeuPet.js recarregar os dados corretos)
-        setPetData({ id: currentPetId, ...petDetails });
-        
-        alert("Perfil do pet salvo com sucesso!");
-        navigation.navigate('MeuPet');
-        
-    } catch (error) {
-        // Loga o erro exato no console para ajudar na depuração
-        console.error("Erro ao salvar pet no Firebase:", error);
-        // Exibe o alerta genérico que você viu na imagem
-        alert("Erro ao salvar perfil do pet. Tente novamente.");
-    }
-};
 
   return (
     <ScrollView style={styles.scroll}>

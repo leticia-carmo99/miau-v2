@@ -204,7 +204,7 @@ const EscolherPet = ({ isVisible, onClose, onAddEvent, initialDate }) => {
 
           </ScrollView>
           
-            <TouchableOpacity style={styles.addButton} onPress={() => { onClose(); navigation.navigate('MeuPetUser', { petId: null });}}>
+            <TouchableOpacity style={styles.addButton} onPress={() => { onClose(); navigation.navigate('EditarMeuPetUser', {});}}>
               <Ionicons
                 name="add"
                 size={20}
