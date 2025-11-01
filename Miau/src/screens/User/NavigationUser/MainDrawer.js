@@ -19,6 +19,7 @@ import BlogDetalhes from '../HomeScreens/BlogDetalhes';
 import { useUser } from "../NavigationUser/UserContext";
 import InicialUser from '../HomeScreens/Inicial';
 import MenuV1User from "./MenuV1";
+import EscolherModal from "../Modal/EscolherPet";
 
 import { getAuth, signOut } from "firebase/auth";
 import { auth } from "../../../../firebaseConfig"; 
@@ -43,6 +44,7 @@ return (<View style={styles.placeholderContainer}><Text style={styles.placeholde
 
 export default function MainDrawer({ navigation }) { // Adicione navigation aqui
  const { userData, setUserData } = useUser();
+ const [isPetModalVisible, setIsPetModalVisible] = useState(false);
  if (userData === null) {
    return (
      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -62,6 +64,13 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
   };
 
   return (
+  <>
+      <EscolherModal 
+        isVisible={isPetModalVisible}
+        onClose={() => setIsPetModalVisible(false)} // Função para fechar o modal
+        // Você pode passar outras props se precisar, mas para a navegação, não é necessário aqui.
+      />
+  
     <Drawer.Navigator drawerContent={(props) => (
         <DrawerContentScrollView {...props}>
           <TouchableOpacity
@@ -82,7 +91,10 @@ export default function MainDrawer({ navigation }) { // Adicione navigation aqui
 
             <TouchableOpacity
               style={styles.drawerItem}
-               onPress={() => props.navigation.navigate('MeuPet')}
+onPress={() => {
+                props.navigation.closeDrawer(); // Fecha o Drawer imediatamente
+                setIsPetModalVisible(true);     // Abre o Modal
+              }}
             >
               <Ionicons name="paw-outline" size={width * 0.06} color={COLORS.mediumGray} />
               <Text style={styles.drawerItemText}>Meu pet</Text>
@@ -156,6 +168,7 @@ screenOptions={{ headerShown: false, drawerStyle: { backgroundColor: 'white', wi
 <Drawer.Screen name="Adote" component={Adote}/>
 <Drawer.Screen name="BlogDetalhes" component={BlogDetalhes}/>
 </Drawer.Navigator>
+</>
 );
 }
 

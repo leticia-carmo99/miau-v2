@@ -8,14 +8,21 @@ import {
   TextInput,
   Dimensions,
   ScrollView,
-  Flatlist,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser } from "../NavigationUser/UserContext";
 import { usePet } from "../NavigationUser/PetContext";
+import { useNavigation } from '@react-navigation/native';
+import { useUser } from "../NavigationUser/UserContext";
 
-
-import { doc, updateDoc } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs 
+} from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from "../../../../firebaseConfig"; 
 
@@ -53,7 +60,10 @@ const COLORS = {
 };
 
 const EscolherPet = ({ isVisible, onClose, onAddEvent, initialDate }) => {
-  // carregar fonts
+  const navigation = useNavigation();
+  const { userData } = useUser(); // Dados do usuário, incluindo o UID e petXId's
+  const [userPets, setUserPets] = useState([]);
+  const [isLoadingPets, setIsLoadingPets] = useState(false);
   const [nunitoFontsLoaded] = useNunitoFonts({
     Nunito_400Regular,
     Nunito_700Bold,
@@ -65,7 +75,9 @@ const EscolherPet = ({ isVisible, onClose, onAddEvent, initialDate }) => {
   });
 
   const renderPetItem = ({ item }) => (
-  <TouchableOpacity style={styles.petCard} onPress={() => navigation.navigate('MeuPet', { petId: item.id })}>
+  <TouchableOpacity style={styles.petCard} onPress={() => {
+        onClose();
+        navigation.navigate('MeuPetUser', { petId: item.id }); }}>
       <View style={styles.petInfo}>
   <View style={styles.petRow1}>
         <Text style={styles.petName}>{item.nome}</Text> 
@@ -79,19 +91,60 @@ const EscolherPet = ({ isVisible, onClose, onAddEvent, initialDate }) => {
         <Ionicons name="paw" size={width * 0.07} color={COLORS.primaryPurple} />
       </View>
 </View>
-        <View style={styles.petDetailsRow}>
-          <Text style={styles.petBreed}>{item.raca}</Text> 
-          <Text style={styles.petSeparator}> • </Text>
-          <Text style={styles.petAge}>{item.idade} anos</Text> 
-        </View>
       </View>
 
     </TouchableOpacity>
   );
 
-const { userData, setUserData } = useUser(); // Pegue a função setUserData para atualizar o contexto
-const { petData, isLoading: isPetsLoading } = usePet(); 
-const userPets = petData ? [petData] : []; 
+  const fetchUserPets = async () => {
+    // Só busca se o modal estiver visível e se o userData estiver carregado e tiver um UID
+    if (!userData || !userData.uid) {
+      setUserPets([]);
+      return;
+    }
+    setIsLoadingPets(true);
+    try {
+      const petsList = [];
+      const userDocRef = doc(db, "usuarios", userData.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const data = userDocSnap.data();
+        
+        let petCount = 1;
+        let petIdKey = `pet${petCount}Id`;
+        let petId = data[petIdKey];
+
+        // Itera sobre pet1Id, pet2Id, pet3Id... até não encontrar mais um ID
+        while(petId && petId.length > 0) { // Garante que o ID não é vazio ("")
+            const petDocRef = doc(db, "pets", petId);
+            const petDocSnap = await getDoc(petDocRef);
+
+            if (petDocSnap.exists()) {
+                petsList.push({ id: petId, ...petDocSnap.data() });
+            }
+            
+            // Tenta buscar o próximo ID
+            petCount++;
+            petIdKey = `pet${petCount}Id`;
+            petId = data[petIdKey]; 
+        }
+      }
+      
+      setUserPets(petsList);
+
+    } catch (error) {
+      console.error("Erro ao buscar a lista de pets:", error);
+    } finally {
+      setIsLoadingPets(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isVisible && userData) {
+      fetchUserPets();
+    }
+  }, [isVisible, userData]);
 
   return (
     <Modal
@@ -125,31 +178,33 @@ const userPets = petData ? [petData] : [];
             <View style={styles.previewSection}>
 
           <View style={styles.petsContentContainer}>
-            {userPets && userPets.length > 0 ? (
-              <FlatList
-                data={userPets} 
-                renderItem={renderPetItem}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.petsListContent}
-              />
+{isLoadingPets ? (
+                <Text style={{ color: COLORS.mediumGray, marginTop: 20 }}>Carregando pets...</Text>
             ) : (
-              <View style={styles.noPetsContainer}>
-                <Ionicons name="information-circle-outline" size={width * 0.1} color={COLORS.white} />
-                <Text style={styles.noPetsText}>Nenhum pet adicionado ainda.</Text>
-                <Text style={styles.noPetsSubText}>Adicione seu primeiro pet para vê-lo aqui!</Text>
-              </View>
+                <View style={styles.petsContentContainer}>
+                  {userPets && userPets.length > 0 ? (
+                    <FlatList
+                      data={userPets} 
+                      renderItem={renderPetItem}
+                      keyExtractor={(item) => item.id}
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.petsListContent}
+                    />
+                  ) : (
+                    <View style={styles.noPetsContainer}>
+                      <Ionicons name="information-circle-outline" size={width * 0.1} color={COLORS.primaryPurple} />
+                      <Text style={styles.noPetsText}>Nenhum pet adicionado ainda.</Text>
+                      <Text style={styles.noPetsSubText}>Adicione seu primeiro pet para vê-lo aqui!</Text>
+                    </View>
+                  )}
+                </View>
             )}
           </View>
-
-            <TouchableOpacity>
-              <Text style={styles.previewTitle}>
-                Luninha
-              </Text>
-            </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.addButton}>
+          </ScrollView>
+          
+            <TouchableOpacity style={styles.addButton} onPress={() => { onClose(); navigation.navigate('MeuPetUser', { petId: null });}}>
               <Ionicons
                 name="add"
                 size={20}
@@ -158,8 +213,8 @@ const userPets = petData ? [petData] : [];
               />
               <Text style={styles.addButtonText}>Adicionar Pet</Text>
             </TouchableOpacity>
-          </ScrollView>
         </View>
+        
       </View>
     </Modal>
   );
@@ -183,7 +238,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    height: '75%',
+    height: '55%',
   },
   scrollView: {
     width: '100%',
@@ -209,8 +264,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 25,
     color: '#FFAB36',
     marginRight: 10,
     fontFamily: 'JosefinSans_700Bold', // aplicada fonte
@@ -244,12 +298,82 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+    bottom: 0,
   },
   addButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
     fontFamily: 'Nunito_700Bold', // aplicada fonte do botão
+  },
+  petsSectionBackgroundWrapper: {
+    width: '100%',
+    alignSelf: 'center',
+    marginVertical: width * 0.1,
+    backgroundColor: COLORS.darkerPurple,
+    borderRadius: width * 0.18,
+    paddingVertical: width * 0.02,
+    position: 'relative',
+  },
+  petsContentContainer: {
+    alignSelf: 'center',
+    marginTop: width * 0.02,
+  },
+  petCard: {
+    backgroundColor: COLORS.petCardBackground,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.petCardBorder,
+    marginBottom: width * 0.03,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    height: width * 0.20,
+    justifyContent: 'center',
+    paddingHorizontal: width * 0.05,
+  },
+  petInfo:{
+flexDirection: 'column'
+  },
+  petRow1: {
+flexDirection: 'row',
+alignItems: 'center',
+justifyContent: 'space-between',
+    width: '90%'
+  },
+  petName: {
+    fontSize: width * 0.06,
+    fontWeight: 'bold',
+    color: COLORS.primaryPurple,
+    marginRight: width * 0.03
+  },
+  petDetailsRow: {
+    flexDirection: 'row',
+  },
+  petIcons: {
+    flexDirection: 'row',
+  },
+  genderIcon: {
+    marginRight: width * 0.02,
+  },
+  noPetsContainer: {
+    alignItems: 'center',
+    paddingVertical: width * 0.1,
+  },
+  noPetsText: {
+    fontSize: width * 0.05,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginTop: width * 0.03,
+    textAlign: 'center',
+  },
+  noPetsSubText: {
+    fontSize: width * 0.04,
+    color: COLORS.white,
+    marginTop: width * 0.01,
+    textAlign: 'center',
+    opacity: 0.8,
   },
 });
 
