@@ -65,14 +65,14 @@ const { petData, setPetData, pet1Id, setPet1Id } = usePet();
 const { userData } = useUser();
 const [isLoading, setIsLoading] = useState(!!petIdFromRoute);
 
-const [nome, setNome] = useState('');
-const [idade, setIdade] = useState('');
-const [peso, setPeso] = useState('');
-const [cor, setCor] = useState('');
-const [raca, setRaca] = useState('');
-const [sexo, setSexo] = useState('Macho'); 
-const [especie, setEspecie] = useState('Cachorro');
-const [image, setImage] = useState(require('../assets/FotosMeuPet/UpdatePic.png'));
+const [nome, setNome] = useState(petData?.nome || '');
+const [idade, setIdade] = useState(petData?.idade || '');
+const [peso, setPeso] = useState(petData?.peso || '');
+const [cor, setCor] = useState(petData?.cor || '');
+const [raca, setRaca] = useState(petData?.raca || '');
+const [sexo, setSexo] = useState(petData?.sexo || 'Macho'); 
+const [especie, setEspecie] = useState(petData?.especie || 'Cachorro');
+const [image, setImage] = useState(petData?.image || require('../assets/FotosMeuPet/UpdatePic.png'));
 const [currentPetDocId, setCurrentPetDocId] = useState(petIdFromRoute); // ID do documento que está sendo editado/criado
 const [isEditMode, setIsEditMode] = useState(!!petIdFromRoute);
 
@@ -99,7 +99,6 @@ if (isEditMode && currentPetDocId) {
 
           if (petDocSnap.exists()) {
             const data = petDocSnap.data();
-            // Preenche os estados com os dados do Firebase
             setNome(data.nome || '');
             setIdade(data.idade || '');
             setPeso(data.peso || '');
@@ -107,8 +106,6 @@ if (isEditMode && currentPetDocId) {
             setRaca(data.raca || '');
             setSexo(data.sexo || 'Macho');
             setEspecie(data.especie || 'Cachorro');
-            // Adicionar aqui a lógica para carregar a imagem, se for um URI
-            // setImage(data.image ? { uri: data.image } : require('...')); 
           } else {
             console.warn("Documento do pet não encontrado:", currentPetDocId);
             setIsEditMode(false); // Volta para o modo Cadastro se não encontrar

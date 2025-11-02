@@ -14,7 +14,8 @@ import Back from '../assets/FotosInicial/Back.png';
 import Amora from '../assets/FotosPerfisAnimais/Amora.png';
 import LogoOng from '../assets/FotosPerfisAnimais/LogoOng.png';
 import { WebView } from "react-native-webview";
-
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../../firebaseConfig';
 
 import { Asset } from "expo-asset";
 
@@ -53,7 +54,11 @@ const COLORS = {
 
 export default function EditarMeuPet() {
   const navigation = useNavigation();
+  const route = useRoute();
 
+  const [ongData, setOngData] = useState(null);
+  const [loadingOng, setLoadingOng] = useState(true);
+  
   const data = [
     { label: 'Idade', value: '3' },
     { label: 'Sexo', value: 'Fêmea' },
@@ -71,6 +76,58 @@ export default function EditarMeuPet() {
   if (!fontsLoaded) {
     return null;
   }
+
+    const { pet } = route.params || {};
+  
+  useEffect(() => {
+      const fetchOngData = async () => {
+        if (!pet || !pet.ongid) { // CORREÇÃO 1: Usar pet.ongid
+          setLoadingOng(false);
+          return;
+        }
+  
+        // CORREÇÃO 2: Usar pet.ongid para referenciar o documento
+        const ongRef = doc(db, 'ongs', pet.ongid); 
+        try {
+          const docSnap = await getDoc(ongRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setOngData({
+              id: docSnap.id,
+              name: data.nomeOng,         
+              telefone: data.telefoneContato,     // Seu campo de telefone/número
+              logo: data.logoInstituicao, 
+            });
+          } else {
+            console.log("ONG não encontrada para o ID:", pet.ongid);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar dados da ONG:", error);
+        } finally {
+          setLoadingOng(false);
+        }
+      };
+      fetchOngData();
+    }, [pet]);
+  
+    if (!fontsLoaded) {
+      return null; 
+    }
+  
+  
+    if (!pet) {
+          return (
+              <SafeAreaView style={styles.safeArea}>
+                  <View style={styles.header}>
+                      <TouchableOpacity onPress={() => navigation.goBack()}>
+                          <Ionicons name="arrow-back" size={28} color={Colors.cardWhite} />
+                      </TouchableOpacity>
+                  </View>
+                  <Text style={styles.errorText}>Pet não encontrado!</Text>
+              </SafeAreaView>
+          );
+        }
+
   return (
     <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
       <SafeAreaView style={styles.container}>
@@ -82,82 +139,70 @@ export default function EditarMeuPet() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.dogImageView}>
-          <Image source={Amora} style={styles.dogImage} />
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.nameView}>
-            <Text style={styles.petName}>Amora</Text>
-            <Text style={styles.animalType}>Vira-lata</Text>
-          </View>
-
-          <View style={styles.infos}>
-            {data.map((item, index) => (
-              <View key={index} style={styles.card}>
-                <Text style={styles.label}>{item.label}</Text>
-                <Text
-                  style={styles.value}
-                  numberOfLines={2}
-                  adjustsFontSizeToFit={true}
-                  minimumFontScale={0.1}>
-                  {item.value}
-                </Text>
+              <View style={styles.imageContainer}>
+                {pet.petImageUri ? (
+                  <Image source={typeof pet.petImageUri === 'string' ? { uri: pet.petImageUri } : pet.petImageUri} style={styles.petImage} />
+                ) : (
+                  <View style={styles.imagePlaceholder} />
+                )}
               </View>
-            ))}
-          </View>
 
-          <View style={styles.infoOngView}>
-            <View
-              style={{
-                position: 'absolute',
-                zIndex: 2,
-                alignSelf: 'flex-start',
-              }}>
-              <Image style={styles.infoOngImage} source={LogoOng} />
-            </View>
-            <View style={styles.infoOngTextView}>
-              <Text style={styles.infoOngText}>
-                Associação Patinhas Unidas de Parintins
-              </Text>
-              <Text style={styles.infoOngText}>(92) 992624521</Text>
-            </View>
-          </View>
+              <View style={styles.mainCard}>
+                <Text style={styles.petName}>{pet.name}</Text>
+                <Text style={styles.petBreed}>{pet.raca}</Text>
 
-          <View style={styles.contentView}>
-            <Text style={styles.subtitle}>Porte</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-              <Image source={PorteMenorRoxo} style={styles.pmenorr} />
-              <Image source={PorteMenorLaranja} style={styles.pmediol} />
-              <Image source={PorteMenorRoxo} style={styles.pmaiorr} />
-            </View>
+                <View style={styles.infoBubbleRow}>
+                  <View style={styles.infoBubble}>
+                    <Text style={styles.bubbleTitle}>Idade</Text>
+                    <Text style={styles.bubbleContent}>{pet.age}</Text>
+                  </View>
+                  <View style={styles.infoBubble}>
+                    <Text style={styles.bubbleTitle}>Sexo</Text>
+                    <Text style={styles.bubbleContent}>{pet.gender === 'Male' ? 'Macho' : 'Fêmea'}</Text>
+                  </View>
+                  <View style={styles.infoBubble}>
+                    <Text style={styles.bubbleTitle}>Cor</Text>
+                    <Text style={styles.bubbleContent}>{pet.cor}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.bannerWrapper}>
+                  <View style={styles.ongContainer}>
+                    <Image
+                      source={pet.ong.logo ? { uri: pet.ong.logo } : require('../assets/FotosPerfisAnimais/LogoOng.png')}
+                      style={styles.ongLogo}
+                    />
+                    <View style={styles.ongBanner}>
+                        <Text style={styles.ongName}>{pet.ong.name}</Text>
+                        <Text style={styles.ongId}>{pet.ong.telefone}</Text>
+                    </View>
+                  </View>
+                </View>
 
-            <Text style={styles.subtitleBold}>Descrição</Text>
-            <Text style={styles.paragraph}>
-              Lorem Ipsum is simply dummy text of the printing and typesetting
-              industry. Lorem Ipsum has been the industry's standard dummy text
-              ever since the 1500s, when an unknown printer took a galley of
-              type and scrambled it to make a type specimen book. It has
-              survived not only five centuries, but also the leap into
-              electronic typesetting, remaining essentially unchanged. It was
-              popularised in the 1960s with the release of Letraset sheets
-              containing Lorem Ipsum passages, and more recently with desktop
-              publishing software like Aldus PageMaker including versions of
-              Lorem Ipsum.
-            </Text>
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Porte</Text>
+                  <View style={styles.porteContainer}>
+                    <DogPorteIcon porte="Pequeno" petPorte={pet.porte} size={1} />
+                    <DogPorteIcon porte="Médio" petPorte={pet.porte} size={1.2} />
+                    <DogPorteIcon porte="Grande" petPorte={pet.porte} size={1.4} />
+                  </View>
+                </View>
 
-            <Text style={styles.subtitleBold}>Informações gerais</Text>
-            <Text style={styles.paragraph}>
-              Lorem Ipsum is simply dummy text of the printing and typesetting
-              industry. Lorem Ipsum has been the industry's standard dummy text
-              ever since the 1500s, when an unknown printer took a galley of
-              type and scrambled it to make a type specimen book.
-            </Text>
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Descrição</Text>
+                  <Text style={styles.sectionContent}>{pet.descricao}</Text>
+                </View>
 
-            <TouchableOpacity style={styles.vacineButton}>
-              <Text style={styles.vacineButtonText}>Carteira de Vacinação</Text>
-            </TouchableOpacity>
-          </View>
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Informações gerais</Text>
+                  <Text style={styles.sectionContent}>{pet.infoGerais}</Text>
+                </View>
+
+                <View style={styles.buttonContainerLeft}>
+                  <TouchableOpacity style={styles.vacinaButton}>
+                    <Text style={styles.vacinaButtonText}>Carteira de vacinação</Text>
+                  </TouchableOpacity>
+                </View>
 
 
           <TouchableOpacity style={styles.adoptButton} >
@@ -379,5 +424,10 @@ const styles = StyleSheet.create({
     flex: 1,
     width: Dimensions.get("window").width,
     height: Dimensions.get("window").height,
+  },
+    ongContainer: {
+    position: 'relative',
+    paddingLeft: 45,
+    justifyContent: 'center',
   },
 });

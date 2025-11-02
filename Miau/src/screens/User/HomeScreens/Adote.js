@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,14 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
-  TextInput
+  TextInput,
+  Modal
 } from 'react-native';
 import { useNavigation, DrawerActions, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Menu from '../NavigationUser/MenuV1';
+import { auth, db } from "../../../../firebaseConfig";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 const { width } = Dimensions.get('window');
 
@@ -139,66 +142,67 @@ const Adote = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { tipoInicial } = route.params || {}; 
-  const [tipoAnimal, setTipoAnimal] = useState(tipoInicial || 'gato');
+  const [tipoAnimal, setTipoAnimal] = useState(tipoInicial || 'Cachorro');
+  const [pets, setPets] = useState([]); // Inicia com uma lista vazia
+const [loading, setLoading] = useState(true);
 
-  // A lista de pets começa vazia
-// A lista de pets começa já com alguns exemplos
-const [pets, setPets] = useState([
-  {
-    id: "1",
-    name: "Amora",
-    raca: "Vira-lata",
-    age: "2 anos",
-    gender: "Female",
-    type: "cao",
-    petImageUri: require('../assets/FotosPerfisAnimais/Amora.png'),
-  },
-  {
-    id: "2",
-    name: "Thor",
-    raca: "Pastor Alemão",
-    age: "4 anos",
-    gender: "Male",
-    type: "cao",
-    petImageUri: require('../assets/FotosPerfisAnimais/Amora.png'),
-  },
-  {
-    id: "3",
-    name: "Prado",
-    raca: "Siamês",
-    age: "1 ano",
-    gender: "Female",
-    type: "gato",
-    petImageUri:  require('../assets/FotosPerfisAnimais/Prado.png'),
-  },
-  {
-    id: "5",
-    name: "Nina",
-    raca: "Persa",
-    age: "2 anos",
-    gender: "Female",
-    type: "gato",
-    petImageUri: require('../assets/FotosPerfisAnimais/Prado.png')
-  },
-]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [petIndisponivel, setPetIndisponivel] = useState(null);
 
+// Nova Função para buscar os dados no Firestore
+const fetchPets = async () => {
+  setLoading(true);
+  try {
+    const petsCollection = collection(db, "petsong");
+    const q = query(petsCollection, where("tipo", "==", tipoAnimal));
+    const querySnapshot = await getDocs(q);
+    const fetchedPets = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.nome,
+        raca: data.cor,
+        age: data.idade ? `${data.idade} anos` : 'Idade N/A',
+        gender: data.sexo || 'N/A',
+        type: data.tipo || tipoAnimal, 
+        petImageUri: data.petImageUrl || null, 
+        email_ong: data.email_ong,
+        descricao: data.descricao,
+        informacoes: data.informacoes,
+        porte: data.porte,
+        status: data.status,
+      };
+    });
 
-
-  const currentData = pets.filter((pet) => pet.type === tipoAnimal);
+    setPets(fetchedPets);
+  } catch (error) {
+    console.error("Erro ao buscar pets:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+useEffect(() => {
+  fetchPets();
+}, [tipoAnimal]);
 
 const handleAnimalPress = (animal) => {
-  if (animal.type === "gato") {
+  if (animal.status && animal.status.toLowerCase() === "indisponivel") {
+    setPetIndisponivel(animal);
+    setModalVisible(true);
+    return;
+  }
+  if (animal.type === "Gato") {
     navigation.navigate("PerfilGatoUser", { pet: animal });
-  } else if (animal.type === "cao") {
+  } else if (animal.type === "Cachorro") {
     navigation.navigate("PerfilCaoUser", { pet: animal });
   }
 };
 
 
   const themeColor =
-    tipoAnimal === 'gato' ? Colors.primaryOrange : Colors.primaryPurple;
+    tipoAnimal === 'Gato' ? Colors.primaryOrange : Colors.primaryPurple;
   const oppositeColor =
-    tipoAnimal === 'gato' ? Colors.primaryPurple : Colors.primaryOrange;
+    tipoAnimal === 'Gato' ? Colors.primaryPurple : Colors.primaryOrange;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -211,7 +215,7 @@ const handleAnimalPress = (animal) => {
           <View>
             <Text style={styles.headerTitle}>Ajude um</Text>
             <Text style={styles.headerSubtitle}>
-              {tipoAnimal === 'gato' ? 'gatinho!' : 'cachorro!'}
+              {tipoAnimal === 'Gato' ? 'gatinho!' : 'cachorro!'}
             </Text>
           </View>
         </View>
@@ -219,12 +223,12 @@ const handleAnimalPress = (animal) => {
 
       <Image
         source={
-          tipoAnimal === 'gato'
+          tipoAnimal === 'Gato'
             ? require('../assets/FotosPerfisAnimais/GatoDeitado.png')
             : require('../assets/FotosPerfisAnimais/CachorroDeitado.png')
         }
         style={
-          tipoAnimal === 'gato'
+          tipoAnimal === 'Gato'
             ? styles.gatoHeaderImage
             : styles.cachorroHeaderImage
         }
@@ -233,7 +237,7 @@ const handleAnimalPress = (animal) => {
 
       <View style={styles.contentContainer}>
         <FlatList
-          data={currentData}
+          data={pets}
           renderItem={({ item, index }) => (
             <AnimalCard item={item} index={index} onPress={handleAnimalPress} />
           )}
@@ -243,12 +247,18 @@ const handleAnimalPress = (animal) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContentContainer}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                Você ainda não adicionou nenhum pet para adoção
-              </Text>
-            </View>
-          }
+            loading ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Carregando animais...</Text>
+                </View>
+             ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
+                    Não há animais disponíveis nesta região
+                  </Text>
+                </View>
+             )
+          }
           ListHeaderComponent={
             <>
               <View style={styles.addNewButtonContainer}>
@@ -259,7 +269,7 @@ const handleAnimalPress = (animal) => {
               <View style={styles.animalSelector}>
                 <TouchableOpacity
                   style={styles.selectorButton}
-                  onPress={() => setTipoAnimal('cao')}
+                  onPress={() => setTipoAnimal('Cachorro')}
                   activeOpacity={0.7}>
                   <View
                     style={[
@@ -278,11 +288,11 @@ const handleAnimalPress = (animal) => {
                   <Text
                     style={[
                       styles.selectorText,
-                      tipoAnimal === 'cao' && { color: Colors.primaryPurple },
+                      tipoAnimal === 'Cachorro' && { color: Colors.primaryPurple },
                     ]}>
                     Cachorros
                   </Text>
-                  {tipoAnimal === 'cao' && (
+                  {tipoAnimal === 'Cachorro' && (
                     <View
                       style={[
                         styles.activeTabIndicator,
@@ -293,7 +303,7 @@ const handleAnimalPress = (animal) => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.selectorButton}
-                  onPress={() => setTipoAnimal('gato')}
+                  onPress={() => setTipoAnimal('Gato')}
                   activeOpacity={0.7}>
                   <View
                     style={[
@@ -312,11 +322,11 @@ const handleAnimalPress = (animal) => {
                   <Text
                     style={[
                       styles.selectorText,
-                      tipoAnimal === 'gato' && { color: Colors.primaryOrange },
+                      tipoAnimal === 'Gato' && { color: Colors.primaryOrange },
                     ]}>
                     Gatos
                   </Text>
-                  {tipoAnimal === 'gato' && (
+                  {tipoAnimal === 'Gato' && (
                     <View
                       style={[
                         styles.activeTabIndicator,
@@ -330,6 +340,26 @@ const handleAnimalPress = (animal) => {
           }
         />
       </View>
+
+      <Modal
+        animationType="fade" // Efeito de esmaecimento suave
+        transparent={true} // Fundo transparente para o modal flutuar
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+                <Text style={styles.modalTitle}>Animal Indisponível</Text>
+                <Text style={styles.modalText}>
+                    O animal **{petIndisponivel?.name || 'este pet'}** não está mais disponível para adoção no momento.
+                </Text>
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: Colors.primaryPurple }]}
+                    onPress={() => setModalVisible(false)}>
+                    <Text style={styles.textStyle}>Entendi</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    </Modal>
     </SafeAreaView>
   );
 };
@@ -491,6 +521,51 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     opacity: 0.6,
   },
+  centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fundo escurecido
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '80%',
+    },
+    modalTitle: {
+        marginBottom: 15,
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontSize: 18,
+        color: Colors.primaryPurple,
+    },
+    modalText: {
+        marginBottom: 25,
+        textAlign: 'center',
+        fontSize: 14,
+        color: Colors.mediumGray,
+    },
+    button: {
+        borderRadius: 10,
+        padding: 10,
+        elevation: 2,
+    },
+    textStyle: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
 });
 
 export default Adote;
