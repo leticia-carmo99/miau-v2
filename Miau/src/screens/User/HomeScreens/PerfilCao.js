@@ -7,20 +7,17 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  ImageBackground
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Back from '../assets/FotosInicial/Back.png';
-import Amora from '../assets/FotosPerfisAnimais/Amora.png';
-import LogoOng from '../assets/FotosPerfisAnimais/LogoOng.png';
 import { WebView } from "react-native-webview";
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../../firebaseConfig';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Asset } from "expo-asset";
-
-import PorteMenorRoxo from '../assets/FotosPerfisAnimais/PorteMenorRoxo.png';
-import PorteMenorLaranja from '../assets/FotosPerfisAnimais/PorteMenorLaranja.png';
 
 import {
   useFonts,
@@ -36,34 +33,43 @@ import * as SplashScreen from 'expo-splash-screen';
 
 const { width } = Dimensions.get('window');
 
-const COLORS = {
-  primaryOrange: '#FFAB36',
+const Colors = {
   primaryPurple: '#9156D1',
+  backgroundPurple: '#9156D1',
+  cardWhite: '#FFFFFF',
+  textDark: '#333333',
+  textMedium: '#8A8A8A',
+  textLight: '#BDBDBD',
+  primaryOrange: '#FFAB36',
+  bubbleBackground: '#FFFFFF',
   lightPurple: '#E6E6FA',
-  lightOrange: '#FFDAB9',
-  white: '#FFFFFF',
-  black: '#000000',
-  darkGray: '#333333',
-  mediumGray: '#666666',
-  lightGray: '#999999',
-  offWhite: '#f8f8f8',
-  yellowStar: '#FFD700',
-  redHeart: '#FF6347',
-  blogTextGray: '#737373',
+};
+
+const DogPorteIcon = ({ porte, petPorte, size }) => {
+  const imageSource =
+    porte === petPorte
+      ? require('../assets/FotosPerfisAnimais/PorteMenorLaranja.png')
+      : require('../assets/FotosPerfisAnimais/PorteMenorRoxo.png');
+
+  return (
+    <Image
+      source={imageSource}
+      style={{
+        width: 120 * size,
+        height: 100 * size,
+        marginHorizontal: -25, 
+      }}
+      resizeMode="contain"
+    />
+  );
 };
 
 export default function EditarMeuPet() {
   const navigation = useNavigation();
   const route = useRoute();
-
   const [ongData, setOngData] = useState(null);
   const [loadingOng, setLoadingOng] = useState(true);
   
-  const data = [
-    { label: 'Idade', value: '3' },
-    { label: 'Sexo', value: 'Fêmea' },
-    { label: 'Cor', value: 'Branco e bege' },
-  ];
 
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
@@ -73,71 +79,79 @@ export default function EditarMeuPet() {
     Nunito_700Bold,
   });
 
+
+   const { pet } = route.params || {};
+
+useEffect(() => {
+    const fetchOngData = async () => {
+      if (!pet || !pet.ownerId) { // CORREÇÃO 1: Usar pet.ongid
+        setLoadingOng(false);
+        return;
+      }
+
+      // CORREÇÃO 2: Usar pet.ongid para referenciar o documento
+      const ongRef = doc(db, 'ongs', pet.ownerId); 
+      try {
+        const docSnap = await getDoc(ongRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setOngData({
+            id: docSnap.id,
+            nome: data.nomeOng,         
+            telefone: data.telefoneContato,     // Seu campo de telefone/número
+            logo: data.logoInstituicao, 
+          });
+        } else {
+          console.log("ONG não encontrada para o ID:", pet.ownerId);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados da ONG:", error);
+      } finally {
+        setLoadingOng(false);
+      }
+    };
+    fetchOngData();
+  }, [pet]);
+
   if (!fontsLoaded) {
-    return null;
+    return null; 
   }
 
-    const { pet } = route.params || {};
-  
-  useEffect(() => {
-      const fetchOngData = async () => {
-        if (!pet || !pet.ongid) { // CORREÇÃO 1: Usar pet.ongid
-          setLoadingOng(false);
-          return;
-        }
-  
-        // CORREÇÃO 2: Usar pet.ongid para referenciar o documento
-        const ongRef = doc(db, 'ongs', pet.ongid); 
-        try {
-          const docSnap = await getDoc(ongRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setOngData({
-              id: docSnap.id,
-              name: data.nomeOng,         
-              telefone: data.telefoneContato,     // Seu campo de telefone/número
-              logo: data.logoInstituicao, 
-            });
-          } else {
-            console.log("ONG não encontrada para o ID:", pet.ongid);
-          }
-        } catch (error) {
-          console.error("Erro ao buscar dados da ONG:", error);
-        } finally {
-          setLoadingOng(false);
-        }
-      };
-      fetchOngData();
-    }, [pet]);
-  
-    if (!fontsLoaded) {
-      return null; 
-    }
-  
-  
-    if (!pet) {
-          return (
-              <SafeAreaView style={styles.safeArea}>
-                  <View style={styles.header}>
-                      <TouchableOpacity onPress={() => navigation.goBack()}>
-                          <Ionicons name="arrow-back" size={28} color={Colors.cardWhite} />
-                      </TouchableOpacity>
-                  </View>
-                  <Text style={styles.errorText}>Pet não encontrado!</Text>
-              </SafeAreaView>
-          );
-        }
+
+  if (!pet) {
+   
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={28} color={Colors.cardWhite} />
+                </TouchableOpacity>
+            </View>
+            <Text style={styles.errorText}>Pet não encontrado!</Text>
+        </SafeAreaView>
+    );
+  }
+
+
+  const petParaExibicao = { ...pet, ong: ongData || { name: 'ONG Indisponível', telefone: '...', logo: null } };
+
 
   return (
-    <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-      <SafeAreaView style={styles.container}>
-        <Image source={BackgroundCao} style={styles.background} />
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <ImageBackground
+            source={require('../assets/FotosPerfisAnimais/BackgroundCao.png')}
+            resizeMode="repeat"
+            style={styles.backgroundImage}
+            imageStyle={{ transform: [{ scale: 2 }] }}>
+            
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Ionicons name="arrow-back" size={28} color={Colors.cardWhite} />
+              </TouchableOpacity>
+            </View>
 
-        <View style={styles.menuView}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Image source={Back} style={styles.back} />
-          </TouchableOpacity>
-        </View>
+            <View style={styles.contentWrapper}>
 
               <View style={styles.imageContainer}>
                 {pet.petImageUri ? (
@@ -148,17 +162,17 @@ export default function EditarMeuPet() {
               </View>
 
               <View style={styles.mainCard}>
-                <Text style={styles.petName}>{pet.name}</Text>
+                <Text style={styles.petName}>{pet.nome}</Text>
                 <Text style={styles.petBreed}>{pet.raca}</Text>
 
                 <View style={styles.infoBubbleRow}>
                   <View style={styles.infoBubble}>
                     <Text style={styles.bubbleTitle}>Idade</Text>
-                    <Text style={styles.bubbleContent}>{pet.age}</Text>
+                    <Text style={styles.bubbleContent}>{pet.idade}</Text>
                   </View>
                   <View style={styles.infoBubble}>
                     <Text style={styles.bubbleTitle}>Sexo</Text>
-                    <Text style={styles.bubbleContent}>{pet.gender === 'Male' ? 'Macho' : 'Fêmea'}</Text>
+                    <Text style={styles.bubbleContent}>{pet.sexo === 'Macho' ? 'Macho' : 'Fêmea'}</Text>
                   </View>
                   <View style={styles.infoBubble}>
                     <Text style={styles.bubbleTitle}>Cor</Text>
@@ -169,12 +183,12 @@ export default function EditarMeuPet() {
                 <View style={styles.bannerWrapper}>
                   <View style={styles.ongContainer}>
                     <Image
-                      source={pet.ong.logo ? { uri: pet.ong.logo } : require('../assets/FotosPerfisAnimais/LogoOng.png')}
+                      source={petParaExibicao.ong.logo ? { uri: petParaExibicao.ong.logo } : require('../assets/FotosPerfisAnimais/LogoOng.png')}
                       style={styles.ongLogo}
                     />
                     <View style={styles.ongBanner}>
-                        <Text style={styles.ongName}>{pet.ong.name}</Text>
-                        <Text style={styles.ongId}>{pet.ong.telefone}</Text>
+                        <Text style={styles.ongName}>{petParaExibicao.ong.nome}</Text>
+                        <Text style={styles.ongId}>{petParaExibicao.ong.telefone}</Text>
                     </View>
                   </View>
                 </View>
@@ -195,7 +209,7 @@ export default function EditarMeuPet() {
 
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Informações gerais</Text>
-                  <Text style={styles.sectionContent}>{pet.infoGerais}</Text>
+                  <Text style={styles.sectionContent}>{pet.informacoes}</Text>
                 </View>
 
                 <View style={styles.buttonContainerLeft}>
@@ -209,196 +223,231 @@ export default function EditarMeuPet() {
             <Text style={styles.adoptButtonText}>Quero Adotar!</Text>
           </TouchableOpacity>
         
-        </View>
-
-        <View style={{ marginTop: 1000, alignItems: 'flex-end' }}>
-          <Image source={BackgroundCao} style={styles.background} />
-        </View>
+              </View>
+            </View>
+          </ImageBackground>
+        </ScrollView>
       </SafeAreaView>
-    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+ backgroundImage: {
     flex: 1,
-    backgroundColor: COLORS.primaryPurple,
   },
-  background: {
-    width: '100%',
-    height: 400,
-    zIndex: 0,
-    position: 'relative',
-  },
-  back: {
-    height: width * 0.1,
-    width: width * 0.1,
-    padding: width * 0.1,
-    marginRight: width * 0.65,
-  },
-  menuView: {
-    height: width * 0.4,
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'absolute',
-  },
-  dogImage: {
-    height: width * 0.7,
-    width: width * 0.8,
-  },
-  dogImageView: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: width * 0.3,
-    zIndex: 2,
-  },
-  content: {
-    backgroundColor: COLORS.offWhite,
-    borderRadius: 40,
+  safeArea: {
     flex: 1,
+    backgroundColor: Colors.backgroundPurple,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 80, 
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    width: '100%',
+  },
+  contentWrapper: {
+    marginTop: width * 0.30,
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  mainCard: {
+    backgroundColor: Colors.cardWhite,
+    borderRadius: 35,
+    width: '100%',
+    paddingTop: width * 0.25 + 20,
+    paddingBottom: 25,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  imageContainer: {
+    position: 'absolute',
+    top: -(width * 0.25),
     zIndex: 1,
-    position: 'absolute',
-    marginTop: width * 0.8,
-    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
   },
-  nameView: {
-    marginTop: width * 0.23,
-    alignItems: 'center',
+  imagePlaceholder: {
+    width: width * 0.5,
+    height: width * 0.5,
+    backgroundColor: Colors.bubbleBackground,
+    borderRadius: 25,
+  },
+  petImage: {
+    width: width * 0.5,
+    height: width * 0.5,
+    borderRadius: 25,
   },
   petName: {
-    fontSize: width * 0.07,
+    fontSize: 30,
+    color: Colors.primaryPurple,
     fontFamily: 'JosefinSans_700Bold',
-    color: COLORS.primaryPurple,
   },
-  animalType: {
-    fontSize: width * 0.05,
+  petBreed: {
+    fontSize: 18,
+    color: Colors.textMedium,
+    marginBottom: 25,
     fontFamily: 'JosefinSans_400Regular',
-    color: COLORS.primaryPurple,
   },
-  infos: {
+  infoBubbleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    flexWrap: 'wrap',
-    padding: 10,
-  },
-  card: {
-    backgroundColor: '#fff',
-    width: '23%', // 4 cards lado a lado
-    aspectRatio: 1, // deixa quadradinho
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: COLORS.primaryPurple,
-    shadowOffset: { width: 3, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-    margin: 1,
-    justifyContent: 'center',
-    borderColor: COLORS.lightPurple,
-    borderWidth: 2,
-  },
-  label: {
-    fontSize: width * 0.045,
-    color: COLORS.primaryPurple,
-    marginBottom: 4,
-    textAlign: 'center',
-    fontFamily: 'JosefinSans_400Regular',
-    marginTop: 8,
-  },
-  value: {
-    fontSize: width * 0.05,
-    color: COLORS.primaryPurple,
-    textAlign: 'center',
-    fontFamily: 'JosefinSans_700Bold',
-    marginBottom: 8,
-  },
-  infoOngView: {
-    alignItems: 'flex-end',
-    marginVertical: width * 0.1,
-    paddingVertical: width * 0.05,
+    justifyContent: 'space-between',
     width: '100%',
-    height: width * 0.3,
+    marginBottom: 25,
+  },
+  infoBubble: {
+    backgroundColor: Colors.bubbleBackground,
+    borderRadius: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  bubbleTitle: {
+    fontSize: 14,
+    color: Colors.textMedium,
+    fontFamily: 'JosefinSans_400Regular',
+  },
+  bubbleContent: {
+    fontSize: 16,
+    color: Colors.primaryPurple,
+    fontFamily: 'JosefinSans_700Bold',
+  },
+  bannerWrapper: {
+    width: '100%',
+    alignItems: 'flex-end',
+    marginBottom: 25,
+    marginRight: -20,
+  },
+  ongContainer: {
+    position: 'relative',
+    paddingLeft: 45,
     justifyContent: 'center',
   },
-  infoOngText: {
+  ongBanner: {
+    backgroundColor: Colors.primaryPurple,
+    borderRadius: 15,
+    paddingVertical: 10,
+    paddingLeft: 55,
+    paddingRight: 15,
+    minHeight: 70,
+    justifyContent: 'center',
+  },
+  ongLogo: {
+    width: 90,
+    height: 90,
+    borderRadius: 40,
+    position: 'absolute',
+    left: 0,
+    zIndex: 1,
+  },
+  ongName: {
+    color: Colors.cardWhite,
+    fontSize: 15,
+    fontFamily: 'JosefinSans_700Bold',
+  },
+  ongId: {
+    color: Colors.cardWhite,
+    fontSize: 13,
     fontFamily: 'JosefinSans_400Regular',
-    fontSize: width * 0.035,
-    color: COLORS.white,
-    marginVertical: width * 0.01,
-    flexWrap: 'wrap',
-    paddingLeft: 40,
   },
-  infoOngTextView: {
-    backgroundColor: COLORS.primaryPurple,
-    alignSelf: 'flex-end',
-    paddingVertical: width * 0.04,
-    width: '68%',
+  section: {
+    width: '100%',
+    marginBottom: 20,
   },
-  infoOngImage: {
-    height: width * 0.15,
-    width: width * 0.15,
-    padding: width * 0.15,
-    alignSelf: 'flex-start',
-    marginLeft: '20%',
-    borderRadius: 20,
-  },
-  subtitle: {
-    fontSize: width * 0.05,
-    fontFamily: 'JosefinSans_400Regular',
-    color: COLORS.primaryPurple,
-  },
-  contentView: {
-    padding: 10,
-    marginHorizontal: width * 0.05,
-  },
-  pmenorr: {
-    height: width * 0.2,
-    width: width * 0.2,
-  },
-  pmediol: {
-    height: width * 0.27,
-    width: width * 0.27,
-  },
-  pmaiorr: {
-    height: width * 0.3,
-    width: width * 0.4,
-  },
-  subtitleBold: {
-    fontSize: width * 0.07,
+  sectionTitle: {
+    fontSize: 20,
+    color: Colors.primaryPurple,
+    marginBottom: 10,
     fontFamily: 'Nunito_700Bold',
-    color: COLORS.primaryPurple,
-    marginTop: width * 0.1,
   },
-  paragraph: {
-    flexWrap: 'wrap',
-    fontSize: width * 0.04,
+  sectionContent: {
+    fontSize: 15,
+    color: Colors.textMedium,
+    lineHeight: 22,
     fontFamily: 'JosefinSans_300Light',
-    color: COLORS.darkGray,
-    letterSpacing: 1,
-    lineHeight: 18,
-    marginTop: width * 0.03,
   },
-  vacineButton: {
+  porteContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  buttonContainerLeft: {
+    width: '100%',
+    alignItems: 'flex-start',
+    marginTop: 10,
+  },
+  vacinaButton: {
+    backgroundColor: Colors.cardWhite,
+    borderWidth: 0,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  vacinaButtonText: {
+    color: Colors.primaryPurple,
+    fontSize: 14,
+    fontFamily: 'Nunito_700Bold',
+  },
+  editButton: {
+    backgroundColor: Colors.primaryPurple,
+    width: '55%',
+    marginTop: 30,
+    paddingVertical: 8,
+    borderRadius: 18,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  editButtonText: {
+    color: Colors.cardWhite,
+    fontSize: 18,
+    fontFamily: 'Nunito_700Bold',
+  },
+  errorText: {
+    color: Colors.cardWhite,
+    textAlign: 'center',
+    fontSize: 18,
+    marginTop: 50,
+    fontFamily: 'Nunito_700Bold',
+  },
+    vacineButton: {
     marginVertical: width * 0.05,
     borderRadius: width * 0.1,
-    shadowColor: COLORS.primaryPurple,
+    shadowColor: Colors.primaryPurple,
     shadowOffset: { width: 5, height: 5 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
     elevation: 4,
     borderWidth: 2,
-    borderColor: COLORS.lightPurple,
+    borderColor: Colors.lightPurple,
     width: '70%',
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
   },
   vacineButtonText: {
     padding: width * 0.04,
     fontFamily: 'JosefinSans_400Regular',
-    color: COLORS.primaryPurple,
+    color: Colors.primaryOrange,
   },
   adoptButton: {
     marginVertical: width * 0.05,
@@ -410,24 +459,14 @@ const styles = StyleSheet.create({
     elevation: 4,
     width: '70%',
     alignSelf: 'center',
-    backgroundColor: COLORS.primaryPurple,
+    backgroundColor: Colors.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
   },
   adoptButtonText: {
     fontFamily: 'JosefinSans_700Bold',
-    color: COLORS.white,
+    color: '#fff',
     padding: width * 0.04,
     fontSize: width * 0.08,
-  },
-    pdf: {
-    flex: 1,
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
-  },
-    ongContainer: {
-    position: 'relative',
-    paddingLeft: 45,
-    justifyContent: 'center',
   },
 });

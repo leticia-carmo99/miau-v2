@@ -54,13 +54,13 @@ const AnimalCard = ({ item, index, onPress }) => {
       )}
       <View style={styles.animalInfo}>
         <View>
-          <Text style={styles.animalName}>{item.name}</Text>
+          <Text style={styles.animalName}>{item.nome}</Text>
           <Text style={styles.animalSubText}>{item.raca}</Text>
-          <Text style={styles.animalSubText}>{item.age}</Text>
+          <Text style={styles.animalSubText}>{item.idade}</Text>
         </View>
         <View style={styles.genderIcon}>
           <Text style={styles.genderText}>
-            {item.gender === 'Male' ? '♂' : '♀'}
+            {item.gender === 'Macho' ? '♂' : '♀'}
           </Text>
         </View>
       </View>
@@ -72,12 +72,11 @@ const AddAdocaoPet = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { tipoInicial } = route.params || {};
-  const [tipoAnimal, setTipoAnimal] = useState(tipoInicial || 'gato');
-  const [ongId, setOngId] = useState(null);
+  const [tipoAnimal, setTipoAnimal] = useState(tipoInicial || 'Gato');
+  const [ownerId, setOngId] = useState(null);
   const [loading, setLoading] = useState(true); 
-
   const [pets, setPets] = useState([]);
-const currentData = pets.filter((pet) => pet.especie?.toLowerCase() === tipoAnimal);
+const currentData = pets.filter((pet) => pet.especie === tipoAnimal);
 
   const handleAnimalPress = (animal) => {
     navigation.navigate('PerfilAdocaoPetOng', { pet: animal });
@@ -90,7 +89,7 @@ const handleAddPet = () => {
   };
 
   const themeColor =
-    tipoAnimal === 'gato' ? Colors.primaryOrange : Colors.primaryPurple;
+    tipoAnimal === 'Gato' ? Colors.primaryOrange : Colors.primaryPurple;
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -109,17 +108,17 @@ const handleAddPet = () => {
         const data = doc.data();
         fetchedPets.push({
           id: doc.id,
-          name: data.nome,
-          age: data.idade,
-          gender: data.sexo === 'Macho' ? 'Male' : 'Female', 
+          nome: data.nome,
+          idade: data.idade,
+          sexo: data.sexo === 'Macho' ? 'Macho' : 'Fêmea', 
           especie: data.especie,
           raca: data.raca,
           petImageUri: data.petImageUri,
           cor: data.cor,
           porte: data.porte,
-          infoGerais: data.infoGerais,
+          informacoes: data.informacoes,
           descricao: data.descricao,
-          ongid: data.ownerId,
+          ownerId: data.ownerId,
           vaccineImageUri: data.vaccineImageUri,
         });
       });
@@ -169,7 +168,7 @@ if (!fontsLoaded || loading) {
           <View>
             <Text style={styles.headerTitle}>Ajude um</Text>
             <Text style={styles.headerSubtitle}>
-              {tipoAnimal === 'gato' ? 'gatinho!' : 'cachorro!'}
+              {tipoAnimal === 'Gato' ? 'gatinho!' : 'cachorro!'}
             </Text>
           </View>
         </View>
@@ -177,12 +176,12 @@ if (!fontsLoaded || loading) {
 
       <Image
         source={
-          tipoAnimal === 'gato'
+          tipoAnimal === 'Gato'
             ? require('../Images/GatoDeitado.png')
             : require('../Images/CachorroDeitado.png')
         }
         style={
-          tipoAnimal === 'gato'
+          tipoAnimal === 'Gato'
             ? styles.gatoHeaderImage
             : styles.cachorroHeaderImage
         }
@@ -226,7 +225,7 @@ if (!fontsLoaded || loading) {
                 {/* Botão Cachorro */}
                 <TouchableOpacity
                   style={styles.selectorButton}
-                  onPress={() => setTipoAnimal('cao')}
+                  onPress={() => setTipoAnimal('Cachorro')}
                   activeOpacity={1}>
                   <View
                     style={[styles.animalIconContainer, { backgroundColor: Colors.primaryPurple }]}>
@@ -239,7 +238,7 @@ if (!fontsLoaded || loading) {
                   <Text style={[styles.selectorText, { color: Colors.primaryPurple }]}>
                     Cachorros
                   </Text>
-                  {tipoAnimal === 'cao' && (
+                  {tipoAnimal === 'Cachorro' && (
                     <View
                       style={[styles.activeTabIndicator, { backgroundColor: Colors.primaryPurple }]}
                     />
@@ -249,7 +248,7 @@ if (!fontsLoaded || loading) {
                 {/* Botão Gato */}
                 <TouchableOpacity
                   style={styles.selectorButton}
-                  onPress={() => setTipoAnimal('gato')}
+                  onPress={() => setTipoAnimal('Gato')}
                   activeOpacity={1}>
                   <View
                     style={[styles.animalIconContainer, { backgroundColor: Colors.primaryOrange }]}>
@@ -262,7 +261,7 @@ if (!fontsLoaded || loading) {
                   <Text style={[styles.selectorText, { color: Colors.primaryOrange }]}>
                     Gatos
                   </Text>
-                  {tipoAnimal === 'gato' && (
+                  {tipoAnimal === 'Gato' && (
                     <View
                       style={[styles.activeTabIndicator, { backgroundColor: Colors.primaryOrange }]}
                     />

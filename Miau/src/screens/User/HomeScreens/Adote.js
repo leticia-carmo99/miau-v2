@@ -51,13 +51,13 @@ const AnimalCard = ({ item, index, onPress }) => {
       
       <View style={styles.animalInfo}>
         <View>
-          <Text style={styles.animalName}>{item.name}</Text>
+          <Text style={styles.animalName}>{item.nome}</Text>
           <Text style={styles.animalSubText}>{item.raca}</Text>
-          <Text style={styles.animalSubText}>{item.age}</Text>
+          <Text style={styles.animalSubText}>{item.idade}</Text>
         </View>
         <View style={styles.genderIcon}>
           <Text style={styles.genderText}>
-            {item.gender === 'Male' ? '♂' : '♀'}
+            {item.sexo === 'Macho' ? '♂' : '♀'}
           </Text>
         </View>
       </View>
@@ -144,29 +144,28 @@ const Adote = () => {
   const { tipoInicial } = route.params || {}; 
   const [tipoAnimal, setTipoAnimal] = useState(tipoInicial || 'Cachorro');
   const [pets, setPets] = useState([]); // Inicia com uma lista vazia
-const [loading, setLoading] = useState(true);
-
+  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [petIndisponivel, setPetIndisponivel] = useState(null);
 
-// Nova Função para buscar os dados no Firestore
-const fetchPets = async () => {
+  const fetchPets = async () => {
   setLoading(true);
   try {
     const petsCollection = collection(db, "petsong");
-    const q = query(petsCollection, where("tipo", "==", tipoAnimal));
+    const q = query(petsCollection, where("especie", "==", tipoAnimal));
     const querySnapshot = await getDocs(q);
     const fetchedPets = querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
-        name: data.nome,
-        raca: data.cor,
-        age: data.idade ? `${data.idade} anos` : 'Idade N/A',
+        nome: data.nome,
+        raca: data.raca,
+        cor: data.cor,
+        idade: data.idade ? `${data.idade} anos` : 'Idade N/A',
         gender: data.sexo || 'N/A',
-        type: data.tipo || tipoAnimal, 
+        especie: data.especie || tipoAnimal, 
         petImageUri: data.petImageUrl || null, 
-        email_ong: data.email_ong,
+        ownerId: data.ownerId,
         descricao: data.descricao,
         informacoes: data.informacoes,
         porte: data.porte,
@@ -191,9 +190,9 @@ const handleAnimalPress = (animal) => {
     setModalVisible(true);
     return;
   }
-  if (animal.type === "Gato") {
+  if (animal.especie === "Gato") {
     navigation.navigate("PerfilGatoUser", { pet: animal });
-  } else if (animal.type === "Cachorro") {
+  } else if (animal.especie === "Cachorro") {
     navigation.navigate("PerfilCaoUser", { pet: animal });
   }
 };

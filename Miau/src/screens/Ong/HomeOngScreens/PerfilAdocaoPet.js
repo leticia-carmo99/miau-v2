@@ -76,20 +76,20 @@ const PerfilPetAdocao = () => {
 
 useEffect(() => {
     const fetchOngData = async () => {
-      if (!pet || !pet.ongid) { // CORREÇÃO 1: Usar pet.ongid
+      if (!pet || !pet.ownerId) { // CORREÇÃO 1: Usar pet.ongid
         setLoadingOng(false);
         return;
       }
 
       // CORREÇÃO 2: Usar pet.ongid para referenciar o documento
-      const ongRef = doc(db, 'ongs', pet.ongid); 
+      const ongRef = doc(db, 'ongs', pet.ownerId); 
       try {
         const docSnap = await getDoc(ongRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
           setOngData({
             id: docSnap.id,
-            name: data.nomeOng,         
+            nome: data.nomeOng,         
             telefone: data.telefoneContato,     // Seu campo de telefone/número
             logo: data.logoInstituicao, 
           });
@@ -157,17 +157,17 @@ const PerfilPetComponent = ({ pet }) => {
               </View>
 
               <View style={styles.mainCard}>
-                <Text style={styles.petName}>{pet.name}</Text>
+                <Text style={styles.petName}>{pet.nome}</Text>
                 <Text style={styles.petBreed}>{pet.raca}</Text>
 
                 <View style={styles.infoBubbleRow}>
                   <View style={styles.infoBubble}>
                     <Text style={styles.bubbleTitle}>Idade</Text>
-                    <Text style={styles.bubbleContent}>{pet.age}</Text>
+                    <Text style={styles.bubbleContent}>{pet.idade}</Text>
                   </View>
                   <View style={styles.infoBubble}>
                     <Text style={styles.bubbleTitle}>Sexo</Text>
-                    <Text style={styles.bubbleContent}>{pet.gender === 'Male' ? 'Macho' : 'Fêmea'}</Text>
+                    <Text style={styles.bubbleContent}>{pet.sexo === 'Macho' ? 'Macho' : 'Fêmea'}</Text>
                   </View>
                   <View style={styles.infoBubble}>
                     <Text style={styles.bubbleTitle}>Cor</Text>
@@ -182,7 +182,7 @@ const PerfilPetComponent = ({ pet }) => {
                       style={styles.ongLogo}
                     />
                     <View style={styles.ongBanner}>
-                        <Text style={styles.ongName}>{pet.ong.name}</Text>
+                        <Text style={styles.ongName}>{pet.ong.nome}</Text>
                         <Text style={styles.ongId}>{pet.ong.telefone}</Text>
                     </View>
                   </View>
@@ -204,7 +204,7 @@ const PerfilPetComponent = ({ pet }) => {
 
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Informações gerais</Text>
-                  <Text style={styles.sectionContent}>{pet.infoGerais}</Text>
+                  <Text style={styles.sectionContent}>{pet.informacoes}</Text>
                 </View>
 
                 <View style={styles.buttonContainerLeft}>

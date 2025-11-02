@@ -62,10 +62,10 @@ const RadioButtonGroup = ({ label, options, selected, onSelect }) => (
 const FormularioAdocao = ({ route }) => {
   const navigation = useNavigation();
   const { tipoAnimal, onGoBack } = route.params || {};
+    const { petParaEdicao } = route.params || {};
   const [ongId, setOngId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [petId, setPetId] = useState(petParaEdicao ? petParaEdicao.id : null);
-  const { petParaEdicao } = route.params || {};
 
   const [nome, setNome] = useState('');
   const [especie, setEspecie] = useState(null);
@@ -75,7 +75,7 @@ const FormularioAdocao = ({ route }) => {
   const [cor, setCor] = useState('');
   const [idade, setIdade] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [infoGerais, setInfoGerais] = useState('');
+  const [informacoes, setInformacoes] = useState('');
   const [petImageUri, setPetImageUri] = useState(null);
   const [vaccineImageUri, setVaccineImageUri] = useState(null);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
@@ -96,20 +96,20 @@ useEffect(() => {
     }
     if (petParaEdicao) {
       setPetId(petParaEdicao.id);
-      setNome(petParaEdicao.name || '');
-      setEspecie(petParaEdicao.especie || (tipoAnimal === 'gato' ? 'Gato' : 'Cachorro')); 
-      setSexo(petParaEdicao.gender === 'Macho' ? 'Macho' : 'Fêmea');
+      setNome(petParaEdicao.nome || '');
+      setEspecie(petParaEdicao.especie || (tipoAnimal === 'Gato' ? 'Gato' : 'Cachorro')); 
+      setSexo(petParaEdicao.sexo === 'Macho' ? 'Macho' : 'Fêmea');
       setRaca(petParaEdicao.raca || '');
       setPorte(petParaEdicao.porte || null);
       setCor(petParaEdicao.cor || '');
-      setIdade(petParaEdicao.age || '');
+      setIdade(petParaEdicao.idade || '');
       setDescricao(petParaEdicao.descricao || '');
-      setInfoGerais(petParaEdicao.infoGerais || '');
+      setInformacoes(petParaEdicao.informacoes || '');
       setPetImageUri(petParaEdicao.petImageUri || null);
       setVaccineImageUri(petParaEdicao.vaccineImageUri || null);
 
     } else if (tipoAnimal) {
-      setEspecie(tipoAnimal === 'gato' ? 'Gato' : 'Cachorro');
+      setEspecie(tipoAnimal === 'Gato' ? 'Gato' : 'Cachorro');
     }
 }, [navigation, petParaEdicao, tipoAnimal]);
 
@@ -137,15 +137,15 @@ useEffect(() => {
     }
     setLoading(true); 
     const petData = {
-        name: nome,
-        age: idade,
-        gender: sexo === 'Macho' ? 'Macho' : 'Fêmea',
+        nome: nome,
+        idade: idade,
+        sexo: sexo === 'Macho' ? 'Macho' : 'Fêmea',
         especie: especie === 'Gato' ? 'Gato' : 'Cachorro',
         raca,
         porte,
         cor,
         descricao,
-        infoGerais,
+        informacoes,
         ownerId: ongId, 
         petImageUri, 
         vaccineImageUri,
@@ -254,7 +254,7 @@ useEffect(() => {
           
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Informações gerais</Text>
-            <TextInput style={[styles.input, styles.textArea]} placeholder="Escreva aqui informações sobre a saúde do pet..." value={infoGerais} onChangeText={setInfoGerais} multiline />
+            <TextInput style={[styles.input, styles.textArea]} placeholder="Escreva aqui informações sobre a saúde do pet..." value={informacoes} onChangeText={setInformacoes} multiline />
           </View>
 
           <View style={styles.inputGroup}>
