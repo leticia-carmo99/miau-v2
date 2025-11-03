@@ -5,50 +5,6 @@ import { auth, db } from "../../../../firebaseConfig"; // Importe a conexão
 
 const OngContext = createContext();
 
-// Objeto de valores padrão para garantir que todos os campos existam no estado inicial
-const DEFAULT_ONG_DATA = {
-  uid: null,
-  nomeOng: "Nova ONG",
-  email: "miaupatinhas@gmail.com", // Campo usado no PerfilOng.js para edição de contato
-  telefone: "(11) 92821 2819", // Campo usado no PerfilOng.js para edição de contato
-  instagram: "@miaupatinhas1", // Campo usado no PerfilOng.js para edição de redes sociais
-  facebook: "@miaupatinhas1", // Campo usado no PerfilOng.js para edição de redes sociais
-  emailContato: "damaceninho3@gmail.com", // Campo da imagem no console (se for diferente de 'email')
-  siteOficial: "www.miau.patas.com", // URL do site
-  sobre: "Ajudamos animais em todo Brasil", // Biografia da ONG
-  horarioInicio: "08:00",
-  horarioFim: "22:00",
-  diasAbertos: { // Deve ser um objeto para Checkbox funcionar
-    segunda: false,
-    terca: false,
-    quarta: false,
-    quinta: false,
-    sexta: false,
-    sabado: false,
-    domingo: false,
-  },
-  headerImage: null, // Será a URI (string) do Firestore, ou null
-  logoImage: null, // Será a URI (string) do Firestore, ou null
-  fotos: [], // Array de URIs (string) para a galeria
-  endereco: {
-    rua: "",
-    numero: "",
-    bairro: "",
-    cidade: "",
-    estado: "", // Você tem este campo no código original
-    cep: "",
-  },
-  cnpjCpf: "",
-  comprovanteCNPJouEstatuto: "",
-  dataCadastro: "",
-  documentoResponsavel: "",
-  espacoFisicoVisitacao: "não", // Para sim/não (booleano ou string 'sim'/'não')
-  especiesAtendidas: "Não Informado", // Ex: "Cães, Gatos" (string)
-  tipoInstituicao: "ONG",
-  regioesAtuacao: [], // Array de strings ou objetos
-  numAnimaisAcolhidos: "0",
-};
-
 
 export const OngProvider = ({ children }) => {
   const [ongData, setOngData] = useState(null);
@@ -64,25 +20,18 @@ export const OngProvider = ({ children }) => {
         if (docSnap.exists()) {
           fetchedData = docSnap.data();
         }
-
         let consolidatedData = {
-          ...DEFAULT_ONG_DATA,
           ...fetchedData,
           uid: user.uid,
         };
-
-
         consolidatedData.endereco = {
-            ...DEFAULT_ONG_DATA.endereco,
-            ...fetchedData.endereco,
+            ...(fetchedData.endereco || {}),
         };
         consolidatedData.diasAbertos = {
-            ...DEFAULT_ONG_DATA.diasAbertos,
-            ...fetchedData.diasAbertos,
+            ...(fetchedData.diasAbertos || {}),
         };
-        consolidatedData.regioesAtuacao = consolidatedData.regioesAtuacao || DEFAULT_ONG_DATA.regioesAtuacao;
-        consolidatedData.fotos = consolidatedData.fotos || DEFAULT_ONG_DATA.fotos;
-
+        consolidatedData.regioesAtuacao = fetchedData.regioesAtuacao || [];
+        consolidatedData.fotos = fetchedData.fotos || [];
 
         setOngData(consolidatedData);
 

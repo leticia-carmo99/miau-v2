@@ -65,28 +65,49 @@ const PerfilOng = () => {
   const navigation = useNavigation();
   const [isEditing, setIsEditing] = useState(false);
   const { ongData: contextOngData, setOngData, isLoading: contextIsLoading } = useOng(); 
-  const [ongDataLocal, setOngDataLocal] = useState(null); 
-  const [initialOngData, setInitialOngData] = useState(null);
+const [ongDataLocal, setOngDataLocal] = useState(contextOngData || {}); // Adiciona {} como fallback inicial
+  const [initialOngData, setInitialOngData] = useState(contextOngData || {});
   const [isLoading, setIsLoading] = useState(contextIsLoading);
 
-  // Use useEffect para carregar os dados do contexto para o estado local, UMA ÚNICA VEZ
-  useEffect(() => {
-    if (!contextIsLoading && contextOngData) {
-      const safeOngData = {
-        ...contextOngData,
-        diasAbertos: contextOngData.diasAbertos || {}, // Garante que é um objeto
-        endereco: contextOngData.endereco || {}, // Garante que é um objeto
-        fotos: contextOngData.fotos || [], // Garante que é um array
-        horarioInicio: contextOngData.horarioInicio || '00:00',
-        horarioFim: contextOngData.horarioFim || '00:00',
-      };
-      setOngDataLocal(safeOngData);
-      setInitialOngData(safeOngData);
-      setIsLoading(false);
-    }
-  }, [contextIsLoading, contextOngData]);
+// Use useEffect para carregar os dados do contexto para o estado local
+// Use useEffect para carregar os dados do contexto para o estado local
+useEffect(() => {
+    if (contextIsLoading) {
+      setIsLoading(true);
+      return;
+    }
 
-  // ADICIONADO: Carregamento das fontes
+    if (contextOngData) {
+      // 🚨 REMOÇÃO DA CONDIÇÃO DE CHECAGEM DO NOME: 
+      // A cópia deve acontecer SEMPRE que o contexto mudar OU se não estiver editando.
+      if (!isEditing) { 
+        const safeOngData = {
+          ...contextOngData,
+          diasAbertos: contextOngData.diasAbertos || {},
+          endereco: contextOngData.endereco || {},
+          fotos: contextOngData.fotos || [],
+          horarioInicio: contextOngData.horarioInicio || '00:00',
+          horarioFim: contextOngData.horarioFim || '22:00', // Certifique-se do fallback correto
+          // Adicione aqui outros campos que podem estar faltando, ex:
+          sobre: contextOngData.sobre || '',
+          email: contextOngData.email || '',
+        };
+        
+        setOngDataLocal(safeOngData);
+        setInitialOngData(safeOngData); // Garante que o cancelamento volte ao dado carregado
+        setIsLoading(false);
+      } else {
+         // Se estiver editando, apenas para o estado de carregamento, mantendo o estado local
+         setIsLoading(false);
+      }
+    } else {
+      // Sem dados de ONG no contexto
+      setOngDataLocal({}); // Usa objeto vazio para evitar erros de leitura no render
+      setInitialOngData({});
+      setIsLoading(false);
+    }
+}, [contextIsLoading, contextOngData, isEditing]); // Mantenha isEditing como dependência
+
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -180,7 +201,7 @@ const handleSaveChanges = async () => {
       horarioInicio: ongDataLocal.horarioInicio,
       horarioFim: ongDataLocal.horarioFim,
       email: ongDataLocal.email,
-      telefone: ongDataLocal.telefone,
+      telefone: ongDataLocal.telefoneContato,
       instagram: ongDataLocal.instagram,
       facebook: ongDataLocal.facebook,
       endereco: ongDataLocal.endereco,
@@ -431,7 +452,7 @@ const handleSaveChanges = async () => {
               style={styles.textInput}
               placeholder="Telefone"
               keyboardType="phone-pad"
-              value={ongDataLocal.telefone}
+              value={ongDataLocal.telefoneContato}
               onChangeText={(text) => handleInputChange('telefone', text)}
             />
 
