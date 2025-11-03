@@ -44,7 +44,7 @@ const generateEventTitle = (eventType, petType) => {
   return `${eventNames[eventType]}${petNames[petType]}`;
 };
 
-const AddEventModal = ({ isVisible, onClose, onAddEvent, initialDate }) => {
+const AddEventModal = ({ isVisible, onClose, onAddEvent, onUpdateEvent, onDeleteEvent, initialDate, eventToEdit }) => {
   // carregar fonts
   const [nunitoFontsLoaded] = useNunitoFonts({
     Nunito_400Regular,
@@ -65,68 +65,84 @@ const AddEventModal = ({ isVisible, onClose, onAddEvent, initialDate }) => {
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Sincroniza a data inicial passada como prop com o estado local
-  useEffect(() => {
-    if (initialDate) {
-      setSelectedDate(initialDate);
-    }
-  }, [initialDate]);
-
-  // Limpa o formulário quando o modal é aberto
-  useEffect(() => {
-    if (isVisible) {
+useEffect(() => {
+  if (isVisible) {
+    if (eventToEdit) {
+      // MODO EDIÇÃO: Carrega dados do evento
+      setEventType(eventToEdit.eventType);
+      setPetType(eventToEdit.petType);
+      setAddress(eventToEdit.address);
+      setStartTime(eventToEdit.startTime);
+      setEndTime(eventToEdit.endTime);
+      // Usa o evento para definir a data selecionada
+      setSelectedDate({ displayDate: eventToEdit.date, isoDate: eventToEdit.isoDate });
+    } else if (initialDate) {
+      // MODO CRIAÇÃO: Limpa formulário e usa data inicial
       setEventType('vacinação');
       setPetType('cães');
       setAddress('');
       setStartTime('09:00');
       setEndTime('16:00');
-      setErrorMessage('');
+      setSelectedDate(initialDate);
     }
-  }, [isVisible]);
+    setErrorMessage('');
+  }
+}, [isVisible, eventToEdit, initialDate]);
 
   // espera as fonts carregarem
   if (!nunitoFontsLoaded || !josefinFontsLoaded) {
     return null;
   }
 
-  const handleAddPress = () => {
-    // Validação
-    if (!address.trim() || !selectedDate) {
-      setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
-      return;
-    }
+  // LINHA 99 (Início da função)
+const handleSubmitPress = () => {
+  // Validação
+  if (!address.trim() || !selectedDate) {
+    setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
+    return;
+  }
 
-    // Validação de horário
-    if (startTime >= endTime) {
-      setErrorMessage(
-        'O horário de início deve ser anterior ao horário final.'
-      );
-      return;
-    }
+  if (startTime >= endTime) {
+    setErrorMessage(
+      'O horário de início deve ser anterior ao horário final.'
+    );
+    return;
+  }
 
-    setErrorMessage('');
-
-    // Gera o título baseado nas seleções
-    const title = generateEventTitle(eventType, petType);
-
-    // Prepara o objeto de evento com a estrutura correta
-    const newEvent = {
-      id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title: title,
-      date: selectedDate.displayDate,
-      isoDate: selectedDate.isoDate,
-      startTime,
-      endTime,
-      location: address, // O endereço será usado como localização
-      address: address,
-      eventType,
-      petType,
-    };
-
-    console.log('Novo evento criado:', newEvent);
-    onAddEvent(newEvent);
-    onClose();
+  setErrorMessage('');
+  const title = generateEventTitle(eventType, petType);
+  const eventPayload = {
+    title: title,
+    date: selectedDate.displayDate,
+    isoDate: selectedDate.isoDate,
+    startTime,
+    endTime,
+    location: address,
+    address: address,
+    eventType,
+    petType,
   };
+  if (eventToEdit) {
+    const updatedEvent = {
+      ...eventPayload,
+      id: eventToEdit.id, // Reutiliza o ID
+    };
+    onUpdateEvent(updatedEvent);
+  } else {
+    onAddEvent(eventPayload);
+  }
+  
+  onClose();
+};
+
+const handleDeletePress = () => {
+  if (eventToEdit && eventToEdit.id && eventToEdit.isoDate) {
+    onDeleteEvent(eventToEdit.id, eventToEdit.isoDate);
+    onClose();
+  } else {
+    setErrorMessage('Erro ao tentar excluir: ID ou data do evento ausente.');
+  }
+};
 
   const RadioButton = ({ label, value, selectedValue, onSelect }) => (
     <TouchableOpacity
@@ -170,7 +186,13 @@ const AddEventModal = ({ isVisible, onClose, onAddEvent, initialDate }) => {
             </View>
 
             {/* Espaçador invisível para centralizar o conteúdo do meio */}
-            <View style={styles.backButton} />
+            {eventToEdit ? (
+  <TouchableOpacity onPress={handleDeletePress} style={styles.trashButton}>
+    <Ionicons name="trash-outline" size={24} color="#e74c3c" />
+  </TouchableOpacity>
+) : (
+  <View style={styles.backButton} /> // Espaçador para manter o alinhamento central
+)}
           </View>
 
           <ScrollView
@@ -285,14 +307,14 @@ const AddEventModal = ({ isVisible, onClose, onAddEvent, initialDate }) => {
               <Text style={styles.timeHint}>Formato: HH:MM (ex: 14:30)</Text>
             </View>
 
-            <TouchableOpacity style={styles.addButton} onPress={handleAddPress}>
+            <TouchableOpacity style={styles.addButton} onPress={handleSubmitPress}>
               <Ionicons
-                name="add"
+                name={eventToEdit ? "checkmark-circle-outline" : "add"}
                 size={20}
                 color="white"
                 style={{ marginRight: 8 }}
               />
-              <Text style={styles.addButtonText}>Adicionar Evento</Text>
+              <Text style={styles.addButtonText}>{eventToEdit ? "Atualizar Evento" : "Adicionar Evento"}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

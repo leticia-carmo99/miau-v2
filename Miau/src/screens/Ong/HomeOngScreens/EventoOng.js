@@ -13,6 +13,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { db } from "../../../../firebaseConfig";
+import { useOng } from '../NavigationOng/OngContext'; 
+import { doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, where, onSnapshot } from "firebase/firestore";
+import { addDoc } from "firebase/firestore";
 
 
 import AddEventModal from '../Modal/AddEventModal'; 
@@ -54,8 +59,10 @@ const getDayName = (date) => {
 };
 
 
-const CalendarScreen = () => {
+const Eventos = () => {
   const navigation = useNavigation();
+  const { ongData } = useOng();
+  const userId = ongData?.uid;
 
   const [nunitoFontsLoaded] = useNunitoFonts({
     Nunito_400Regular,
@@ -74,43 +81,163 @@ const CalendarScreen = () => {
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [isAddEventModalVisible, setAddEventModalVisible] = useState(false);
   const [selectedDateForEvent, setSelectedDateForEvent] = useState(null);
-
+  const [eventToEdit, setEventToEdit] = useState(null);
 
   const EXTRA_BOTTOM_SPACE = Math.round(width * 0.45);
 
+  // Removi fetchEvents e troquei por onSnapshot para tempo real
   useEffect(() => {
-    const today = new Date();
-    const eventYear = today.getFullYear();
-    const eventMonth = String(today.getMonth() + 1).padStart(2, '0');
-    const eventDay = '23';
-    const eventDateKey = `${eventYear}-${eventMonth}-${eventDay}`;
-    const eventDisplayDate = `${eventDay} de ${monthNames[today.getMonth()].toLowerCase()}`;
+    if (!userId) return;
 
-    const DUMMY_EVENTS = {
-      [eventDateKey]: {
-        marked: true,
-        dotColor: '#9156D1',
-        events: [
-          {
-            id: 'dummy-1',
-            title: 'Encontro e doação de cães e gatos',
-            date: eventDisplayDate,
-            isoDate: eventDateKey,
-            startTime: '09:00',
-            endTime: '16:00',
-            location: 'Rua Professora Rosália dos Santos, 123 - Bairro Cidade',
-            eventType: 'adoção',
-            petType: 'ambos',
-            address: 'Parque Municipal - Centro'
-          }
-        ]
-      },
-    };
-    setMarkedEvents(DUMMY_EVENTS);
-  }, []);
+    const eventsRef = collection(db, "eventos");
+    const q = query(eventsRef,
+      where("ongId", "==", userId),
+      orderBy("isoDate", "asc")
+    );
+
+    // Usa onSnapshot para escutar mudanças em tempo real
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const eventsData = {};
+
+      querySnapshot.forEach((doc) => {
+        const event = { id: doc.id, ...doc.data() };
+        const dateKey = event.isoDate; // Ex: "2025-01-23"
+
+        if (!eventsData[dateKey]) {
+          eventsData[dateKey] = { marked: true, dotColor: COLORS.primaryPurple, events: [] };
+        }
+        eventsData[dateKey].events.push(event);
+      });
+
+      setMarkedEvents(eventsData);
+    }, (error) => {
+      console.error("Erro ao escutar eventos:", error);
+    });
+
+    // Função de limpeza
+    return () => unsubscribe();
+  }, [userId]);
+
 
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (month, year) => new Date(year, month, 1).getDay();
+  const getAllMarkedEvents = () => {
+    const events = [];
+    if (markedEvents && typeof markedEvents === 'object') {
+      Object.values(markedEvents).forEach(dateData => {
+        if (dateData && dateData.events) {
+          events.push(...dateData.events);
+        }
+      });
+    }
+    // Não precisa de sort aqui, a query do Firestore já ordena.
+    return events;
+  };
+  const getEventsForSelectedMonth = () => {
+    const allEvents = getAllMarkedEvents();
+    const selectedMonthKey = String(selectedMonth + 1).padStart(2, '0');
+    const selectedYearKey = String(selectedYear);
+
+    return allEvents.filter(event => {
+      return event.isoDate.startsWith(`${selectedYearKey}-${selectedMonthKey}`);
+    }).sort((a, b) => {
+       // Ordena por hora se as datas forem iguais
+       if (a.isoDate === b.isoDate) {
+           return a.startTime.localeCompare(b.startTime);
+       }
+       // Senão, ordena pela data
+       return a.isoDate.localeCompare(b.isoDate);
+    });
+  };
+
+  // --- FUNÇÕES AUXILIARES DE MODAL ---
+
+  const handleCloseModal = () => {
+    setAddEventModalVisible(false);
+    setEventToEdit(null); // Limpa o objeto de edição
+    setSelectedDateForEvent(null); // Limpa a data selecionada
+  };
+
+  const handleOpenAddModal = (dateInfo) => {
+    setEventToEdit(null); // Criação: OBRIGATÓRIO ser NULL
+    setSelectedDateForEvent(dateInfo);
+    setAddEventModalVisible(true);
+  };
+
+  const handleOpenEditModal = (event) => {
+    setEventToEdit(event); // Edição: OBRIGATÓRIO ter o objeto do evento
+    // Cria o objeto de data para o modal, usando os dados do evento
+    const eventDateInfo = { displayDate: event.date, isoDate: event.isoDate };
+    setSelectedDateForEvent(eventDateInfo);
+    setAddEventModalVisible(true);
+  };
+
+  // --- FUNÇÕES DE AÇÃO DO FIREBASE (CORREÇÃO DO REFERENCE ERROR) ---
+
+  // 1. Função de ADICIONAR Evento (Antiga handleAddEventFromModal)
+  const handleAddEvent = async (newEvent) => {
+    if (!userId) {
+      console.error("UID da ONG não encontrado.");
+      alert("Erro de sessão: Não foi possível identificar a ONG.");
+      handleCloseModal();
+      return;
+    }
+
+    const eventWithONGId = {
+      ...newEvent,
+      ongId: userId,
+      createdAt: new Date(),
+    };
+
+    try {
+      // O onSnapshot cuida da atualização do estado local, apenas salvamos no Firestore
+      await addDoc(collection(db, "eventos"), eventWithONGId);
+      console.log("Evento salvo no Firestore.");
+      handleCloseModal();
+      alert("Evento adicionado com sucesso!");
+    } catch (e) {
+      console.error("Erro ao adicionar documento no Firestore: ", e);
+      alert("Erro ao salvar evento no banco de dados. Verifique a conexão.");
+    }
+  };
+
+
+  // 2. Função de Atualização (Edição) (Antiga handleUpdateEventFromModal)
+  const handleUpdateEvent = async (updatedEvent) => {
+    if (!updatedEvent.id) return;
+
+    try {
+      const eventRef = doc(db, "eventos", updatedEvent.id);
+
+      // O onSnapshot cuida da atualização do estado local, apenas atualizamos no Firestore
+      await updateDoc(eventRef, updatedEvent);
+      console.log("Evento atualizado com sucesso no Firebase!");
+
+      handleCloseModal(); // Usamos o helper para fechar e limpar os estados
+      alert("Evento editado com sucesso!");
+    } catch (e) {
+      console.error("Erro ao atualizar evento: ", e);
+      alert("Erro ao editar evento. Verifique a conexão.");
+    }
+  };
+
+  // 3. Função de EXCLUIR Evento (Antiga handleDeleteEventFromModal)
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      // O onSnapshot cuida da atualização do estado local, apenas deletamos no Firestore
+      await deleteDoc(doc(db, "eventos", eventId));
+      console.log("Evento excluído com sucesso no Firebase!");
+
+      handleCloseModal(); // Usamos o helper para fechar e limpar os estados
+      alert("Evento excluído com sucesso!");
+    } catch (e) {
+      console.error("Erro ao excluir evento: ", e);
+      alert("Erro ao excluir evento. Verifique a conexão.");
+    }
+  };
+
+
+  // --- LÓGICA DE NAVEGAÇÃO DE MÊS ---
 
   const handlePrevMonth = () => {
     setSelectedMonth(prevMonth => {
@@ -131,6 +258,8 @@ const CalendarScreen = () => {
       return prevMonth + 1;
     });
   };
+
+  // --- RENDERIZAÇÃO DO CALENDÁRIO ---
 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
@@ -154,13 +283,12 @@ const CalendarScreen = () => {
           key={day}
           style={[styles.dayCell, isToday && styles.todayCell]}
           onPress={() => {
-           
             const selectedDate = new Date(selectedYear, selectedMonth, day);
             const displayDate = selectedDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
             const isoDate = dateKey;
-            
-            setSelectedDateForEvent({ displayDate, isoDate });
-            setAddEventModalVisible(true);
+
+            // ✨ Ação: Usando a função auxiliar de criação
+            handleOpenAddModal({ displayDate, isoDate });
           }}
         >
           <Text style={[styles.dayText, isMarked && styles.markedDayText, isToday && styles.todayText]}>
@@ -173,41 +301,10 @@ const CalendarScreen = () => {
 
     const remainingCells = totalCells - (days.length);
     for (let i = 0; i < remainingCells; i++) {
-        days.push(<View key={`empty-end-${i}`} style={styles.emptyDay} />);
+      days.push(<View key={`empty-end-${i}`} style={styles.emptyDay} />);
     }
 
     return days;
-  };
-
-  const getAllMarkedEvents = () => {
-    const events = [];
-    if (markedEvents && typeof markedEvents === 'object') {
-      Object.values(markedEvents).forEach(dateData => {
-        if (dateData && dateData.events) {
-          events.push(...dateData.events);
-        }
-      });
-    }
-    return events.sort((a, b) => new Date(a.isoDate) - new Date(b.isoDate));
-  };
-
-
-  const handleAddEventFromModal = (newEvent) => {
-    const dateKey = newEvent.isoDate;
-
-    setMarkedEvents(prevEvents => {
-      const existingEventsForDate = prevEvents[dateKey]?.events || [];
-      return {
-        ...prevEvents,
-        [dateKey]: {
-          marked: true,
-          dotColor: '#9156D1',
-          events: [...existingEventsForDate, newEvent],
-        },
-      };
-    });
-
-    setAddEventModalVisible(false);
   };
 
   if (!nunitoFontsLoaded || !josefinFontsLoaded) {
@@ -277,19 +374,26 @@ const CalendarScreen = () => {
         <View style={styles.eventsSection}>
           <Text style={styles.eventsTitle}>Eventos marcados</Text>
 
-          {getAllMarkedEvents().length === 0 ? (
+          {getEventsForSelectedMonth().length === 0 ? (
             <View style={styles.noEventsContainer}>
               <Text style={styles.noEventsText}>Nenhum evento marcado ainda.</Text>
               <Text style={styles.noEventsSubText}>Clique em "Adicione um evento!" para começar.</Text>
             </View>
           ) : (
-            getAllMarkedEvents().map((event, index) => {
+            getEventsForSelectedMonth().map((event, index) => {
               const eventDate = new Date(event.isoDate);
               const dayName = getDayName(eventDate);
               
               return (
                 <View style={styles.eventBanner} key={event.id || index}> 
-                  <TouchableOpacity onPress={() => navigation.navigate('EventoDetalhes')}>
+                  <TouchableOpacity 
+                  onPress={() => {
+                      const eventDateInfo = { displayDate: event.date, isoDate: event.isoDate };
+                      setEventToEdit(event);
+                      setSelectedDateForEvent(eventDateInfo);
+                      setAddEventModalVisible(true);
+                    }}
+                  >
                     <View style={styles.eventCard}>
                       <View style={styles.eventDarkArea}>
                         <Text style={styles.eventDate}>{event.date}</Text>
@@ -317,8 +421,11 @@ const CalendarScreen = () => {
         <AddEventModal
           isVisible={isAddEventModalVisible}
           onClose={() => setAddEventModalVisible(false)}
-          onAddEvent={handleAddEventFromModal}
+          onAddEvent={handleAddEvent}
+          onUpdateEvent={handleUpdateEvent}
+          onDeleteEvent={handleDeleteEvent}
           initialDate={selectedDateForEvent}
+          eventToEdit={eventToEdit}
         />
       )}
     </SafeAreaView>
@@ -561,4 +668,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CalendarScreen;
+export default Eventos;

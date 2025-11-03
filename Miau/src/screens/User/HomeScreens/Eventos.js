@@ -11,6 +11,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Menu from '../NavigationUser/MenuV1';
+import { useUser } from "../NavigationUser/UserContext";
+import { db } from "../../../../firebaseConfig"; 
+import { collection, query, getDocs, orderBy } from "firebase/firestore";
+import { addDoc } from "firebase/firestore";
 
 const { width } = Dimensions.get('window');
 
@@ -51,29 +55,35 @@ const Eventos = () => {
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
-  useEffect(() => {
-    const DUMMY_EVENTS = {
-      '2025-09-25': {
-        marked: true,
-        dotColor: '#9156D1',
-        events: [
-          {
-            id: 'dummy-1',
-            title: 'Evento de adoção de pets',
-            date: '25 de setembro',
-            isoDate: '2025-09-25',
-            startTime: '13:00',
-            endTime: '17:00',
-            location: 'Parque Municipal',
-            eventType: 'adoção',
-            petType: 'ambos',
-            address: 'Parque Municipal - Centro'
-          }
-        ]
-      },
+useEffect(() => {
+    const fetchEvents = async () => {
+        try {
+            const eventsCollectionRef = collection(db, "eventos");
+            const q = query(eventsCollectionRef, orderBy("isoDate", "asc"));
+            const querySnapshot = await getDocs(q);
+            const eventsData = {};
+            querySnapshot.forEach((doc) => {
+                const event = { id: doc.id, ...doc.data() };
+                const dateKey = event.isoDate;
+                if (!eventsData[dateKey]) {
+                    eventsData[dateKey] = {
+                        marked: true,
+                        dotColor: '#9156D1',
+                        events: [],
+                    };
+                }
+                
+                eventsData[dateKey].events.push(event);
+            });
+            setMarkedEvents(eventsData);
+            
+        } catch (error) {
+            console.error("Erro ao buscar eventos do Firestore:", error);
+        }
     };
-    setMarkedEvents(DUMMY_EVENTS);
-  }, []);
+
+    fetchEvents();
+}, []);
 
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (month, year) => new Date(year, month, 1).getDay();
