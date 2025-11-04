@@ -24,9 +24,6 @@ export const OngProvider = ({ children }) => {
           ...fetchedData,
           uid: user.uid,
         };
-        consolidatedData.endereco = {
-            ...(fetchedData.endereco || {}),
-        };
         consolidatedData.diasAbertos = {
             ...(fetchedData.diasAbertos || {}),
         };

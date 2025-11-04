@@ -196,15 +196,20 @@ const handleSaveChanges = async () => {
     // Prepara os dados. Apenas URIs de imagem (string) são salvas. 
     // O require() não é serializável.
     const dataToSave = {
-      sobre: ongDataLocal.sobre,
-      diasAbertos: ongDataLocal.diasAbertos,
-      horarioInicio: ongDataLocal.horarioInicio,
-      horarioFim: ongDataLocal.horarioFim,
-      email: ongDataLocal.email,
-      telefone: ongDataLocal.telefoneContato,
-      instagram: ongDataLocal.instagram,
-      facebook: ongDataLocal.facebook,
-      endereco: ongDataLocal.endereco,
+      descricao: ongDataLocal.descricao || '',
+      diasAbertos: ongDataLocal.diasAbertos || '',
+      horarioInicio: ongDataLocal.horarioInicio || '',
+      horarioFim: ongDataLocal.horarioFim || '',
+      emailContato: ongDataLocal.emailContato || '',
+      telefoneContato: ongDataLocal.telefoneContato || '',
+      instagram: ongDataLocal.instagram || '',
+      facebook: ongDataLocal.facebook || '',
+      rua: ongDataLocal.rua || '',
+      bairro: ongDataLocal.bairro || '',
+      cidade: ongDataLocal.cidade || '',
+      estado: ongDataLocal.estado || '',
+      numero: ongDataLocal.numero || '',
+      cep: ongDataLocal.cep || '',
       headerImage: typeof ongDataLocal.headerImage === 'string' ? ongDataLocal.headerImage : null,
       logoImage: typeof ongDataLocal.logoImage === 'string' ? ongDataLocal.logoImage : null,
       fotos: ongDataLocal.fotos || [],
@@ -335,7 +340,7 @@ const handleSaveChanges = async () => {
               <Image source={renderImageSource(ongDataLocal.logoImage || DEFAULT_LOGO)} style={styles.ongLogo} />
             </TouchableOpacity>
             <Text style={styles.ongNameHeader}>{ongDataLocal?.nomeOng || 'ONG'}</Text>
-            <Text style={styles.enderecoOng}>Jardim das Esmeraldas, SP</Text>
+            <Text style={styles.enderecoOng}>{ongDataLocal?.cidade}, {ongDataLocal?.estado}</Text>
           </View>
         </ImageBackground>
 
@@ -376,37 +381,37 @@ const handleSaveChanges = async () => {
             <View style={styles.checkboxGroup}>
               <Checkbox
                 label="Segunda-feira"
-                isSelected={ongDataLocal.diasAbertos.segunda}
+                isSelected={ongDataLocal?.diasAbertos.segunda}
                 onValueChange={() => handleCheckboxChange('segunda')}
               />
               <Checkbox
                 label="Terça-feira"
-                isSelected={ongDataLocal.diasAbertos.terca}
+                isSelected={ongDataLocal?.diasAbertos.terca}
                 onValueChange={() => handleCheckboxChange('terca')}
               />
               <Checkbox
                 label="Quarta-feira"
-                isSelected={ongDataLocal.diasAbertos.quarta}
+                isSelected={ongDataLocal?.diasAbertos.quarta}
                 onValueChange={() => handleCheckboxChange('quarta')}
               />
               <Checkbox
                 label="Quinta-feira"
-                isSelected={ongDataLocal.diasAbertos.quinta}
+                isSelected={ongDataLocal?.diasAbertos.quinta}
                 onValueChange={() => handleCheckboxChange('quinta')}
               />
               <Checkbox
                 label="Sexta-feira"
-                isSelected={ongDataLocal.diasAbertos.sexta}
+                isSelected={ongDataLocal?.diasAbertos.sexta}
                 onValueChange={() => handleCheckboxChange('sexta')}
               />
               <Checkbox
                 label="Sábado"
-                isSelected={ongDataLocal.diasAbertos.sabado}
+                isSelected={ongDataLocal?.diasAbertos.sabado}
                 onValueChange={() => handleCheckboxChange('sabado')}
               />
               <Checkbox
                 label="Domingo"
-                isSelected={ongDataLocal.diasAbertos.domingo}
+                isSelected={ongDataLocal?.diasAbertos.domingo}
                 onValueChange={() => handleCheckboxChange('domingo')}
               />
             </View>
@@ -415,7 +420,7 @@ const handleSaveChanges = async () => {
             <View style={styles.timeInputsContainer}>
               <TextInput
                 style={styles.timeInput}
-                value={ongDataLocal.horarioInicio}
+                value={ongDataLocal?.horarioInicio}
                 onChangeText={(text) => handleTimeChange('horarioInicio', text)}
                 keyboardType="numeric"
                 maxLength={5}
@@ -423,7 +428,7 @@ const handleSaveChanges = async () => {
               <Ionicons name="time-outline" size={24} color={COLORS.orange} />
               <TextInput
                 style={styles.timeInput}
-                value={ongDataLocal.horarioFim}
+                value={ongDataLocal?.horarioFim}
                 onChangeText={(text) => handleTimeChange('horarioFim', text)}
                 keyboardType="numeric"
                 maxLength={5}
@@ -437,22 +442,22 @@ const handleSaveChanges = async () => {
             <TextInput
               style={[styles.textInput, styles.textArea]}
               multiline
-              value={ongDataLocal.sobre}
-              onChangeText={(text) => handleInputChange('sobre', text)}
+              value={ongDataLocal?.descricao}
+              onChangeText={(text) => handleInputChange('descricao', text)}
             />
 
             <Text style={styles.sectionTitle}>CONTATO</Text>
             <TextInput
               style={styles.textInput}
               placeholder="E-mail"
-              value={ongDataLocal.email}
+              value={ongDataLocal?.emailContato}
               onChangeText={(text) => handleInputChange('email', text)}
             />
             <TextInput
               style={styles.textInput}
               placeholder="Telefone"
               keyboardType="phone-pad"
-              value={ongDataLocal.telefoneContato}
+              value={ongDataLocal?.telefoneContato}
               onChangeText={(text) => handleInputChange('telefone', text)}
             />
 
@@ -465,7 +470,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={styles.textInput}
                 placeholder="Página no Instagram"
-                value={ongDataLocal.instagram}
+                value={ongDataLocal?.instagram }
                 onChangeText={(text) => handleInputChange('instagram', text)}
               />
             </View>
@@ -477,7 +482,7 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={styles.textInput}
                 placeholder="Página no Facebook"
-                value={ongDataLocal.facebook}
+                value={ongDataLocal?.facebook}
                 onChangeText={(text) => handleInputChange('facebook', text)}
               />
             </View>
@@ -487,17 +492,17 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 placeholder="Rua"
-                value={ongDataLocal.endereco.rua}
+                value={ongDataLocal?.rua}
                 onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'rua')
+                  handleInputChange('rua', text)
                 }
               />
               <TextInput
                 style={[styles.textInput, { width: 80, marginLeft: 10 }]}
                 placeholder="Número"
-                value={ongDataLocal.endereco.numero}
+                value={ongDataLocal?.numero}
                 onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'numero')
+                  handleInputChange('numero', text)
                 }
               />
             </View>
@@ -505,17 +510,17 @@ const handleSaveChanges = async () => {
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 placeholder="Bairro"
-                value={ongDataLocal.endereco.bairro}
+                value={ongDataLocal?.bairro}
                 onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'bairro')
+                  handleInputChange('bairro', text)
                 }
               />
               <TextInput
                 style={[styles.textInput, { width: 120, marginLeft: 10 }]}
                 placeholder="Cidade"
-                value={ongDataLocal.endereco.cidade}
+                value={ongDataLocal?.cidade}
                 onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'cidade')
+                  handleInputChange('cidade', text)
                 }
               />
             </View>
@@ -523,9 +528,9 @@ const handleSaveChanges = async () => {
               style={styles.textInput}
               placeholder="CEP"
               keyboardType="numeric"
-              value={ongDataLocal.endereco.cep}
+              value={ongDataLocal?.cep}
               onChangeText={(text) =>
-                handleInputChange('endereco', text, 'cep')
+                handleInputChange('cep', text)
               }
             />
 
@@ -558,7 +563,7 @@ const handleSaveChanges = async () => {
               <Text style={styles.hoursText}>{`${formatOpenDays()} | ${
                 ongDataLocal.horarioInicio
               } às ${ongDataLocal.horarioFim}`}</Text>
-              <Text style={styles.sectionContent}>{ongDataLocal.sobre}</Text>
+              <Text style={styles.sectionContent}>{ongDataLocal.sobre || 'Nenhuma informação inserida ainda.'}</Text>
             </View>
             <View style={styles.contactSectionWrapper}>
               <Image
@@ -571,18 +576,18 @@ const handleSaveChanges = async () => {
                 resizeMode="stretch">
                 <View style={styles.contactContent}>
                   <Text style={styles.contactTitle}>Contato</Text>
-                  <Text style={styles.contactText}>{ongDataLocal.email}</Text>
-                  <Text style={styles.contactText}>{ongDataLocal.telefone}</Text>
+                  <Text style={styles.contactText}>{ongDataLocal?.emailContato}</Text>
+                  <Text style={styles.contactText}>{ongDataLocal?.telefoneContato}</Text>
                   <Text style={styles.socialTitle}>Redes Sociais</Text>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{ongDataLocal.instagram}</Text>
+                    <Text style={styles.socialText}>{ongDataLocal?.instagram || 'Nenhum perfil inserido.'}</Text>
                     <Image
                       source={require('../Images/Instagram.png')}
                       style={styles.socialIconImage}
                     />
                   </View>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{ongDataLocal.facebook}</Text>
+                    <Text style={styles.socialText}>{ongDataLocal?.facebook || 'Nenhum perfil inserido.'}</Text>
                     <Image
                       source={require('../Images/Facebook.png')}
                       style={styles.socialIconImage}
@@ -600,13 +605,13 @@ const handleSaveChanges = async () => {
               <Text
                 style={
                   styles.addressText
-                }>{`${ongDataLocal.endereco.rua}, ${ongDataLocal.endereco.numero} - ${ongDataLocal.endereco.bairro}, ${ongDataLocal.endereco.cidade}`}</Text>
+                }>{`${ongDataLocal?.rua}, ${ongDataLocal?.numero} - ${ongDataLocal?.bairro}, ${ongDataLocal?.cidade}`}</Text>
             </View>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>FOTOS</Text>
               <View style={styles.photoGrid}>
                 {isGalleryExpanded ? (
-                  ongDataLocal.fotos.map((foto, index) => (
+                  ongDataLocal?.fotos.map((foto, index) => (
                     <TouchableOpacity
                       key={index}
                       style={styles.photo}
@@ -620,7 +625,7 @@ const handleSaveChanges = async () => {
                   ))
                 ) : (
                   <>
-                    {ongDataLocal.fotos.slice(0, 4).map((foto, index) => (
+                    {ongDataLocal?.fotos.slice(0, 4).map((foto, index) => (
                       <TouchableOpacity
                         key={index}
                         style={styles.photo}
@@ -632,17 +637,17 @@ const handleSaveChanges = async () => {
                         />
                       </TouchableOpacity>
                     ))}
-                    {ongDataLocal.fotos.length > 4 && (
+                    {ongDataLocal?.fotos.length > 4 && (
                       <TouchableOpacity
                         onPress={() => setIsGalleryExpanded(true)}
                         style={styles.photo}>
                         <ImageBackground
-                          source={renderImageSource(ongDataLocal.fotos[4])}
+                          source={renderImageSource(ongDataLocal?.fotos[4])}
                           style={styles.fullSize}
                           imageStyle={{ borderRadius: 10 }}>
                           <View style={styles.photoOverlay}>
                             <Text style={styles.photoOverlayText}>
-                              Ver mais {ongDataLocal.fotos.length - 4}
+                              Ver mais {ongDataLocal?.fotos.length - 4}
                             </Text>
                           </View>
                         </ImageBackground>
