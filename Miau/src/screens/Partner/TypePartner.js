@@ -15,9 +15,15 @@ const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
 const BRANCO = '#FFFFFF';
 
-export default function TypePartner({ navigation }) {
-    const route = useRoute(); // Use o hook para acessar os parâmetros
-    const initialData = route.params?.initialData || {}; // Recebe os dados da tela CadPartner
+export default function TypePartner() {
+  const navigation = useNavigation();
+    const route = useRoute();
+    const { initialData, userId } = route.params || {};
+
+if (!userId) {
+        console.error("userId não encontrado no roteamento.");
+        return <Text>Erro: Sessão de cadastro perdida.</Text>;
+    }
 
 
   return (
@@ -43,13 +49,13 @@ export default function TypePartner({ navigation }) {
       <View style={styles.botoesContainer}>
         <TouchableOpacity
           style={styles.botao}
-          onPress={() => navigation.navigate('FormCNPJ1', { allFormData: initialData })}>
+          onPress={() => navigation.navigate('FormCNPJ1', { userId: userId, allDataFromPreviousSteps: initialData})}>
           <Text style={styles.botaoTexto}>Empresa (CNPJ)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.botao}
-          onPress={() => navigation.navigate('FormCPF1', { allFormData: initialData })}>
+          onPress={() => navigation.navigate('FormCPF1', { userId: userId, allDataFromPreviousSteps: initialData})}>
           <Text style={styles.botaoTexto}>Prestador de Serviços (CPF)</Text>
         </TouchableOpacity>
       </View>

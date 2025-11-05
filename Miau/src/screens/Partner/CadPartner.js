@@ -9,7 +9,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { auth, db } from "../../../firebaseConfig";
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
@@ -26,9 +28,28 @@ export default function CadUser() {
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
 
-const handleNext = () => {
-    const initialData = { nome, cpfCnpj, email, senha };
-    navigation.navigate('TypePartner', { initialData });
+const handleNext = async () => {
+    if (senha !== confirmarSenha) {
+        alert('As senhas não conferem!');
+        return;
+    }
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+        const user = userCredential.user;
+        const initialData = { 
+            nome, 
+            cpfCnpj, 
+            email, 
+        };
+        navigation.navigate('TypePartner', { 
+            initialData: initialData,
+            userId: user.uid
+        });
+
+    } catch (error) {
+        console.error("Erro na autenticação:", error.message);
+        alert("Erro ao cadastrar: " + error.message);
+    }
 };
 
   return (

@@ -18,15 +18,17 @@ const VERMELHO = '#E83F5B';
 
 export default function FormCPF1() {
   const navigation = useNavigation();
+
   const route = useRoute();
 
-  const allFormData = route.params?.allFormData || {};
+  const { userId, allDataFromPreviousSteps } = route.params || {}; 
+  const initialData = allDataFromPreviousSteps || {}; 
 
-  const initialFormData = allFormData.cpf1 || {
-    nome: '',
-    cpf: '',
+  const initialFormData = initialData.cpf1 || {
+    nome: initialData.nome || '',
+    cpf: initialData.cpfCnpj ||'',
     servico: '',
-    email: '',
+    email: initialData.email ||'',
     telefone: '',
     endereco: '',
     bairro: '',
@@ -41,17 +43,17 @@ export default function FormCPF1() {
 
   useEffect(() => {
     setFormData(initialFormData);
-  }, [allFormData.cpf1]);
+  }, [initialData.cpf1]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrorMessage('');
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (
       !formData.nome.trim() ||
-      !formData.cpf.trim() ||
+      !formData.cpfCnpj.trim() ||
       !formData.servico.trim() ||
       !formData.email.trim() ||
       !formData.telefone.trim() ||
@@ -61,12 +63,21 @@ export default function FormCPF1() {
       return;
     }
 
-    const updatedAllFormData = {
-      ...allFormData,
-      cpf1: formData,
-    };
-
-    navigation.navigate('FormCPF2', { allFormData: updatedAllFormData });
+const updatedAllFormData = {
+            ...allDataFromPreviousSteps, // Dados do CadUser
+            cpf1: formData,             // Dados deste formulário
+            // Aqui você adiciona a informação do tipo para garantir no DB
+            documentType: 'prestador' 
+        };
+        try {
+            await db.collection('prestador').doc(userId).set(updatedAllFormData); 
+            
+            alert('Cadastro de Prestador concluído com sucesso!');
+            navigation.navigate('FormCPF2'); 
+        } catch (error) {
+            console.error("Erro ao salvar dados do prestador:", error);
+            setErrorMessage('Falha ao salvar dados. Tente novamente.');
+        } 
   };
 
   return (
