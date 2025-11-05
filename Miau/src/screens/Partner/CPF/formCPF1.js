@@ -9,6 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -26,7 +28,7 @@ export default function FormCPF1() {
 
   const initialFormData = initialData.cpf1 || {
     nome: initialData.nome || '',
-    cpf: initialData.cpfCnpj ||'',
+    cpfCnpj: initialData.cpfCnpj ||'',
     servico: '',
     email: initialData.email ||'',
     telefone: '',
@@ -52,33 +54,33 @@ export default function FormCPF1() {
 
   const handleNext = async () => {
     if (
-      !formData.nome.trim() ||
-      !formData.cpfCnpj.trim() ||
-      !formData.servico.trim() ||
-      !formData.email.trim() ||
-      !formData.telefone.trim() ||
-      !formData.endereco.trim()
+      !(formData.nome || '').trim() ||
+      !(formData.cpfCnpj || '').trim() ||
+      !(formData.servico || '').trim() ||
+      !(formData.email || '').trim() ||
+      !(formData.telefone || '').trim() ||
+      !(formData.endereco || '').trim()
     ) {
       setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-const updatedAllFormData = {
-            ...allDataFromPreviousSteps, // Dados do CadUser
-            cpf1: formData,             // Dados deste formulário
-            // Aqui você adiciona a informação do tipo para garantir no DB
-            documentType: 'prestador' 
-        };
-        try {
-            await db.collection('prestador').doc(userId).set(updatedAllFormData); 
-            
-            alert('Cadastro de Prestador concluído com sucesso!');
-            navigation.navigate('FormCPF2'); 
-        } catch (error) {
-            console.error("Erro ao salvar dados do prestador:", error);
-            setErrorMessage('Falha ao salvar dados. Tente novamente.');
-        } 
-  };
+  const updatedAllFormData = {
+              ...allDataFromPreviousSteps, 
+              cpf1: formData,
+              userId: userId,
+              documentType: 'prestador' 
+          };
+          try {
+              const docRef = doc(db, 'prestador_draft', userId);
+              await setDoc(docRef, updatedAllFormData, { merge: true }); 
+              navigation.navigate('FormCPF2', { allFormData: updatedAllFormData, userId: userId });
+              
+          } catch (error) {
+              console.error("Erro ao salvar rascunho (CPF1):", error);
+              setErrorMessage('Falha ao salvar rascunho. Tente novamente.');
+          } 
+    };
 
   return (
     <View style={styles.container}>

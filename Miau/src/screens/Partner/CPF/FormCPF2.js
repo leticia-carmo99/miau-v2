@@ -9,6 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
@@ -52,24 +54,35 @@ export default function FormCPF2() {
     setErrorMessage('');
   };
 
-  const handleNext = () => {
-    const { tipoProduto, regioes, localAtendimento } = formData;
-    if (
-      !tipoProduto.trim() ||
-      regioes.length === 0 ||
-      !localAtendimento.trim()
-    ) {
-      setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
-      return;
+  const handleNext = async () => {
+  const { tipoProduto, regioes, localAtendimento } = formData;
+if (
+      !(tipoProduto || '').trim() ||
+      regioes.length === 0 ||
+      !(localAtendimento || '').trim()
+    ) {
+      setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+    const userId = allFormData.userId; 
+    const updatedAllFormData = {
+      ...allFormData, 
+      cpf2: formData, 
+    };
+    try {
+        if (!userId) {
+            console.error("ID do usuário não encontrado para salvar rascunho.");
+            setErrorMessage('Erro de autenticação. Tente voltar e avançar.');
+            return;
+        }
+        const docRef = doc(db, 'prestador_draft', userId);
+        await setDoc(docRef, updatedAllFormData, { merge: true });
+        navigation.navigate('FormCPF3', { allFormData: updatedAllFormData });   
+    } catch (error) {
+        console.error("Erro ao salvar rascunho (CPF2):", error);
+        setErrorMessage('Falha ao salvar rascunho. Tente novamente.');
     }
-
-    const updatedAllFormData = {
-      ...allFormData,
-      cpf2: formData,
-    };
-
-    navigation.navigate('FormCPF3', { allFormData: updatedAllFormData });
-  };
+  };
 
   return (
     <View style={styles.container}>
