@@ -18,6 +18,7 @@ const CINZA_CLARO = '#F7F7F7';
 const BRANCO = '#FFFFFF';
 const VERMELHO = '#E83F5B';
 
+
 export default function FormCPF1() {
   const navigation = useNavigation();
 
@@ -111,7 +112,7 @@ export default function FormCPF1() {
               placeholder="000.000.000-00"
               placeholderTextColor="#999"
               keyboardType="numeric"
-              value={formData.cpf}
+              value={formData.cpfCnpj}
               onChangeText={(text) => handleChange('cpf', text)}
             />
           </Field>

@@ -11,6 +11,8 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -64,21 +66,32 @@ export default function FormCPF3() {
     pickImage(key);
   };
 
-  const handleNext = () => {
-    if (!uploads.logoPerfil || !uploads.documentoFoto) {
-      setErrorMessage(
-        'Por favor, envie os documentos obrigatórios (Logo/Foto de Perfil e Documento com Foto).'
-      );
-      return;
-    }
+const handleNext = async () => {
+    const userId = allFormData.userId; 
+    if (!userId) {
+      setErrorMessage('Erro de autenticação. Usuário não identificado.');
+      return;
+    }
+    if (!uploads.logoPerfil || !uploads.documentoFoto) {
+      setErrorMessage(
+        'Por favor, envie os documentos obrigatórios (Logo/Foto de Perfil e Documento com Foto).'
+      );
+      return;
+    }
+    const updatedAllFormData = {
+      ...allFormData,
+      cpf3: uploads,
+    };
+    try {
+      const docRef = doc(db, 'prestador_draft', userId);
+      await setDoc(docRef, updatedAllFormData, { merge: true }); 
+      navigation.navigate('FormCPF4', { allFormData: updatedAllFormData, userId: userId });
 
-    const updatedAllFormData = {
-      ...allFormData,
-      cpf3: uploads,
-    };
-
-    navigation.navigate('FormCPF4', { allFormData: updatedAllFormData });
-  };
+    } catch (error) {
+      console.error("Erro ao salvar rascunho (CPF3):", error);
+      setErrorMessage('Falha ao salvar dados. Tente novamente.');
+    }
+  };
 
   const renderUploadBox = (label, key, obrigatorio = false) => (
     <View style={styles.fieldContainer}>

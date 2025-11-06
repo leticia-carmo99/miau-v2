@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Image, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../../firebaseConfig'; // Verifique o caminho para o seu arquivo de configuração
 
 const { width, height } = Dimensions.get('window');
@@ -49,59 +48,31 @@ export default function RevisaoCPF3() {
     );
   }
 
-  // Função para fazer o upload da imagem no Firebase Storage
-  const uploadImage = async (uri, fileName) => {
-    try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const storageRef = ref(storage, `prestadores/cpf/${formCPF1Data.cpf}/${fileName}`);
-      await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
-    } catch (e) {
-      console.error("Erro no upload da imagem:", e);
-      return null;
-    }
-  };
+const handleFinalizarCadastro = async () => {
+    const userId = allFormData.userId;
+    if (!userId) {
+      Alert.alert("Erro", "Erro de autenticação. Usuário não identificado.");
+      return;
+    }
+    try {
+      const finalData = {
+        ...allFormData.cpf1,
+        ...allFormData.cpf2,
+        ...allFormData.cpf3,
+        documentType: 'prestador',
+        dataCadastro: new Date().toISOString(),
+        ativo: false, 
+      };
+      const docRef = doc(db, 'prestador', userId);
+      await setDoc(docRef, finalData);
+      Alert.alert("Sucesso!", "Seu cadastro foi finalizado e será revisado.");
+      navigation.navigate('Finalizacao', { tipoCadastro: 'CPF' });
 
-  // Função para finalizar o cadastro e enviar tudo para o Firestore
-  const handleFinalizarCadastro = async () => {
-    try {
-      Alert.alert("Enviando...", "Aguarde enquanto salvamos os seus dados.");
-      
-      const logoPerfilUrl = formCPF3Data.logoPerfil 
-        ? await uploadImage(formCPF3Data.logoPerfil, 'logoPerfil') 
-        : null;
-
-      const documentoFotoUrl = formCPF3Data.documentoFoto 
-        ? await uploadImage(formCPF3Data.documentoFoto, 'documentoFoto') 
-        : null;
-
-      const localAtendimentoUrl = formCPF3Data.localAtendimento 
-        ? await uploadImage(formCPF3Data.localAtendimento, 'localAtendimento') 
-        : null;
-      
-      const finalData = {
-        ...formCPF1Data,
-        ...formCPF2Data,
-        logoPerfil: logoPerfilUrl,
-        documentoFoto: documentoFotoUrl,
-        localAtendimento: localAtendimentoUrl,
-        dataCadastro: new Date().toISOString(),
-        ativo: false,
-      };
-      
-      const docRef = doc(db, 'prestador', formCPF1Data.cpf);
-      await setDoc(docRef, finalData);
-
-      Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve.");
-      navigation.navigate('Finalizacao', { tipoCadastro: 'CPF' }); // Navegue para uma tela de sucesso
-      
-    } catch (e) {
-      console.error("Erro ao finalizar o cadastro:", e);
-      Alert.alert("Erro", "Ocorreu um erro ao finalizar o seu cadastro. Tente novamente.");
-    }
-  };
+    } catch (e) {
+      console.error("Erro ao finalizar o cadastro:", e);
+      Alert.alert("Erro", "Ocorreu um erro ao finalizar o seu cadastro. Tente novamente.");
+    }
+  };
 
   return (
     <View style={styles.container}>

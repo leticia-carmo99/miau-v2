@@ -24,10 +24,10 @@ export default function Finalizacao() {
   const [perfilAtivo, setPerfilAtivo] = useState(false);
   const { tipoCadastro, documento } = route.params;
 
-  // Função para verificar o status do perfil no Firebase
-  const verificarStatusPerfil = async () => {
+const verificarStatusPerfil = async () => {
+    const collectionName = tipoCadastro === 'CNPJ' ? 'empresa' : 'prestador'; 
     try {
-      const docRef = doc(db, 'prestador', documento);
+      const docRef = doc(db, collectionName, documento);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists() && docSnap.data().ativo) {
@@ -42,10 +42,9 @@ export default function Finalizacao() {
     }
   };
 
-  useEffect(() => {
-    // A tela finalizacao será exibida primeiro e irá verificar o status
-    // Quando você estiver pronto para a aprovação, chame verificarStatusPerfil
-  }, []);
+useEffect(() => {
+    verificarStatusPerfil(); 
+  }, [documento, tipoCadastro]);
 
   const handlePress = () => {
       if (tipoCadastro === 'CPF') {
@@ -55,8 +54,12 @@ export default function Finalizacao() {
       }
   };
 
-  const handleConfirm = () => {
-    setModalVisible(true);
+const handleConfirm = () => {
+    if (perfilAtivo) {
+      handlePress();
+    } else {
+      setModalVisible(true);
+    }
   };
 
   return (
