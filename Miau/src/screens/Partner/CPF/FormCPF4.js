@@ -139,11 +139,6 @@ const handleNext = async () => { // ADICIONADO: async
               <Text style={styles.buttonText}>Rever Dados</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleNext}
-              style={[styles.button, styles.sendButton]}>
-              <Text style={styles.buttonText}>Enviar Dados</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

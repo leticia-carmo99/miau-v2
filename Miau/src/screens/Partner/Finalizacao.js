@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../../firebaseConfig'; // Verifique o caminho
+import { db } from '../../../firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';

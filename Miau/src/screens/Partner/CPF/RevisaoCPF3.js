@@ -2,7 +2,9 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Image, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, storage } from '../../../../firebaseConfig'; // Verifique o caminho para o seu arquivo de configuração
+import { db, storage } from '../../../../firebaseConfig';
+import emailjs from '@emailjs/browser';
+import { init, send } from '@emailjs/browser'; 
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -10,16 +12,31 @@ const BRANCO = '#FFFFFF';
 const CINZA_CLARO = '#E0E0E0';
 const LARANJA = '#FFAB36';
 
+const EMAILJS_SERVICE_ID = 'service_cb172kq'; 
+const EMAILJS_TEMPLATE_ID = 'template_l3urlac'; 
+const EMAILJS_USER_ID = 'QXC1EChik2nZagzZZA';
+
 export default function RevisaoCPF3() {
   const navigation = useNavigation();
   const route = useRoute();
+const [emailJsReady, setEmailJsReady] = useState(false);
 
   const allFormData = route.params?.allFormData || {};
   const formCPF1Data = allFormData.cpf1 || {};
   const formCPF2Data = allFormData.cpf2 || {};
   const formCPF3Data = allFormData.cpf3 || {};
 
-  // Componente para exibir dados de texto
+    useEffect(() => {
+        try {
+            // Chamando a função 'init' que importamos
+            init(EMAILJS_USER_ID); 
+            setEmailJsReady(true);
+            console.log("EmailJS SDK inicializado com sucesso.");
+        } catch (error) {
+            console.error("Falha ao inicializar o EmailJS SDK:", error);
+        }
+    }, []); 
+
   function DataLine({ label, value }) {
     if (!value || (Array.isArray(value) && value.length === 0)) {
       return null;
@@ -32,7 +49,6 @@ export default function RevisaoCPF3() {
     );
   }
 
-  // Componente para exibir imagens
   function ImageLine({ label, imageUri }) {
     return (
       <View style={styles.line}>
@@ -48,10 +64,11 @@ export default function RevisaoCPF3() {
     );
   }
 
-const sendApprovalEmail = async (data, userId) => { // userId é útil para criar o link de aprovação
-    const EMAILJS_SERVICE_ID = 'service_cb172kq'; 
-    const EMAILJS_TEMPLATE_ID = 'template_l3urlac'; // SUBSTITUA ESTE ID REAL
-    const EMAILJS_USER_ID = 'QXC1EChik2nZagzZA'; // SUBSTITUA ESTE ID REAL
+    const sendApprovalEmail = async (data, userId) => {
+        if (!emailJsReady) {
+            console.error("EmailJS não inicializado. Não é possível enviar o e-mail.");
+            return;
+        }
     
 const linkAprovacao = `https://console.firebase.google.com/u/0/project/miauuu-84f5b/firestore/databases/-default-/data/~2Fprestador~2F${userId}`;
 
@@ -68,30 +85,21 @@ const linkAprovacao = `https://console.firebase.google.com/u/0/project/miauuu-84
         instrucao_admin: `Acesse o link abaixo para revisar e aprovar manualmente no Firebase.`,
     };
 
-    try {
-      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          service_id: EMAILJS_SERVICE_ID,
-          template_id: EMAILJS_TEMPLATE_ID,
-          user_id: EMAILJS_USER_ID,
-          template_params: templateParamsParaEmailJS, 
-            subject: `Aprovação Pendente: ${data.documentType} ${data.documento || data.cnpj}`,
-            to: templateParamsParaEmailJS.to_email,
-        }),
-      });
+    try {
+            const response = await send(
+                EMAILJS_SERVICE_ID,
+                EMAILJS_TEMPLATE_ID,
+                templateParamsParaEmailJS
+            );
 
-      if (response.ok) {
-        console.log("E-mail de aprovação enviado com sucesso.");
-      } else {
-        console.error("Falha ao enviar e-mail de aprovação:", await response.text());
-      }
-    } catch (error) {
-      console.error("Erro na requisição EmailJS:", error);
-    }
+        if (response.status === 200) {
+            console.log("E-mail de aprovação enviado com sucesso.", response);
+        } else {
+            console.error("Falha ao enviar e-mail de aprovação. Status:", response.status, response.text);
+        }
+    } catch (error) {
+        console.error("Erro na requisição EmailJS (SDK):", error);
+    }
   };
 
 const handleFinalizarCadastro = async () => {
