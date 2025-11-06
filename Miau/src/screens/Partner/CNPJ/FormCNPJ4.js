@@ -183,9 +183,6 @@ export default function FormCNPJ4() {
               <Text style={styles.buttonText}>Rever respostas</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleNext} style={[styles.button, styles.sendButton]}>
-              <Text style={styles.buttonText}>Enviar</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

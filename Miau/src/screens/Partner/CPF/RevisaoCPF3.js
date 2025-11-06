@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Image, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, setDoc } from 'firebase/firestore';
@@ -14,7 +14,7 @@ const LARANJA = '#FFAB36';
 
 const EMAILJS_SERVICE_ID = 'service_cb172kq'; 
 const EMAILJS_TEMPLATE_ID = 'template_l3urlac'; 
-const EMAILJS_USER_ID = 'QXC1EChik2nZagzZZA';
+const EMAILJS_USER_ID = '7Z2Yvbl4xyV5_wuBM';
 
 export default function RevisaoCPF3() {
   const navigation = useNavigation();
@@ -75,7 +75,7 @@ const linkAprovacao = `https://console.firebase.google.com/u/0/project/miauuu-84
     const templateParamsParaEmailJS = {
         to_email: 'suporteappmiau@gmail.com', 
         nome_usuario: data.nome || data.razaoSocial,
-        documento_info: `${data.documento || data.cnpj} (${data.documentType})`,
+        documento_info: `${data.cpfCnpj || data.cnpj} (${data.documentType})`,
         email_usuario: data.email,
         servico: data.servico || 'N/A',
         link_logo: data.logoPerfil || 'N/A',

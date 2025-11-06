@@ -196,9 +196,6 @@ export default function FormONG4() {
               <Text style={[styles.buttonText, { fontFamily: 'JosefinSans_700Bold' }]}>Rever respostas</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleNext} style={[styles.button, styles.sendButton]}>
-              <Text style={[styles.buttonText, { fontFamily: 'JosefinSans_700Bold' }]}>Enviar</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>

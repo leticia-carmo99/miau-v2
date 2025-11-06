@@ -25,43 +25,47 @@ export default function Finalizacao() {
   const { tipoCadastro, documento } = route.params;
 
 const verificarStatusPerfil = async () => {
-  if (!documento || typeof documento !== 'string') return;
-    const collectionName = tipoCadastro === 'CNPJ' ? 'empresa' : 'prestador'; 
-    try {
-      const docRef = doc(db, collectionName, documento);
-      const docSnap = await getDoc(docRef);
+  if (!documento || typeof documento !== 'string') return;
+    const collectionName = tipoCadastro === 'CNPJ' ? 'empresa' : 'prestador'; 
+    try {
+      const docRef = doc(db, collectionName, documento);
+      const docSnap = await getDoc(docRef);
 
-      if (docSnap.exists() && docSnap.data().ativo) {
-        setPerfilAtivo(true);
-      } else {
-        setPerfilAtivo(false);
-      }
-    } catch (error) {
-      console.error("Erro ao verificar o status do perfil:", error);
-      Alert.alert("Erro", "Não foi possível verificar o status do seu perfil.");
-      setPerfilAtivo(false);
-    }
-  };
+      if (docSnap.exists() && docSnap.data().ativo) {
+        setPerfilAtivo(true);
+      } else {
+        setPerfilAtivo(false);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar o status do perfil:", error);
+      Alert.alert("Erro", "Não foi possível verificar o status do seu perfil.");
+      setPerfilAtivo(false);
+    }
+  };
 
 useEffect(() => {
-    verificarStatusPerfil(); 
-  }, [documento, tipoCadastro]);
+    verificarStatusPerfil(); 
+  }, [documento, tipoCadastro]);
 
-  const handlePress = () => {
-      if (tipoCadastro === 'CPF') {
-        navigation.navigate('PersonStack', { screen: 'MainDrawerCPF' });
-      } else if (tipoCadastro === 'CNPJ') {
-        navigation.navigate('BusinessStack', { screen: 'MainDrawerCNPJ' });
-      }
-  };
+  const handlePress = () => {
+    if (!perfilAtivo) {
+        setModalVisible(false); 
+        return;
+    }
+      if (tipoCadastro === 'CPF') {
+        navigation.navigate('PersonStack', { screen: 'MainDrawerCPF' });
+      } else if (tipoCadastro === 'CNPJ') {
+        navigation.navigate('BusinessStack', { screen: 'MainDrawerCNPJ' });
+      }
+  };
 
 const handleConfirm = () => {
-    if (perfilAtivo) {
-      handlePress();
-    } else {
-      setModalVisible(true);
-    }
-  };
+    if (perfilAtivo) {
+      handlePress();
+    } else {
+      setModalVisible(true);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -98,10 +102,10 @@ const handleConfirm = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Seus dados ainda não foram confirmados</Text>
+            <Text style={styles.modalTitle}>Seus dados foram enviados para análise</Text>
             <Text style={styles.modalText}>
-              Estamos analisando as informações da sua empresa ou pessoais. {'\n\n'}
-              Por favor, aguarde — em breve entraremos em contato!
+             Nossa equipe atende a solicitação até 12 horas. {'\n\n'}
+              Por favor, aguarde — retorne e selecione em "ok" para tentar prosseguir.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.modalButtonCancelar} onPress={() => setModalVisible(false)}>

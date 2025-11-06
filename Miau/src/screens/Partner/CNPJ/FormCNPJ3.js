@@ -11,6 +11,8 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';

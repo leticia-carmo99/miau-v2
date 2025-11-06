@@ -9,6 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -20,13 +22,14 @@ export default function FormCNPJ1() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  const allFormData = route.params?.allFormData || {};
+  const { userId, allDataFromPreviousSteps } = route.params || {}; 
+  const initialData = allDataFromPreviousSteps || {}; 
 
-  const initialFormData = allFormData.cnpj1 || {
-    nomeEmpresa: '',
-    cnpj: '',
+  const initialFormData = initialData.cnpj1 || {
+    nome: initialData.nome || '',
+    cpfCnpj: initialData.cpfCnpj ||'',
     nomeResponsavel: '',
-    email: '',
+    email: initialData.email ||'',
     telefone: '',
     endereco: '',
     bairro: '',
@@ -42,26 +45,43 @@ export default function FormCNPJ1() {
 
   useEffect(() => {
     setFormData(initialFormData);
-  }, [allFormData.cnpj1]);
+  }, [initialData.cnpj1]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrorMessage('');
   };
 
-  const handleNext = () => {
-    if (!formData.nomeEmpresa.trim() || !formData.cnpj.trim()) {
-      setErrorMessage('Preencha pelo menos Nome da Empresa e CNPJ antes de continuar.');
+  const handleNext = async () => {
+    if (
+      !(formData.nome || '').trim() ||
+      !(formData.cpfCnpj || '').trim() ||
+      !(formData.servico || '').trim() ||
+      !(formData.email || '').trim() ||
+      !(formData.telefone || '').trim() ||
+      !(formData.endereco || '').trim()
+    ) {
+      setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    const updatedAllFormData = {
-      ...allFormData,
-      cnpj1: formData,
-    };
+  const updatedAllFormData = {
+              ...allDataFromPreviousSteps, 
+              cnpj1: formData,
+              userId: userId,
+              documentType: 'empresa' 
+          };
+          try {
+              const docRef = doc(db, 'empresa_draft', userId);
+              await setDoc(docRef, updatedAllFormData, { merge: true }); 
+              navigation.navigate('FormCNPJ2', { allFormData: updatedAllFormData, userId: userId });
+              
+          } catch (error) {
+              console.error("Erro ao salvar rascunho (CNPJ1):", error);
+              setErrorMessage('Falha ao salvar rascunho. Tente novamente.');
+          } 
+    };
 
-    navigation.navigate('FormCNPJ2', { allFormData: updatedAllFormData });
-  };
 
   return (
     <View style={styles.container}>
