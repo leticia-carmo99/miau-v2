@@ -42,38 +42,6 @@ export default function FormCPF4() {
     setUsageChecked(initialFormData.usageChecked);
   }, [allFormData.cpf4]);
 
-const handleNext = async () => { // ADICIONADO: async
-    const userId = allFormData.userId; 
-
-    if (!termsChecked) {
-      setErrorMessage(
-        'Você deve concordar com os Termos de Uso para continuar.'
-      );
-      return;
-    }
-
-    if (!userId) {
-      setErrorMessage('Erro de autenticação. Usuário não identificado.');
-      return;
-    }
-
-    const updatedAllFormData = {
-      ...allFormData,
-      cpf4: {
-        termsChecked,
-        usageChecked,
-      },
-    };
-    try {
-      const docRef = doc(db, 'prestador_draft', userId);
-      await setDoc(docRef, updatedAllFormData, { merge: true });
-      navigation.navigate('Finalizacao', { allFormData: updatedAllFormData, userId: userId });
-    } catch (error) {
-      console.error("Erro ao salvar rascunho (CPF4):", error);
-      setErrorMessage('Falha ao salvar dados. Tente novamente.');
-    }
-  };
-
   const handleReview = () => {
     const updatedAllFormData = {
       ...allFormData,

@@ -13,6 +13,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { TextInput } from 'react-native-gesture-handler';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36'; // Usada para o fluxo CNPJ (junto com Roxo)
@@ -20,15 +22,12 @@ const BRANCO = '#FFFFFF';
 const CINZA_CLARO = '#F7F7F7';
 const VERMELHO = '#E83F5B';
 
-// Renomeado de FormCPF4UploadTerms para FormCNPJ4
 export default function FormCNPJ4() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Recebe o objeto allFormData completo ou inicializa como vazio
   const allFormData = route.params?.allFormData || {};
 
-  // Inicializa o estado para esta tela com dados existentes (cnpj4) ou valores padrão
   const initialFormData = allFormData.cnpj4 || {
     termsChecked: false,
     usageChecked: false,
@@ -36,14 +35,14 @@ export default function FormCNPJ4() {
     policyLink: '',
   };
 
-  const [formData, setFormData] = useState(initialFormData); // Renomeado para formData para consistência
+  const [formData, setFormData] = useState(initialFormData); 
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    setFormData(initialFormData); // Usa setFormData para atualizar todo o objeto
-  }, [allFormData.cnpj4]); // Depende apenas dos dados específicos desta etapa no allFormData
+    setFormData(initialFormData);
+  }, [allFormData.cnpj4]); 
 
-  const pickFile = async () => { // Removido 'key' pois setPolicyFile é direto
+  const pickFile = async () => { 
     let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       setErrorMessage("Permissão negada. Você precisa permitir acesso à galeria para selecionar arquivos.");
@@ -53,11 +52,11 @@ export default function FormCNPJ4() {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: false,
-      quality: 1,
+      quality: 0.2,
     });
 
     if (!result.canceled) {
-      setFormData(prev => ({ ...prev, policyFile: result.assets[0].uri })); // Atualiza policyFile em formData
+      setFormData(prev => ({ ...prev, policyFile: result.assets[0].uri })); 
       setErrorMessage('');
     }
   };
@@ -67,30 +66,12 @@ export default function FormCNPJ4() {
     setErrorMessage('');
   };
 
-  const handleNext = () => {
-    if (!formData.termsChecked) { // Usa formData.termsChecked
-      setErrorMessage('Você deve concordar com os Termos de Uso para continuar.');
-      return;
-    }
-
-    // Atualiza o objeto allFormData com os dados desta etapa (cnpj4)
-    const updatedAllFormData = {
-      ...allFormData,
-      cnpj4: formData, // Usa formData para persistir os dados da tela
-    };
-
-    // Navega para a tela de Finalização, passando todo o allFormData
-    navigation.navigate('Finalizacao', { allFormData: updatedAllFormData });
-  };
 
   const handleReview = () => {
-    // Atualiza o objeto allFormData com os dados desta etapa (cnpj4) antes de revisar
     const updatedAllFormData = {
       ...allFormData,
-      cnpj4: formData, // Usa formData para persistir os dados da tela
+      cnpj4: formData,
     };
-
-    // CORREÇÃO: Navegar para RevisaoCNPJ1 (ou RevisaoCNPJFinal, se existir)
     navigation.navigate('RevisaoCNPJ1', { allFormData: updatedAllFormData });
   };
 

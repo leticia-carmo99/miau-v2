@@ -26,7 +26,7 @@ export default function FormCNPJ3() {
 
   const allFormData = route.params?.allFormData || {};
 
-  const initialFormData = allFormData.cnpj3 || {
+   const initialUploads = allFormData.cnpj3 || {
     logoEmpresa: null,
     comprovanteCNPJ: null,
     localFisico: null,
@@ -36,59 +36,59 @@ export default function FormCNPJ3() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    setUploads(initialFormData);
+    setUploads(initialUploads);
   }, [allFormData.cnpj3]);
-
-  const pickImage = async (sourceType, key) => {
-    let permissionResult;
-    let pickerOptions = {
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    };
-
-    if (sourceType === 'camera') {
-      permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    } else {
-      permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    }
-
+  const pickImage = async (key) => {
+    let permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      setErrorMessage(`Permissão negada. Você precisa permitir acesso à ${sourceType === 'camera' ? 'câmera' : 'galeria'}.`);
+      setErrorMessage(
+        'Permissão negada. Você precisa permitir acesso à galeria.'
+      );
       return;
     }
-
-    let result;
-    if (sourceType === 'camera') {
-      result = await ImagePicker.launchCameraAsync(pickerOptions);
-    } else {
-      result = await ImagePicker.launchImageLibraryAsync(pickerOptions);
-    }
-
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.2,
+    });
     if (!result.canceled) {
-      setUploads(prev => ({ ...prev, [key]: result.assets[0].uri }));
+      setUploads((prev) => ({ ...prev, [key]: result.assets[0].uri }));
       setErrorMessage('');
     }
   };
 
   const handleUploadOption = (key) => {
     setErrorMessage('');
-    pickImage('gallery', key);
+    pickImage(key);
   };
 
-  const handleNext = () => {
-    if (!uploads.logoEmpresa || !uploads.comprovanteCNPJ) {
-      setErrorMessage("Por favor, envie os documentos obrigatórios (Logo da Empresa e Comprovante de CNPJ).");
-      return;
-    }
+  const handleNext = async () => {
+    const userId = allFormData.userId; 
+    if (!userId) {
+      setErrorMessage('Erro de autenticação. Usuário não identificado.');
+      return;
+    }
+    if (!uploads.logoEmpresa || !uploads.comprovanteCNPJ) {
+      setErrorMessage(
+        'Por favor, envie os documentos obrigatórios (Logo/Foto de Perfil e Comprovante).'
+      );
+      return;
+    }
+    const updatedAllFormData = {
+      ...allFormData,
+      cnpj3: uploads,
+    };
+    try {
+      const docRef = doc(db, 'empresa_draft', userId);
+      await setDoc(docRef, updatedAllFormData, { merge: true }); 
+      navigation.navigate('FormCNPJ4', { allFormData: updatedAllFormData, userId: userId });
 
-    const updatedAllFormData = {
-      ...allFormData,
-      cnpj3: uploads,
-    };
-
-    navigation.navigate('FormCNPJ4', { allFormData: updatedAllFormData });
-  };
+    } catch (error) {
+      console.error("Erro ao salvar rascunho (CNPJ3):", error);
+      setErrorMessage('Falha ao salvar dados. Tente novamente.');
+    }
+  };
 
   const renderUploadBox = (label, key, obrigatorio = false) => (
     <View style={styles.fieldContainer}>
