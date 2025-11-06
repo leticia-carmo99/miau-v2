@@ -48,26 +48,74 @@ export default function RevisaoCPF3() {
     );
   }
 
+const sendApprovalEmail = async (data, userId) => { // userId é útil para criar o link de aprovação
+    const EMAILJS_SERVICE_ID = 'service_cb172kq'; 
+    const EMAILJS_TEMPLATE_ID = 'template_l3urlac'; // SUBSTITUA ESTE ID REAL
+    const EMAILJS_USER_ID = 'QXC1EChik2nZagzZA'; // SUBSTITUA ESTE ID REAL
+    
+const linkAprovacao = `https://console.firebase.google.com/u/0/project/miauuu-84f5b/firestore/databases/-default-/data/~2Fprestador~2F${userId}`;
+
+    const templateParamsParaEmailJS = {
+        to_email: 'suporteappmiau@gmail.com', 
+        nome_usuario: data.nome || data.razaoSocial,
+        documento_info: `${data.documento || data.cnpj} (${data.documentType})`,
+        email_usuario: data.email,
+        servico: data.servico || 'N/A',
+        link_logo: data.logoPerfil || 'N/A',
+        link_documento: data.documentoFoto || 'N/A',
+        instrucao_admin: `Acesse o Firebase, procure pelo ID: ${userId}, e defina 'ativo' como true.`,
+        link_de_aprovacao: linkAprovacao, 
+        instrucao_admin: `Acesse o link abaixo para revisar e aprovar manualmente no Firebase.`,
+    };
+
+    try {
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service_id: EMAILJS_SERVICE_ID,
+          template_id: EMAILJS_TEMPLATE_ID,
+          user_id: EMAILJS_USER_ID,
+          template_params: templateParamsParaEmailJS, 
+            subject: `Aprovação Pendente: ${data.documentType} ${data.documento || data.cnpj}`,
+            to: templateParamsParaEmailJS.to_email,
+        }),
+      });
+
+      if (response.ok) {
+        console.log("E-mail de aprovação enviado com sucesso.");
+      } else {
+        console.error("Falha ao enviar e-mail de aprovação:", await response.text());
+      }
+    } catch (error) {
+      console.error("Erro na requisição EmailJS:", error);
+    }
+  };
+
 const handleFinalizarCadastro = async () => {
     const userId = allFormData.userId;
+
     if (!userId) {
       Alert.alert("Erro", "Erro de autenticação. Usuário não identificado.");
       return;
     }
+
     try {
       const finalData = {
         ...allFormData.cpf1,
         ...allFormData.cpf2,
-        ...allFormData.cpf3,
-        documentType: 'prestador',
+        ...allFormData.cpf3, 
+        documentType: 'prestador', 
         dataCadastro: new Date().toISOString(),
         ativo: false, 
       };
       const docRef = doc(db, 'prestador', userId);
       await setDoc(docRef, finalData);
-      Alert.alert("Sucesso!", "Seu cadastro foi finalizado e será revisado.");
-      navigation.navigate('Finalizacao', { tipoCadastro: 'CPF' });
-
+      await sendApprovalEmail(finalData, userId); 
+      Alert.alert("Sucesso!", "Seu cadastro foi finalizado e enviado para análise.");
+      navigation.navigate('Finalizacao', { tipoCadastro: 'CPF', documento: userId });
     } catch (e) {
       console.error("Erro ao finalizar o cadastro:", e);
       Alert.alert("Erro", "Ocorreu um erro ao finalizar o seu cadastro. Tente novamente.");

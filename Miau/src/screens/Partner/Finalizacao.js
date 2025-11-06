@@ -25,6 +25,7 @@ export default function Finalizacao() {
   const { tipoCadastro, documento } = route.params;
 
 const verificarStatusPerfil = async () => {
+  if (!documento || typeof documento !== 'string') return;
     const collectionName = tipoCadastro === 'CNPJ' ? 'empresa' : 'prestador'; 
     try {
       const docRef = doc(db, collectionName, documento);
