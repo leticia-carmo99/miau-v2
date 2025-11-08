@@ -24,7 +24,6 @@ export default function FormCNPJ1() {
 
   const { userId, allDataFromPreviousSteps } = route.params || {}; 
   const initialData = allDataFromPreviousSteps || {}; 
-
   const initialFormData = initialData.cnpj1 || {
     nome: initialData.nome || '',
     cpfCnpj: initialData.cpfCnpj ||'',
@@ -59,7 +58,12 @@ export default function FormCNPJ1() {
       !(formData.servico || '').trim() ||
       !(formData.email || '').trim() ||
       !(formData.telefone || '').trim() ||
-      !(formData.endereco || '').trim()
+      !(formData.endereco || '').trim() ||
+      !(formData.bairro || '').trim() ||
+      !(formData.cidade || '').trim() ||
+      !(formData.estado || '').trim() ||
+      !(formData.cep || '').trim() ||
+      !(formData.redes || '').trim()
     ) {
       setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
       return;
@@ -102,8 +106,8 @@ export default function FormCNPJ1() {
               style={styles.input}
               placeholder="Insira aqui"
               placeholderTextColor="#999"
-              value={formData.nomeEmpresa}
-              onChangeText={(text) => handleChange('nomeEmpresa', text)}
+              value={formData.nome}
+              onChangeText={(text) => handleChange('nome', text)}
             />
           </Field>
 
@@ -113,8 +117,8 @@ export default function FormCNPJ1() {
               placeholder="00.000.000/0000-00"
               placeholderTextColor="#999"
               keyboardType="numeric"
-              value={formData.cnpj}
-              onChangeText={(text) => handleChange('cnpj', text)}
+              value={formData.cpfCnpj}
+              onChangeText={(text) => handleChange('cpfCnpj', text)}
             />
           </Field>
 
@@ -203,10 +207,10 @@ export default function FormCNPJ1() {
             </Field>
           </View>
 
-          <Field label="Link para Redes Sociais (Instagram, etc)">
+          <Field label="Usuário de redes sociais (Instagram, etc)">
             <TextInput
               style={styles.input}
-              placeholder="Link ou usuário"
+              placeholder="@Usuário Ex. @empresa123"
               placeholderTextColor="#999"
               value={formData.redes}
               onChangeText={(text) => handleChange('redes', text)}

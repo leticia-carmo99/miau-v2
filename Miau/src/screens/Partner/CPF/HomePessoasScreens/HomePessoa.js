@@ -52,8 +52,8 @@ const COLORS = {
 export default function HomePessoa() {
   const navigation = useNavigation();
   const { personData } = useContext(PersonContext); 
- const name = personData?.nome || "Nicolas";
-const pic = personData?.profileImage || Perfil;
+  const nome = personData?.nome || "Prestador";
+  const pic = personData?.logoPerfil || Perfil;
   const description = personData?.sobre || "Produtos para cachorros, gatos e diversos outros pets.";
 
 
@@ -78,7 +78,7 @@ const pic = personData?.profileImage || Perfil;
       <Image source={FundoLaranja} style={styles.orangeBackground}/>
       <View style={styles.welcomeView}>
         <Text style={styles.welcomeTitle}>Bem-Vindo,</Text>
-        <Text style={styles.welcomePerson}>{name}</Text>
+        <Text style={styles.welcomePerson}>{nome}</Text>
       </View>
 
       <Text style={styles.title1} >Edite o perfil da sua empresa</Text>
@@ -87,7 +87,7 @@ const pic = personData?.profileImage || Perfil;
        <View style={styles.card}>
         <Image source={pic} style={styles.logo} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.nameBusiness}>{name}</Text>
+          <Text style={styles.nameBusiness}>{nome}</Text>
           <Text style={styles.description}>
   {(description?.toString() || "")
     .split(' ')

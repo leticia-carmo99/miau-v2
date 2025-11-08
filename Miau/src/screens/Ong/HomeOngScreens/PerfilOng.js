@@ -140,7 +140,7 @@ useEffect(() => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: !allowsMultipleSelection,
       aspect: imageType === 'headerImage' ? [16, 9] : [1, 1],
-      quality: 1,
+      quality: 0.2,
       allowsMultipleSelection: allowsMultipleSelection,
     });
 

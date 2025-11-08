@@ -82,7 +82,7 @@ let result = await ImagePicker.launchImageLibraryAsync({
   mediaTypes: ['image'],
   allowsEditing: true, // provavelmente você quis dizer 'allowsEditing', não 'allowsEdition'
   aspect: [4, 3],
-  quality: 1,
+  quality: 0.2,
 });
 if (!result.canceled) {
   setImage(result.assets[0].uri);

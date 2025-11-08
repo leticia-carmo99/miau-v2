@@ -97,7 +97,7 @@ const userPets = petData ? [petData] : [];
       mediaTypes: 'Images',
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.2,
     });
 
     if (!result.canceled) {

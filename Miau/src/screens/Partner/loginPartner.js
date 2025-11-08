@@ -10,6 +10,9 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../firebaseConfig"; 
 
 const { width, height } = Dimensions.get('window');
 const TOP_HEIGHT = height * 0.3;
@@ -19,6 +22,59 @@ export default function LoginUser({ navigation }) {
   const [showPass, setShowPass] = useState(false);
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
+
+// Assumindo que getAuth, signInWithEmailAndPassword, doc, getDoc, db, e navigation estão importados e disponíveis.
+const handleLogin = async () => {
+    if (user === '' || pass === '') {
+        Alert.alert("Erro", "Por favor, preencha todos os campos.");
+        return;
+    }
+
+    try {
+        const auth = getAuth();
+        const userCredential = await signInWithEmailAndPassword(auth, user, pass);
+        const loggedInUser = userCredential.user;
+        const userId = loggedInUser.uid;
+        let foundInCollection = null;
+        let docSnap;
+        let docRef = doc(db, "empresa", userId); 
+        docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            foundInCollection = 'empresa';
+        } else {
+            docRef = doc(db, "prestador", userId);
+            docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                foundInCollection = 'prestador';
+            }
+        }
+
+        if (foundInCollection === 'empresa') {
+            Alert.alert("Sucesso!", "Login de Empresa realizado com sucesso.");
+            navigation.navigate('BusinessStack', { screen: 'MainDrawerCNPJ' }); 
+            
+        } else if (foundInCollection === 'prestador') {
+            Alert.alert("Sucesso!", "Login de Prestador de Serviço realizado com sucesso.");
+            navigation.navigate('PersonStack', { screen: 'MainDrawerCPF' }); 
+
+        } else {
+            await auth.signOut(); 
+            Alert.alert(
+                "Acesso Negado", 
+                "Essa conta não está cadastrada na área de prestadores ou empresas. Por favor, verifique seu cadastro."
+            );
+        }
+    } catch (error) {
+        console.error("Erro ao fazer login:", error.code, error.message);
+        let errorMessage = "Erro ao fazer login. Verifique seu e-mail e senha.";
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            errorMessage = "E-mail ou senha inválidos.";
+        }
+        Alert.alert("Erro de Login", errorMessage);
+    }
+};
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -67,7 +123,7 @@ export default function LoginUser({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.enterBtn} onPress={() => navigation.navigate('PersonStack', { screen: 'MainDrawerCPF' })}>
+        <TouchableOpacity style={styles.enterBtn} onPress={handleLogin}>
           <Text style={styles.enterText}>Entrar</Text>
         </TouchableOpacity>
 

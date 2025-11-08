@@ -38,6 +38,16 @@ export default function MainDrawer() {
  const name = businessData?.nome || "Empresa";
 const pic = businessData?.logoImage || LogoPatinhasUnidas;
 
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        setUserData(null);
+        navigation.navigate('InitialStack', { screen: 'Welcome' }); 
+    } catch (error) {
+        console.error("Erro ao fazer logout:", error);
+    }
+  };
+
  return (
     <Drawer.Navigator
       drawerContent={(props) => (
@@ -65,7 +75,6 @@ const pic = businessData?.logoImage || LogoPatinhasUnidas;
 
             <TouchableOpacity
               style={styles.drawerItem}
-              onPress={() => props.navigation.navigate('Configuracoes')}
             >
               <Ionicons name="settings-outline" size={width * 0.06} color={COLORS.mediumGray} />
               <Text style={styles.drawerItemText}>Configurações</Text>
@@ -76,7 +85,7 @@ const pic = businessData?.logoImage || LogoPatinhasUnidas;
           {/* Botão Sair */}
           <TouchableOpacity
             style={styles.logoutButton}
-            onPress={() => props.navigation.navigate('Sair')}
+            onPress={handleLogout}
           >
             <Ionicons name="log-out-outline" size={width * 0.06} color={COLORS.mediumGray} />
             <Text style={styles.logoutButtonText}>Sair</Text>

@@ -17,7 +17,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
-const LARANJA = '#FFAB36'; // Usada para o fluxo CNPJ (junto com Roxo)
+const LARANJA = '#FFAB36'; 
 const BRANCO = '#FFFFFF';
 const CINZA_CLARO = '#F7F7F7';
 const VERMELHO = '#E83F5B';
@@ -61,7 +61,7 @@ export default function FormCNPJ4() {
     }
   };
 
-  const handleChange = (field, value) => { // Adicionado handleChange para policyLink
+  const handleChange = (field, value) => { 
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrorMessage('');
   };
@@ -91,11 +91,11 @@ export default function FormCNPJ4() {
             <View style={styles.fieldWrapper}>
               <Text style={styles.subLabel}>Arquivo</Text>
               <TouchableOpacity style={styles.uploadBox} onPress={pickFile}> {/* Chamada direta para pickFile */}
-                {formData.policyFile ? ( // Usa formData.policyFile
+                {formData.policyFile ? ( 
                   formData.policyFile.match(/\.(jpeg|jpg|png|gif)$/i) ? (
                     <Image
                       source={{ uri: formData.policyFile }}
-                      style={{ width: '100%', height: '100%', borderRadius: width * 0.025 }} // Convertido para porcentagem
+                      style={{ width: '100%', height: '100%', borderRadius: width * 0.025 }} 
                       resizeMode="cover"
                     />
                   ) : (
@@ -113,8 +113,8 @@ export default function FormCNPJ4() {
                 style={styles.input}
                 placeholder="Insira aqui"
                 placeholderTextColor="#999"
-                value={formData.policyLink} // Usa formData.policyLink
-                onChangeText={(text) => handleChange('policyLink', text)} // Atualiza com handleChange
+                value={formData.policyLink}
+                onChangeText={(text) => handleChange('policyLink', text)}
                 keyboardType="url"
                 autoCapitalize="none"
               />
@@ -147,10 +147,10 @@ export default function FormCNPJ4() {
 
           <TouchableOpacity
             style={styles.checkboxContainer}
-            onPress={() => setFormData(prev => ({ ...prev, usageChecked: !prev.usageChecked }))} // Atualiza usageChecked em formData
+            onPress={() => setFormData(prev => ({ ...prev, usageChecked: !prev.usageChecked }))}
           >
             <Ionicons
-              name={formData.usageChecked ? 'checkbox' : 'square-outline'} // Usa formData.usageChecked
+              name={formData.usageChecked ? 'checkbox' : 'square-outline'}
               size={width * 0.06}
               color={LARANJA}
             />

@@ -16,7 +16,10 @@ import {
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
-import { PersonContext } from "../NavigationPessoa/PersonContext";
+import { updateDoc, doc } from 'firebase/firestore'; 
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; 
+import { db, storage } from "../../../../../firebaseConfig"; 
+import { usePerson } from "../NavigationPessoa/PersonContext"; 
 
 
 import {
@@ -58,9 +61,10 @@ const Checkbox = ({ label, isSelected, onValueChange }) => (
 
 export default function PerfilPessoa() {
   const navigation = useNavigation();
-    const { personData, setPersonData } = useContext(PersonContext); 
+  const { personData, setPersonData } = useContext(PersonContext); 
   const [isEditing, setIsEditing] = useState(false);
   const [initialPersonData, setInitialPersonData] = useState({});
+  
 
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
@@ -74,33 +78,28 @@ export default function PerfilPessoa() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  useEffect(() => {
-    const fetchedData = {
-      nome: 'Nicolas',
-      localizacao: 'Jardim das Esmeraldas, SP',
-      role: 'Adestrador',
-      sobre:
-        'Aqui na nossa petshop, você encontra tudo para o bem-estar do seu pet: alimentação de qualidade, acessórios, medicamentos, banho e tosa. Também apoiamos a adoção responsável...',
-      diasAbertos: {
-        segunda: true,
-        terca: true,
-        quarta: true,
-        quinta: true,
-        sexta: true,
-        sabado: true,
-        domingo: true,
-      },
-      horarioInicio: '08:00',
-      horarioFim: '22:00',
-      email: 'petscantato@gmail.com',
-      telefone: '+55 11 99262-4521',
-      instagram: '@petx.official',
-      facebook: '@oficialpetz',
-      headerImage: require('../Images/FundoCao.png'),
-      profileImage: require('../Images/Perfil.png'),
-    };
-  setPersonData(fetchedData);
-}, []);
+useEffect(() => {
+    if (!db || !userId || !isAuthReady) return;
+    const collectionName = 'prestadores';
+    const docRef = doc(db, collectionName, userId); 
+
+    const unsubscribe = onSnapshot(docRef, (docSnapshot) => {
+        if (docSnapshot.exists()) {
+            const fetchedData = docSnapshot.data();
+            setPersonData(fetchedData);
+            setInitialPersonData(fetchedData); 
+            setIsLoading(false);
+        } else {
+            console.log("Documento não encontrado. Inicializando dados padrão.");
+            setIsLoading(false); 
+        }
+    }, (error) => {
+        console.error("Erro ao carregar perfil:", error);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe(); 
+}, [db, userId, isAuthReady]);
 
   
   const openImageModal = (image) => {
@@ -128,49 +127,92 @@ export default function PerfilPessoa() {
   };
 
  
-  const validateTime = (time) => {
-    if (!/^\d{2}:\d{2}$/.test(time)) return false;
-    const [hours, minutes] = time.split(':').map(Number);
-    return !(isNaN(hours) || isNaN(minutes) || hours > 23 || minutes > 59);
-  };
+// --- FUNÇÕES DE LÓGICA E VALIDAÇÃO ---
 
-  const handleTimeChange = (field, value) => {
-    let formatted = value.replace(/[^0-9]/g, '');
+const validateTime = (time) => /^\d{2}:\d{2}$/.test(time) && 
+    (Number(time.split(':')[0]) <= 23 && Number(time.split(':')[1]) <= 59);
+
+const handleInputChange = (field, value) => {
+    setPersonData((prev) => {
+        if (field === 'instagram' || field === 'facebook') {
+            return { 
+                ...prev, 
+                redes: { ...(prev.redes || {}), [field]: value } 
+            };
+        } 
+        if (field === 'cidade' || field === 'estado') {
+             return { ...prev, [field]: value.toUpperCase() };
+        }
+        
+        return { ...prev, [field]: value };
+    });
+};
+
+const handleTimeChange = (field, value) => {
+    let formatted = value.replace(/[^0-9]/g, ''); 
     if (formatted.length > 2) {
-      formatted = formatted.slice(0, 2) + ':' + formatted.slice(2, 4);
+        formatted = formatted.slice(0, 2) + ':' + formatted.slice(2, 4);
     }
+    
     handleInputChange(field, formatted);
+
     if (formatted.length === 5 && !validateTime(formatted)) {
-      setTimeError('Horário inválido. Use HH:MM.');
+        setTimeError('Horário inválido. Use HH:MM.'); 
     } else {
-      setTimeError('');
+        setTimeError('');
     }
-  };
+};
 
-  const handleSaveChanges = () => {
-    if (timeError) {
-      Alert.alert('Erro', 'Por favor, corrija o formato do horário.');
-      return;
-    }
-    setInitialPersonData(personData);
-    setIsEditing(false);
-  };
+const handleCheckboxChange = (day) => {
+    setPersonData((prev) => ({
+        ...prev,
+        diasAbertos: { ...prev.diasAbertos, [day]: !prev.diasAbertos[day] },
+    }));
+};
 
-  const handleCancelEdit = () => {
+const handleCancelEdit = () => {
     setPersonData(initialPersonData);
     setIsEditing(false);
-  };
+};
 
-  const handleInputChange = (field, value) => {
-    setPersonData((prev) => ({ ...prev, [field]: value }));
-  };
 
-  const handleCheckboxChange = (day) => {
-    setPersonData((prev) => ({
-      ...prev,
-      diasAbertos: { ...prev.diasAbertos, [day]: !prev.diasAbertos[day] },
-    }));
-  };
+// --- FUNÇÃO PRINCIPAL DE SALVAMENTO ---
+
+const handleSaveChanges = async () => {
+    if (!db || !userId) {
+        console.error('Erro: Falha na autenticação do Firebase. Não é possível salvar.');
+        return;
+    }
+
+    if (timeError) {
+        console.error('Erro de validação: Por favor, corrija o formato do horário.'); 
+        return;
+    }
+    
+    setIsSaving(true);
+    let updatedData = { ...personData };
+
+    try {
+        const collectionName = 'prestadores'; 
+        const docRef = doc(db, collectionName, userId);
+        const dataToSave = {
+            ...updatedData,
+            redes: updatedData.redes || {}, 
+            diasAbertos: updatedData.diasAbertos || {},
+        };
+
+        await updateDoc(docRef, dataToSave);
+        setInitialPersonData(dataToSave); 
+        setIsEditing(false);
+        console.log('Sucesso: Perfil atualizado!'); 
+
+    } catch (error) {
+        console.error("Erro ao salvar perfil:", error);
+        console.error('Erro ao salvar: Não foi possível salvar as alterações.'); 
+    } finally {
+        setIsSaving(false);
+    }
+};
 
   const renderImageSource = (source) => {
     return typeof source === 'string' ? { uri: source } : source;

@@ -68,9 +68,7 @@ export default function RevisaoCNPJ3() {
           nome_responsavel: data.nomeResponsavel || 'N/A',
           email_usuario: data.email,
           telefone: data.telefone,
-          servico: data.servico || 'N/A',
-          link_logo: data.logoPerfil || 'N/A',
-          link_documento: data.documentoFoto || 'N/A',
+          tipo_empresa: data.tipo_empresa || 'N/A',
           instrucao_admin: `Acesse o Firebase, procure pelo ID: ${userId}, e defina 'ativo' como true.`,
           link_de_aprovacao: linkAprovacao, 
           instrucao_admin: `Acesse o link abaixo para revisar e aprovar manualmente no Firebase.`,
@@ -109,7 +107,7 @@ export default function RevisaoCNPJ3() {
           ...allFormData.cnpj4, 
           documentType: 'empresa', 
           dataCadastro: new Date().toISOString(),
-          ativo: false, 
+          ativo: false,
         };
         const docRef = doc(db, 'empresa', userId);
         await setDoc(docRef, finalData);
