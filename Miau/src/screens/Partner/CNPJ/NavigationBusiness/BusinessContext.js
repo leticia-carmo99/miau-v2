@@ -36,7 +36,6 @@ export const BusinessProvider = ({ children }) => {
             regioes: fetchedData.regioes || [], 
             redes: fetchedData.redes || "",
             site: fetchedData.site || "",
-            tipoEmpresa: fetchedData.tipoEmpresa || "",
             imagensServico: fetchedData.imagensServico || [],
             comprovanteCNPJ: fetchedData.comprovanteCNPJ || null, 
             logoPerfil: fetchedData.logoPerfil || null, 

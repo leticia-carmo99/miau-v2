@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from "../../../../firebaseConfig";
+import { db } from "../../../../firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -55,15 +55,13 @@ export default function FormCNPJ1() {
     if (
       !(formData.nome || '').trim() ||
       !(formData.cpfCnpj || '').trim() ||
-      !(formData.servico || '').trim() ||
       !(formData.email || '').trim() ||
       !(formData.telefone || '').trim() ||
       !(formData.endereco || '').trim() ||
       !(formData.bairro || '').trim() ||
       !(formData.cidade || '').trim() ||
       !(formData.estado || '').trim() ||
-      !(formData.cep || '').trim() ||
-      !(formData.redes || '').trim()
+      !(formData.cep || '').trim() 
     ) {
       setErrorMessage('Por favor, preencha todos os campos obrigatórios.');
       return;

@@ -8,11 +8,11 @@ import {
   Linking,
   Image,
   ScrollView,
+  TextInput
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { TextInput } from 'react-native-gesture-handler';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from "../../../../firebaseConfig";
 

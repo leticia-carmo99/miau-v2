@@ -32,7 +32,7 @@ export default function FormCNPJ3() {
     localFisico: null,
   };
 
-  const [uploads, setUploads] = useState(initialFormData);
+  const [uploads, setUploads] = useState(initialUploads);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {

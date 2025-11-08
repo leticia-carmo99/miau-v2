@@ -100,6 +100,7 @@ export default function RevisaoCNPJ3() {
           documentType: 'empresa', 
           dataCadastro: new Date().toISOString(),
           ativo: false,
+          sobre: ""
         };
         const docRef = doc(db, 'empresa', userId);
         await setDoc(docRef, finalData);

@@ -24,7 +24,7 @@ export default function FormCNPJ2() {
 
   const allFormData = route.params?.allFormData || {};
 
-  const initialFormData = allFormData.cpf2 || {
+  const initialFormData = allFormData.cnpj2 || {
     tipoEmpresa: '',
     tipoServico: '',
     regioes: [],
@@ -54,11 +54,18 @@ export default function FormCNPJ2() {
     setErrorMessage('');
   };
 
+  const handleRadioSelect = (value) => {
+    handleChange('tipoServico', value);
+};
+
+const handleOutroChange = (text) => {
+    handleChange('tipoServico', text);
+};
+
   const handleNext = async () => {
-    const { tipoServico, tipoEmpresa, regioes, localAtendimento } = formData;
+    const { tipoServico, regioes, localAtendimento } = formData;
     if (
       !tipoServico.trim() ||
-      !tipoEmpresa ||
       regioes.length === 0 ||
       !localAtendimento.trim()
     ) {
@@ -97,41 +104,65 @@ export default function FormCNPJ2() {
             <Text style={styles.errorMessage}>{errorMessage}</Text>
           ) : null}
 
-          <Field label="Tipo da empresa" required>
-            {['Petshop', 'Veterinário'].map((tipo) => (
-              <TouchableOpacity
-                key={tipo}
-                style={styles.checkboxContainer}
-                onPress={() => handleChange('tipoEmpresa', tipo)}>
-                <View
-                  style={[
-                    styles.checkbox,
-                    formData.tipoEmpresa === tipo && styles.checkboxSelected,
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.checkboxLabel,
-                    formData.tipoEmpresa === tipo && {
-                      color: LARANJA,
-                      fontWeight: 'bold',
-                    },
-                  ]}>
-                  {tipo}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </Field>
+<Field label="Tipo da empresa" required>
+    {/* Opções Fixas: Petshop e Veterinário */}
+    {['Petshop', 'Veterinário'].map((tipo) => (
+        <TouchableOpacity
+            key={tipo}
+            style={styles.radioContainer}
+            onPress={() => handleRadioSelect(tipo)}
+        >
+            <View
+                style={[
+                    styles.radioButton,
+                    // Verifica se o valor atual no estado é igual ao tipo
+                    formData.tipoServico === tipo && styles.radioSelectedOuter,
+                ]}
+            >
+                {formData.tipoServico === tipo && (
+                    <View style={styles.radioSelectedInner} />
+                )}
+            </View>
+            <Text style={styles.radioLabel}>
+                {tipo}
+            </Text>
+        </TouchableOpacity>
+    ))}
 
-          <Field label="Tipo de produto ou serviço oferecido" required>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: banho, acessórios, ração, tosa..."
-              placeholderTextColor="#999"
-              value={formData.tipoServico}
-              onChangeText={(text) => handleChange('tipoServico', text)}
-            />
-          </Field>
+    {/* Opção "Outro" */}
+    <TouchableOpacity
+        style={styles.radioContainer}
+        onPress={() => handleRadioSelect('Outro')}
+    >
+        <View
+            style={[
+                styles.radioButton,
+                // Verifica se o valor atual no estado não é nenhuma das opções fixas
+                formData.tipoServico !== 'Petshop' && 
+                formData.tipoServico !== 'Veterinário' &&
+                styles.radioSelectedOuter,
+            ]}
+        >
+            {formData.tipoServico !== 'Petshop' && 
+             formData.tipoServico !== 'Veterinário' && (
+                <View style={styles.radioSelectedInner} />
+            )}
+        </View>
+        <Text style={styles.radioLabel}>Outro (Especifique)</Text>
+    </TouchableOpacity>
+
+    {/* TextInput Condicional para "Outro" */}
+    {formData.tipoServico !== 'Petshop' && formData.tipoServico !== 'Veterinário' && (
+        <TextInput
+            style={styles.inputOutro}
+            // O valor exibido é o próprio tipoServico (que pode ser 'Outro' ou o texto digitado)
+            value={formData.tipoServico === 'Outro' ? '' : formData.tipoServico} 
+            onChangeText={handleOutroChange}
+            placeholder="Qual o tipo da empresa?"
+            placeholderTextColor="#999"
+        />
+    )}
+</Field>
 
           <Field label="Região de atuação (SP)" required>
             {[
@@ -309,4 +340,46 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.02,
     fontSize: width * 0.035,
   },
+  radioContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    // Estilo do CÍRCULO EXTERNO (Não-selecionado)
+    radioButton: {
+        height: 24,
+        width: 24,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: CINZA_CLARO,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+    // Estilo do CÍRCULO EXTERNO (Selecionado)
+    radioSelectedOuter: {
+        borderColor: LARANJA, // Cor da borda quando selecionado
+    },
+    // Estilo do CÍRCULO INTERNO (Selecionado)
+    radioSelectedInner: {
+        height: 12,
+        width: 12,
+        borderRadius: 6,
+        backgroundColor: LARANJA, // Preenchimento interno
+    },
+    radioLabel: {
+        fontSize: 16,
+        color: '#333',
+    },
+    inputOutro: {
+        height: 40,
+        borderColor: CINZA_CLARO,
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        marginTop: 5,
+        marginBottom: 15,
+        marginLeft: 34, // Alinha com o texto dos radio buttons
+        width: '80%',
+    }
 });

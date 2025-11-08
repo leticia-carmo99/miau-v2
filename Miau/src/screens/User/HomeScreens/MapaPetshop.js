@@ -15,6 +15,8 @@ import {
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import WebView from 'react-native-webview';
+import { db } from "../../../../firebaseConfig";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 import {
   useFonts,
@@ -52,6 +54,78 @@ export default function MapaPetshop() {
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   });
+  const [dbPetshops, setDbPetshops] = useState([]);
+
+  useEffect(() => {
+    if (search.trim() === '') {
+      setFiltered(dbPetshops); 
+    } else {
+      setFiltered(
+        dbPetshops.filter((item) => 
+          item.name.toLowerCase().includes(search.toLowerCase())
+        )
+      );
+    }
+  }, [search, dbPetshops]);
+
+useEffect(() => {
+    const fetchPetshops = async () => {
+        const petshopsRef = collection(db, "empresa");
+        const q = query(petshopsRef, where("tipoServico", "==", "Petshop"));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            const petshopsData = [];
+            for (const docSnapshot of querySnapshot.docs) {
+                const data = docSnapshot.data();
+                const cep = data.cep;
+                if (!cep) continue;
+                try {
+                    const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${cep}&format=json&limit=1&countrycodes=br`, {
+                        headers: {
+                            'User-Agent': 'PetshopApp (seuemail@seudominio.com)',
+                        }
+                    });
+
+                    if (!geoResponse.ok) throw new Error("Falha na geocodificação.");
+
+                    const geoJson = await geoResponse.json();
+
+                    if (geoJson.length > 0) {
+                        const result = geoJson[0];
+                        petshopsData.push({
+                            id: docSnapshot.id,
+                            name: data.nome || 'Petshop Sem Nome',
+                            logo: data.logoEmpresa || '../assets/incognita.jpg', 
+                            distance: 'Aprox.', 
+                            description: data.sobre || 'Sem descrição',
+                            lat: parseFloat(result.lat),
+                            lon: parseFloat(result.lon),
+                        });
+                    }
+
+                } catch (geoError) {
+                    console.warn(`Aviso: Não foi possível geocodificar o CEP ${cep}.`, geoError.message);
+                }
+            }
+            
+            setDbPetshops(petshopsData);
+            setFiltered(petshopsData);
+            
+        } catch (error) {
+            console.error("Erro ao buscar petshops do Firestore:", error);
+            Alert.alert("Erro", "Não foi possível carregar os petshops do mapa.");
+        }
+    };
+
+    fetchPetshops();
+}, []);
+
+useEffect(() => {
+    if (webViewRef.current && dbPetshops.length > 0) {
+        webViewRef.current.injectJavaScript(updateMarkersScript(dbPetshops));
+    }
+}, [dbPetshops]);
 
 
   const translateY = useRef(new Animated.Value(height * 0.5)).current;
@@ -97,13 +171,9 @@ const addCenterMarkerScript = (newRegion) => {
           if (typeof window.map !== 'undefined') {
               const lat = ${newRegion.latitude};
               const lon = ${newRegion.longitude};
-              
-              // Remove o marcador central anterior, se houver
               if (window.centerMarker) {
                   window.map.removeLayer(window.centerMarker);
               }
-              
-              // O ícone padrão do Leaflet é um pouco feio, vamos criar um simples
               const customIcon = L.divIcon({
                   className: 'center-marker-icon',
                   html: '<div style="background-color:#7b3aed; width:15px; height:15px; border: 3px solid white; border-radius: 50%;"></div>',
@@ -112,11 +182,10 @@ const addCenterMarkerScript = (newRegion) => {
                   popupAnchor: [1, -15] // Ponto para o popup
               });
 
-              // Cria e adiciona o novo marcador central ao mapa
               window.centerMarker = L.marker([lat, lon], { icon: customIcon })
                   .addTo(window.map)
                   .bindPopup("Sua Localização de Busca")
-                  .openPopup(); // Abre o popup automaticamente
+                  .openPopup();
           }
       })();
       true;
@@ -140,42 +209,12 @@ const TILE_PROVIDERS = {
 const MAP_PROVIDER_KEY = 'CartoDB_Positron'; 
 const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStreetMap'];
 
-  const petshop = [
-    {
-      id: 'p1',
-      name: 'Petz',
-      logo: require('../assets/FotosInicial/petz.png'),
-      distance: '0.4 km',
-      description: 'Pet shop',
-      lat: -23.55,
-      lon: -46.63,
-    },
-    {
-      id: 'p2',
-      name: 'Pet Point',
-      logo: require('../assets/FotosInicial/petz.png'),
-      distance: '0.4 km',
-      description: 'Pet shop',
-      lat: -23.54,
-      lon: -46.64,
-    },
-    {
-      id: 'p3',
-      name: 'Pet-shop',
-      logo: require('../assets/FotosInicial/petz.png'),
-      distance: '0.8 km',
-      description: 'Produtos para cães e',
-      lat: -23.553,
-      lon: -46.635,
-    },
-  ];
-
   useEffect(() => {
     if (search.trim() === '') {
-      setFiltered(petshop);
+      setFiltered(dbPetshops);
     } else {
       setFiltered(
-        petshop.filter((item) =>
+        dbPetshops.filter((item) =>
           item.name.toLowerCase().includes(search.toLowerCase())
         )
       );
@@ -284,33 +323,22 @@ const generateMapScript = (data, center) => {
         if (typeof L === 'undefined' || document.getElementById('map')._leaflet_id) {
             return; 
         }
-        
-        // Variável global na WebView para armazenar os marcadores
         window.activeMarkers = [];
         
         const initialCenter = [${center.lat}, ${center.lon}];
-        const zoomLevel = 13; 
-         
-        // Inicializa o mapa
+        const zoomLevel = 13;
         window.map = L.map('map').setView(initialCenter, zoomLevel);
-
-        // Define o Tile Layer CartoDB Positron
         L.tileLayer('${MAP_PROVIDER.url}', {
             attribution: '${MAP_PROVIDER.attribution}',
             maxZoom: 19,
         }).addTo(map);
-
-        // Função para criar o ícone customizado
         window.getCustomIcon = (initials) => L.divIcon({
             className: 'custom-div-icon',
             html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">' + initials + '</div>',
             iconSize: [30, 30], 
             iconAnchor: [15, 30], 
         });
-
-        // Função para adicionar marcadores
         window.addMarkers = (petshops) => {
-            // Remove marcadores antigos
             window.activeMarkers.forEach(marker => map.removeLayer(marker));
             window.activeMarkers = [];
 
@@ -324,9 +352,9 @@ const generateMapScript = (data, center) => {
         };
 
         // Adiciona os marcadores iniciais
-        window.addMarkers(${JSON.stringify(petshop)});
-    })();
-    true;
+window.addMarkers(${JSON.stringify(dbPetshops)});
+    })();
+    true;
 `;
 }
 
@@ -352,12 +380,12 @@ const mapHtmlContent = MapHtmlModule;
 source={{ html: mapHtmlContent }}
           style={styles.map}
           onLoadEnd={() => {
-            setTimeout(() => {
-        if (webViewRef.current) {
-            webViewRef.current.injectJavaScript(generateMapScript(petshop, centerCoord));
-        }
-    }, 300); 
-          }}
+setTimeout(() => {
+        if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(generateMapScript(dbPetshops, centerCoord));
+        }
+    }, 300); 
+          }}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           allowFileAccess={true}
