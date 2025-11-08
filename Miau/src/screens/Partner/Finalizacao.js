@@ -104,8 +104,8 @@ const handleConfirm = () => {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Seus dados foram enviados para análise</Text>
             <Text style={styles.modalText}>
-             Nossa equipe atende a solicitação até 12 horas. {'\n\n'}
-              Por favor, aguarde — retorne e selecione em "ok" para tentar prosseguir.
+             Nossa equipe atende a solicitação em até 8 horas. Por favor, aguarde — retorne e selecione em "ok" para tentar prosseguir. {'\n\n'}
+              Em caso de dúvidas, contate-nos em suporteappmiau@gmail.com.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.modalButtonCancelar} onPress={() => setModalVisible(false)}>

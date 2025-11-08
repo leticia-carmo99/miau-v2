@@ -8,6 +8,8 @@ import {
   Dimensions,
   Modal,
 } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
 const LARANJA = '#FFAB36';
@@ -15,14 +17,54 @@ const MARRON = '#8C4A14';
 
 export default function DadosEnviados({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
+  const [perfilAtivo, setPerfilAtivo] = useState(false);
+const { userUid } = route.params || {};
+const [isLoading, setIsLoading] = useState(true);
 
-  const handlePress = () => {
-    setModalVisible(true);
+const verificarStatusPerfil = async () => {
+    const collectionName = 'ongs'; 
+    
+    if (!userUid) {
+      console.error("UID do usuário ausente na rota.");
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const docRef = doc(db, collectionName, userUid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists() && docSnap.data().ativo === true) {
+        setPerfilAtivo(true);
+      } else {
+        setPerfilAtivo(false);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar o status do perfil:", error);
+      // Não exibe Alert, apenas loga e define como inativo
+      setPerfilAtivo(false); 
+    } finally {
+        setIsLoading(false);
+    }
   };
 
-  const handleConfirm = () => {
+  useEffect(() => {
+    verificarStatusPerfil();
+  }, [userUid]);
+  const handlePress = () => {
+    if (perfilAtivo) {
+      navigation.navigate('MainDrawerOng');
+    } else {
+      setModalVisible(true);
+    }
+  };
+
+
+const handleConfirm = () => {
+    if (perfilAtivo) {
+      navigation.navigate('MainDrawerOng');
+    }
     setModalVisible(false);
-    navigation.navigate('MainDrawerOng');
   };
 
   return (
@@ -38,10 +80,9 @@ export default function DadosEnviados({ navigation }) {
       <View style={styles.content}>
         <Text style={styles.titulo}>Dados enviados com sucesso!</Text>
         <Text style={styles.texto}>
-          Recebemos suas informações e agora vamos analisá-las com carinho. {'\n\n'}
-          Assim que forem confirmadas, você poderá começar a utilizar o app MiAu
-          para vender seus produtos e serviços. {'\n\n'}
-          Muito obrigado por fazer parte dessa causa!
+           Nossa equipe atende a solicitação em até 8 horas. {'\n\n'}
+              Por favor, aguarde — retorne e selecione em "ok" para tentar prosseguir. {'\n\n'}
+              Em caso de dúvidas, contate-nos em suporteappmiau@gmail.com.
         </Text>
       </View>
 
@@ -63,8 +104,8 @@ export default function DadosEnviados({ navigation }) {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Seus dados ainda não foram confirmados</Text>
             <Text style={styles.modalText}>
-              Estamos analisando as informações da sua empresa ou pessoais. {'\n\n'}
-              Por favor, aguarde — em breve entraremos em contato!
+             Nossa equipe atende a solicitação em até 8 horas. Por favor, aguarde — retorne e selecione em "ok" para tentar prosseguir. {'\n\n'}
+              Em caso de dúvidas, contate-nos em suporteappmiau@gmail.com.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.modalButtonCancelar} onPress={() => setModalVisible(false)}>

@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Image
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { doc, setDoc } from 'firebase/firestore';
 import { db, storage } from '../../../../firebaseConfig';
-import emailjs from '@emailjs/browser';
-import { init, send } from '@emailjs/browser';
+import emailjs from '@emailjs/react-native'; 
 
 const { width, height } = Dimensions.get('window');
 const ROXO = '#6A57D2';
@@ -18,22 +17,11 @@ const EMAILJS_USER_ID = '7Z2Yvbl4xyV5_wuBM';
 export default function RevisaoCNPJ3() {
   const navigation = useNavigation();
   const route = useRoute();
-  const [emailJsReady, setEmailJsReady] = useState(false);
   const allFormData = route.params?.allFormData || {};
   const formCNPJ1Data = allFormData.cnpj1 || {};
   const formCNPJ2Data = allFormData.cnpj2 || {};
   const formCNPJ3Data = allFormData.cnpj3 || {};
   const formCNPJ4Data = allFormData.cnpj4 || {};
-
-    useEffect(() => {
-        try {
-            init(EMAILJS_USER_ID); 
-            setEmailJsReady(true);
-            console.log("EmailJS SDK inicializado com sucesso.");
-        } catch (error) {
-            console.error("Falha ao inicializar o EmailJS SDK:", error);
-        }
-    }, []);
 
 
   function ImageLine({ label, imageUri }) {
@@ -54,10 +42,11 @@ export default function RevisaoCNPJ3() {
   }
 
       const sendApprovalEmail = async (data, userId) => {
-          if (!emailJsReady) {
-              console.error("EmailJS não inicializado. Não é possível enviar o e-mail.");
-              return;
-          }
+    if (!EMAILJS_USER_ID || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+      console.error("Configurações do EmailJS ausentes. Verifique as constantes.");
+      Alert.alert("Erro de E-mail", "Configuração do serviço de e-mail ausente.");
+      return;
+    }
       
   const linkAprovacao = `https://console.firebase.google.com/u/0/project/miauuu-84f5b/firestore/databases/-default-/data/~2Fempresa~2F${userId}`;
   
@@ -69,27 +58,30 @@ export default function RevisaoCNPJ3() {
           email_usuario: data.email,
           telefone: data.telefone,
           tipo_empresa: data.tipo_empresa || 'N/A',
-          instrucao_admin: `Acesse o Firebase, procure pelo ID: ${userId}, e defina 'ativo' como true.`,
           link_de_aprovacao: linkAprovacao, 
           instrucao_admin: `Acesse o link abaixo para revisar e aprovar manualmente no Firebase.`,
       };
   
-      try {
-              const response = await send(
-                  EMAILJS_SERVICE_ID,
-                  EMAILJS_TEMPLATE_ID,
-                  templateParamsParaEmailJS
-              );
-  
-          if (response.status === 200) {
-              console.log("E-mail de aprovação enviado com sucesso.", response);
-          } else {
-              console.error("Falha ao enviar e-mail de aprovação. Status:", response.status, response.text);
-          }
-      } catch (error) {
-          console.error("Erro na requisição EmailJS (SDK):", error);
-      }
-    };
+    try {
+        const response = await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            templateParamsParaEmailJS,
+            { 
+                publicKey: EMAILJS_USER_ID
+            }
+        );
+        if (response.status === 200) {
+            console.log("E-mail de aprovação enviado com sucesso.", response);
+        } else {
+            console.error("Falha ao enviar e-mail de aprovação. Status:", response.status, response.text);
+            Alert.alert("Erro de E-mail", `Falha ao enviar notificação. Status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error("Erro na requisição EmailJS (SDK React Native):", error);
+        Alert.alert("Erro de E-mail", `Não foi possível enviar o e-mail de notificação. Detalhe: ${error.message || error.text || 'Erro desconhecido'}`);
+    }
+  };
   
   const handleFinalizarCadastro = async () => {
       const userId = allFormData.userId;

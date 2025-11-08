@@ -15,6 +15,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebaseConfig';
 import * as FileSystem from 'expo-file-system';
 import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
+import emailjs from '@emailjs/react-native'; 
 
 const { width, height } = Dimensions.get('window');
 
@@ -23,6 +24,10 @@ const BRANCO = '#FFFFFF';
 const CINZA_CLARO = '#E0E0E0';
 const CINZA_TEXTO_PLACEHOLDER = '#999';
 const CINZA_TEXTO_LABEL = '#737373';
+
+const EMAILJS_SERVICE_ID = 'service_o63emyi'; 
+const EMAILJS_TEMPLATE_ID = 'template_xff62ks'; 
+const EMAILJS_USER_ID = 'n_m2HmH5uYcM1URRu';
 
 export default function RevisaoONG3() {
   const navigation = useNavigation();
@@ -40,21 +45,57 @@ export default function RevisaoONG3() {
 
   if (!fontsLoaded) return null;
 
-  const imageToBase64 = async (uri) => {
+const imageToBase64 = async (uri) => {
     if (!uri) return null;
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result.split(',')[1]);
-        };
-        reader.onerror = (error) => reject(new Error('Falha ao ler a imagem como Base64.'));
-        reader.readAsDataURL(blob);
-      });
+        const base64Data = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        return base64Data;
     } catch (error) {
-      throw new Error('Falha na leitura da imagem.');
+        console.error('Falha na leitura/conversão da imagem para Base64:', error);
+        throw new Error('Falha na leitura da imagem.');
+    }
+};
+
+  // -- ENVIAR EMAIL --
+  const sendApprovalEmail = async (data, userUid) => {
+    if (!EMAILJS_USER_ID || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+      console.error("Configurações do EmailJS ausentes. Verifique as constantes.");
+      Alert.alert("Erro de E-mail", "Configuração do serviço de e-mail ausente.");
+      return;
+    }
+    
+    const linkAprovacao = `https://console.firebase.google.com/u/0/project/miauuu-84f5b/firestore/databases/-default-/data/~2Fongs~2F${userUid}`;
+
+    const templateParamsParaEmailJS = {
+        to_email: 'suporteappmiau@gmail.com', 
+        nome_usuario: data.nomeOng || data.razaoSocial,
+        documento_info: data.cnpjCpf,
+        email_usuario: data.emailContato,
+        link_de_aprovacao: linkAprovacao, 
+        instrucao_admin: `Acesse o link abaixo para revisar e aprovar manualmente no Firebase.`,
+    };
+
+
+    try {
+        const response = await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            templateParamsParaEmailJS,
+            { 
+                publicKey: EMAILJS_USER_ID
+            }
+        );
+        if (response.status === 200) {
+            console.log("E-mail de aprovação enviado com sucesso.", response);
+        } else {
+            console.error("Falha ao enviar e-mail de aprovação. Status:", response.status, response.text);
+            Alert.alert("Erro de E-mail", `Falha ao enviar notificação. Status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error("Erro na requisição EmailJS (SDK React Native):", error);
+        Alert.alert("Erro de E-mail", `Não foi possível enviar o e-mail de notificação. Detalhe: ${error.message || error.text || 'Erro desconhecido'}`);
     }
   };
 
@@ -91,6 +132,7 @@ export default function RevisaoONG3() {
             uid: userUid,
             dataCadastro: new Date().toISOString(),
             tipoInstituicao: 'ONG',
+            ativo: false, 
             comprovanteCNPJouEstatuto: comprovanteCNPJouEstatutoBase64,
             fotoFachadaEspaco: fotoFachadaEspacoBase64,
             documentoResponsavel: documentoResponsavelBase64,
@@ -101,12 +143,19 @@ export default function RevisaoONG3() {
 
         try {
           await setDoc(doc(db, 'ongs', userUid), finalData);
-        } catch (firestoreError) {
-          if (userCredential && userCredential.user) {
-            await userCredential.user.delete();
-          }
-          throw new Error(`Falha de Permissão no Firestore. Erro: ${firestoreError.message}`);
+          await sendApprovalEmail(finalData, userUid);
+    } catch (firestoreError) { 
+        console.error("Erro ao salvar no Firestore:", firestoreError);
+        if (userCredential && userCredential.user) {
+            try {
+                await userCredential.user.delete();
+                console.log("Conta Auth deletada com sucesso após falha no Firestore.");
+            } catch (deleteError) {
+                console.error("ERRO GRAVE: Falha ao deletar a conta Auth.", deleteError);
+            }
         }
+        throw new Error(`Falha ao salvar os dados da ONG no Firestore. Erro: ${firestoreError.message}`);
+    }
 
         Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve. Você pode logar agora.");
 
@@ -151,7 +200,7 @@ export default function RevisaoONG3() {
 
           <TouchableOpacity
               style={[styles.button, styles.nextButton]}
-              onPress={() => navigation.navigate('FormONG4', { allFormData })}
+              onPress={handleFinalize}
 >
   <Text style={styles.buttonText}>Finalizar</Text>
 </TouchableOpacity>
