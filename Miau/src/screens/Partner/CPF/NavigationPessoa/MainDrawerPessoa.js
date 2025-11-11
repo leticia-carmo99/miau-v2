@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Tabs from './MainTabsPessoa';
 import { useNavigation } from '@react-navigation/native';
 import { useContext } from "react";
-import { PersonContext } from "../NavigationPessoa/PersonContext";
+import { PersonContext } from "./PersonContext";
 import Perfil from '../Images/Perfil.png';
 
 import Sobre from '../HomePessoasScreens/SobreApp';
@@ -31,8 +31,8 @@ function ConfiguracoesScreen() {
 export default function MainDrawer() {
   const navigation = useNavigation();
   const { personData } = useContext(PersonContext); 
- const nome = personData?.nome || "Nicolas";
-const pic = personData?.logoImage || Perfil;
+ const nome = personData?.nome || "Prestador";
+const pic = personData?.logoImage;
 
   const handleLogout = async () => {
     try {
@@ -115,7 +115,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  // Estilos para o conteúdo customizado do Drawer
   profileSection: {
     padding: width * 0.05,
     backgroundColor: COLORS.white,
@@ -164,7 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: width * 0.035,
     paddingHorizontal: width * 0.05,
-    marginTop: width * 0.05, // Espaçamento antes do botão Sair
+    marginTop: width * 0.05,
     borderTopWidth: 0.5,
     borderTopColor: COLORS.lightGray,
   },
@@ -172,6 +171,6 @@ const styles = StyleSheet.create({
     fontSize: width * 0.045,
     marginLeft: width * 0.03,
     color: COLORS.mediumGray,
-    fontFamily: 'Nunito_400Regular', // Alterado para Nunito
+    fontFamily: 'Nunito_400Regular',
   },
 });

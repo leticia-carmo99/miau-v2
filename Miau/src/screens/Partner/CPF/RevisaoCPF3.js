@@ -100,6 +100,8 @@ const handleFinalizarCadastro = async () => {
         documentType: 'prestador', 
         dataCadastro: new Date().toISOString(),
         ativo: false, 
+        sobre: '',
+        tipoCadastro: 'CPF',
       };
       const docRef = doc(db, 'prestador', userId);
       await setDoc(docRef, finalData);

@@ -81,11 +81,10 @@ useEffect(() => {
     if (personData && Object.keys(personData).length > 0) {
         const defaultStructure = {
             headerImage: '',
-            profileImage: '',
+            fotoPerfil: '',
             sobre: '',
             horarioInicio: '00:00',
             horarioFim: '00:00',
-            role: '', 
             diasAbertos: {
                 segunda: false, terca: false, quarta: false,
                 quinta: false, sexta: false, sabado: false, domingo: false,
@@ -107,124 +106,156 @@ useEffect(() => {
 }, [personData]);
 
   
+useEffect(() => {
+    if (businessData && Object.keys(businessData).length > 0) {
+      setInitialBusinessData({ ...businessData }); 
+      setIsGalleryExpanded(true); 
+    }
+  }, [businessData]);
+
   const openImageModal = (image) => {
     setSelectedImage(image);
     setIsModalVisible(true);
   };
+
   const closeImageModal = () => {
     setIsModalVisible(false);
     setSelectedImage(null);
   };
 
-  
+
   const pickImage = async (imageType) => {
+    const allowsMultipleSelection = imageType === 'gallery';
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: !allowsMultipleSelection,
       aspect: imageType === 'headerImage' ? [16, 9] : [1, 1],
-      quality: 1,
+      quality: 0.2,
+      allowsMultipleSelection: allowsMultipleSelection,
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const newImageUri = result.assets[0].uri;
-      handleInputChange(imageType, { uri: newImageUri });
+    if (!result.canceled) {
+      if (allowsMultipleSelection && result.assets) {
+        const newImageUris = result.assets.map((asset) => asset.uri);
+        setPersonData((prev) => ({
+          ...prev,
+          fotos: [...prev.fotos, ...newImageUris],
+        }));
+      } else if (result.assets && result.assets.length > 0) {
+        const newImageUri = result.assets[0].uri;
+        handleInputChange(imageType, { uri: newImageUri });
+      }
     }
   };
 
-const validateTime = (time) => /^\d{2}:\d{2}$/.test(time) && 
-    (Number(time.split(':')[0]) <= 23 && Number(time.split(':')[1]) <= 59);
+  const validateTime = (time) => {
+    if (!/^\d{2}:\d{2}$/.test(time)) return false;
+    const [hours, minutes] = time.split(':').map(Number);
+    return !(isNaN(hours) || isNaN(minutes) || hours > 23 || minutes > 59);
+  };
 
-const handleInputChange = (field, value) => {
-    setPersonData((prev) => {
-        if (field === 'instagram' || field === 'facebook') {
-            return { 
-                ...prev, 
-                redes: { ...(prev.redes || {}), [field]: value } 
-            };
-        } 
-        if (field === 'cidade' || field === 'estado') {
-             return { ...prev, [field]: value.toUpperCase() };
-        }
-        
-        return { ...prev, [field]: value };
-    });
-};
-
-const handleTimeChange = (field, value) => {
-    let formatted = value.replace(/[^0-9]/g, ''); 
+  const handleTimeChange = (field, value) => {
+    let formatted = value.replace(/[^0-9]/g, '');
     if (formatted.length > 2) {
-        formatted = formatted.slice(0, 2) + ':' + formatted.slice(2, 4);
+      formatted = formatted.slice(0, 2) + ':' + formatted.slice(2, 4);
     }
-    
     handleInputChange(field, formatted);
 
     if (formatted.length === 5 && !validateTime(formatted)) {
-        setTimeError('Horário inválido. Use HH:MM.'); 
+      setTimeError('Horário inválido. Use HH:MM.');
     } else {
-        setTimeError('');
+      setTimeError('');
     }
-};
-
-const handleCheckboxChange = (day) => {
-    setPersonData((prev) => ({
-        ...prev,
-        diasAbertos: { ...prev.diasAbertos, [day]: !prev.diasAbertos[day] },
-    }));
-};
-
-const handleCancelEdit = () => {
-    setPersonData(initialPersonData);
-    setIsEditing(false);
-};
+  };
 
 const handleSaveChanges = async () => {
-    if (!db || !personData.uid) { // Assumindo que o userId é personData.uid
-        Alert.alert('Erro', 'Falha na autenticação do Firebase. Não é possível salvar.');
-        return;
-    }
-
     if (timeError) {
-        Alert.alert('Erro', 'Por favor, corrija o formato do horário antes de salvar.');
+        Alert.alert(
+            'Erro',
+            'Por favor, corrija o formato do horário antes de salvar.'
+        );
         return;
     }
 
-    let dataToUpdate = { ...personData };
+let dataToUpdate = { ...personData };
+    const userId = personData.uid;
 
-    try {
-        if (typeof personData.headerImage === 'object' && personData.headerImage.uri) {
-            dataToUpdate.headerImage = personData.headerImage.uri;
-        } else if (typeof dataToUpdate.headerImage !== 'string') {
-            dataToUpdate.headerImage = ''; 
+    try {
+        if (typeof personData.headerImage === 'object' && personData.headerImage.uri) {
+            dataToUpdate.headerImage = personData.headerImage.uri; 
+        } else if (typeof dataToUpdate.headerImage !== 'string') {
+            dataToUpdate.headerImage = '';
         }
-        if (typeof personData.profileImage === 'object' && personData.profileImage.uri) {
-            dataToUpdate.profileImage = personData.profileImage.uri;
-        } else if (typeof dataToUpdate.profileImage !== 'string') {
-            dataToUpdate.profileImage = '';
+        if (typeof personData.logoPerfil === 'object' && personData.logoPerfil.uri) {
+            dataToUpdate.logoPerfil = personData.logoPerfil.uri; 
+        } else if (typeof dataToUpdate.logoPerfil !== 'string') {
+            dataToUpdate.logoPerfil = '';
         }
-        const collectionName = 'prestadores';
-        const docRef = doc(db, collectionName, personData.uid);
-        const { uid, ...dataToSave } = dataToUpdate; 
-        await updateDoc(docRef, dataToSave);
-        setBusinessData(dataToSave);
-        setInitialBusinessData(dataToSave);
+        
+        dataToUpdate.fotos = fotosArraySeguro.map(foto => {
+            if (typeof foto === 'object' && foto.uri) {
+                return foto.uri;
+            }
+            return foto;
+        }).filter(uri => typeof uri === 'string');
 
+        const docRef = doc(db, "prestador", userId);
+        await updateDoc(docRef, dataToUpdate);
+        setPersonData(dataToUpdate);
+        setInitialBusinessData(dataToUpdate); 
+        
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
         setIsEditing(false);
-
+        setIsGalleryExpanded(true); 
+        
     } catch (error) {
         console.error("Erro ao salvar dados no Firestore:", error);
-        Alert.alert("Erro", "Não foi possível salvar as alterações. Detalhe: " + error.message);
+        Alert.alert("Erro", "Não foi possível salvar as alterações. Tente novamente. Detalhe: " + error.message);
         setPersonData(initialPersonData);
     }
 };
 
 
-  const renderImageSource = (source) => {
-    return typeof source === 'string' ? { uri: source } : source;
+  const handleCancelEdit = () => {
+    setPersonData(initialPersonData);
+    setIsGalleryExpanded(true);
+    setIsEditing(false);
   };
 
+  const handleInputChange = (field, value, subField = null) => {
+    if (subField) {
+      setPersonData((prev) => ({
+        ...prev,
+        [field]: { ...prev[field], [subField]: value },
+      }));
+    } else {
+      setPersonData((prev) => ({ ...prev, [field]: value }));
+    }
+  };
 
-  const formatOpenDays = () => {
+  const handleCheckboxChange = (day) => {
+    setPersonData((prev) => ({
+      ...prev,
+      diasAbertos: { ...prev.diasAbertos, [day]: !prev.diasAbertos[day] },
+    }));
+  };
+const renderImageSource = (source) => {
+  if (!source || source === '') {
+    return null;
+  }
+  if (source !== null && typeof source === 'object' && source.uri) {
+      return { uri: source.uri };
+  }
+  if (typeof source === 'string' && (source.startsWith('file:///') || source.startsWith('http'))) {
+      return { uri: source };
+  }
+  return null; 
+};
+
+
+const formatOpenDays = () => {
+    const diasAbertosData = personData.diasAbertos || {}; 
     const days = [
       { key: 'segunda', short: 'Seg' },
       { key: 'terca', short: 'Ter' },
@@ -234,22 +265,24 @@ const handleSaveChanges = async () => {
       { key: 'sabado', short: 'Sáb' },
       { key: 'domingo', short: 'Dom' },
     ];
-    const openDays = days.filter((day) => personData.diasAbertos[day.key]);
+    const openDays = days.filter((day) => diasAbertosData[day.key]);
+
     if (openDays.length === 0) return 'Fechado';
-    if (openDays.length === 7) return 'Seg. a Dom.';
+    if (openDays.length === 7) return 'Todos os dias';
     if (
-      personData.diasAbertos.segunda &&
-      personData.diasAbertos.terca &&
-      personData.diasAbertos.quarta &&
-      personData.diasAbertos.quinta &&
-      personData.diasAbertos.sexta &&
+      diasAbertosData.segunda &&
+      diasAbertosData.terca &&
+      diasAbertosData.quarta &&
+      diasAbertosData.quinta &&
+      diasAbertosData.sexta &&
       openDays.length === 5
     ) {
-      return 'Seg. a Sex.';
+      return 'Segunda a Sexta';
     }
+
     return openDays.map((day) => day.short).join(', ');
-  };
-  
+};
+
   if (!fontsLoaded) {
     return null;
   }
@@ -284,8 +317,8 @@ const handleSaveChanges = async () => {
           <Menu background="colorful" />
         </View>
           <View style={styles.headerContent}>
-            <TouchableOpacity onPress={() => openImageModal(personData.profileImage)}>
-              <Image source={renderImageSource(personData.profileImage)} style={styles.profileLogo} />
+            <TouchableOpacity onPress={() => openImageModal(personData.logoPerfil)}>
+              <Image source={renderImageSource(personData.logoPerfil)} style={styles.profileLogo} />
             </TouchableOpacity>
             <Text style={styles.profileNameHeader}>{personData.nome}</Text>
             <Text style={styles.profileLocation}>{personData.localizacao}</Text>
@@ -295,7 +328,6 @@ const handleSaveChanges = async () => {
         {isEditing ? (
           
           <View style={styles.container}>
-            {/* ... (Todo o seu modo de edição permanece o mesmo) ... */}
             <View style={styles.editHeader}>
               <View style={styles.editPhotoButtons}>
                 <TouchableOpacity
@@ -328,8 +360,8 @@ const handleSaveChanges = async () => {
             <Text style={styles.editLabel}>Função (Ex: Adestrador)</Text>
             <TextInput
               style={styles.textInput}
-              value={personData.role}
-              onChangeText={(text) => handleInputChange('role', text)}
+              value={personData.servico}
+              onChangeText={(text) => handleInputChange('servico', text)}
             />
 
             <Text style={styles.editLabel}>Dias de atendimento</Text>
