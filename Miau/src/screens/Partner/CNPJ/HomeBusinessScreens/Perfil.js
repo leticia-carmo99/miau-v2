@@ -18,6 +18,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import Menu from '../NavigationBusiness/Menu';
 import { BusinessContext } from "../NavigationBusiness/BusinessContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../../../../../firebaseConfig"; 
 
 
 import {
@@ -63,7 +65,6 @@ const PerfilBusiness = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [initialBusinessData, setInitialBusinessData] = useState({});
 
-  // ADICIONADO: Carregamento das fontes
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -77,45 +78,40 @@ const PerfilBusiness = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
+useEffect(() => {
+    if (businessData && Object.keys(businessData).length > 0) {
+        const defaultStructure = {
+            headerImage: '',
+            logoPerfil: '',
+            diasAbertos: {
+              segunda: false, terca: false, quarta: false,
+              quinta: false, sexta: false, sabado: false, domingo: false,
+            },
+            fotos: [],
+        };
+        const sanitizedData = {
+            ...businessData,
+            headerImage: businessData.headerImage || defaultStructure.headerImage,
+            logoPerfil: businessData.logoPerfil || defaultStructure.logoPerfil,
+            diasAbertos: businessData.diasAbertos || defaultStructure.diasAbertos,
+            fotos: businessData.fotos || defaultStructure.fotos,
+        };
+        if (JSON.stringify(sanitizedData) !== JSON.stringify(businessData)) {
+            setBusinessData(sanitizedData); 
+            setInitialBusinessData(sanitizedData); 
+        } else {
+             setInitialBusinessData(sanitizedData);
+        }
+        setIsGalleryExpanded(true); 
+    }
+}, [businessData]);
 
 useEffect(() => {
-  const fetchedData = {
-    sobre: "Produtos para cachorros, gatos e diversos outros pets.",
-    diasAbertos: {
-      segunda: true,
-      terca: true,
-      quarta: true,
-      quinta: true,
-      sexta: true,
-      sabado: false,
-      domingo: false,
-    },
-    horarioInicio: '08:00',
-    horarioFim: '22:00',
-    email: 'petscantoro@gmail.com',
-    telefone: '+55 11 99262-4521',
-    instagram: '@petx.official',
-    facebook: '@oficialpetz',
-    endereco: {
-      rua: 'Rua das Palmeiras',
-      numero: '123',
-      bairro: 'Jardim Central',
-      cidade: 'Taboão da Serra',
-      cep: '06850-000',
-    },
-    fotos: [
-      require('../Imagens/exemplo1.png'),
-      require('../Imagens/Exemplo2.png'),
-      require('../Imagens/Exemplo3.png'),
-      require('../Imagens/Exemplo4.png'),
-      require('../Imagens/Exemplo5.png'),
-    ],
-    headerImage: require('../Imagens/FundoPatinhasUnidas.png'),
-    logoImage: require('../Imagens/LogoPatinhasUnidas.png'),
-  };
-  setBusinessData(fetchedData);
-}, []);
-
+    if (businessData && Object.keys(businessData).length > 0) {
+      setInitialBusinessData({ ...businessData }); 
+      setIsGalleryExpanded(true); 
+    }
+  }, [businessData]);
 
   const openImageModal = (image) => {
     setSelectedImage(image);
@@ -126,6 +122,8 @@ useEffect(() => {
     setIsModalVisible(false);
     setSelectedImage(null);
   };
+
+  
 
   const pickImage = async (imageType) => {
     const allowsMultipleSelection = imageType === 'gallery';
@@ -172,18 +170,50 @@ useEffect(() => {
     }
   };
 
-  const handleSaveChanges = () => {
+const handleSaveChanges = async () => {
     if (timeError) {
-      Alert.alert(
-        'Erro',
-        'Por favor, corrija o formato do horário antes de salvar.'
-      );
-      return;
+        Alert.alert(
+            'Erro',
+            'Por favor, corrija o formato do horário antes de salvar.'
+        );
+        return;
     }
-    setInitialBusinessData(businessData);
-    setIsGalleryExpanded(true);
-    setIsEditing(false);
-  };
+
+    let dataToUpdate = { ...businessData };
+    const userId = businessData.uid;
+
+    try {
+        if (typeof businessData.headerImage === 'object' && businessData.headerImage.uri) {
+            dataToUpdate.headerImage = businessData.headerImage.uri; 
+        } 
+        if (typeof businessData.logoPerfil === 'object' && businessData.logoPerfil.uri) {
+            dataToUpdate.logoPerfil = businessData.logoPerfil.uri; 
+        }
+        const fotosArraySeguro = businessData.fotos || [];
+        
+        dataToUpdate.fotos = fotosArraySeguro.map(foto => {
+            if (typeof foto === 'object' && foto.uri) {
+                return foto.uri;
+            }
+            return foto;
+        }).filter(uri => typeof uri === 'string'); 
+        const docRef = doc(db, "empresa", userId);
+        await updateDoc(docRef, dataToUpdate);
+        setBusinessData(dataToUpdate);
+        setInitialBusinessData(dataToUpdate); 
+        
+        Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+        setIsEditing(false);
+        setIsGalleryExpanded(true); 
+        
+    } catch (error) {
+        console.error("Erro ao salvar dados no Firestore:", error);
+        Alert.alert("Erro", "Não foi possível salvar as alterações. Tente novamente. Detalhe: " + error.message);
+        setBusinessData(initialBusinessData);
+    }
+};
+
+  
 
   const handleCancelEdit = () => {
     setBusinessData(initialBusinessData);
@@ -208,12 +238,22 @@ useEffect(() => {
       diasAbertos: { ...prev.diasAbertos, [day]: !prev.diasAbertos[day] },
     }));
   };
+const renderImageSource = (source) => {
+  if (!source || source === '') {
+    return null;
+  }
+  if (source !== null && typeof source === 'object' && source.uri) {
+      return { uri: source.uri };
+  }
+  if (typeof source === 'string' && (source.startsWith('file:///') || source.startsWith('http'))) {
+      return { uri: source };
+  }
+  return null; 
+};
 
-  const renderImageSource = (source) => {
-    return typeof source === 'string' ? { uri: source } : source;
-  };
 
-  const formatOpenDays = () => {
+const formatOpenDays = () => {
+    const diasAbertosData = businessData.diasAbertos || {}; 
     const days = [
       { key: 'segunda', short: 'Seg' },
       { key: 'terca', short: 'Ter' },
@@ -223,25 +263,23 @@ useEffect(() => {
       { key: 'sabado', short: 'Sáb' },
       { key: 'domingo', short: 'Dom' },
     ];
-
-    const openDays = days.filter((day) => businessData.diasAbertos[day.key]);
+    const openDays = days.filter((day) => diasAbertosData[day.key]);
 
     if (openDays.length === 0) return 'Fechado';
     if (openDays.length === 7) return 'Todos os dias';
-
     if (
-      businessData.diasAbertos.segunda &&
-      businessData.diasAbertos.terca &&
-      businessData.diasAbertos.quarta &&
-      businessData.diasAbertos.quinta &&
-      businessData.diasAbertos.sexta &&
+      diasAbertosData.segunda &&
+      diasAbertosData.terca &&
+      diasAbertosData.quarta &&
+      diasAbertosData.quinta &&
+      diasAbertosData.sexta &&
       openDays.length === 5
     ) {
       return 'Segunda a Sexta';
     }
 
     return openDays.map((day) => day.short).join(', ');
-  };
+};
 
   if (!fontsLoaded) {
     return null;
@@ -272,18 +310,19 @@ useEffect(() => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}>
         <ImageBackground
-          source={businessData.headerImage}
+          source={renderImageSource(businessData.headerImage) || { uri: 'https://placehold.co/1200x675/A4A4A4/FFFFFF?text=FUNDO' }}
           style={styles.headerBackground}>
           <View style={styles.headerOverlay} />
               <View style={styles.menu}>
           <Menu background="colorful" />
         </View>
           <View style={styles.headerContent}>
-            <TouchableOpacity onPress={() => openImageModal(businessData.logoImage)}>
-              <Image source={businessData.logoImage} style={styles.businessLogo} />
+            <TouchableOpacity onPress={() => openImageModal(businessData.logoPerfil)}>
+              <Image source={renderImageSource(businessData.fotoPerfil) || { uri: 'https://placehold.co/1200x675/A4A4A4/FFFFFF?text=FUNDO' }}
+ style={styles.businessLogo} />
             </TouchableOpacity>
-            <Text style={styles.businessNameHeader}>Empresa</Text>
-            <Text style={styles.enderecoBusiness}>Jardim das Esmeraldas, SP</Text>
+            <Text style={styles.businessNameHeader}>{businessData.nome}</Text>
+            <Text style={styles.enderecoBusiness}>{businessData.cidade}, {businessData.estado}</Text>
           </View>
         </ImageBackground>
 
@@ -298,7 +337,7 @@ useEffect(() => {
                   <Text style={styles.photoEditButtonText}>Trocar Fundo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => pickImage('logoImage')}
+                  onPress={() => pickImage('logoPerfil')}
                   style={styles.photoEditButton}>
                   <Text style={styles.photoEditButtonText}>Trocar Logo</Text>
                 </TouchableOpacity>
@@ -324,37 +363,37 @@ useEffect(() => {
             <View style={styles.checkboxGroup}>
               <Checkbox
                 label="Segunda-feira"
-                isSelected={businessData.diasAbertos.segunda}
+                isSelected={(businessData.diasAbertos || {}).segunda}
                 onValueChange={() => handleCheckboxChange('segunda')}
               />
               <Checkbox
                 label="Terça-feira"
-                isSelected={businessData.diasAbertos.terca}
+                isSelected={(businessData.diasAbertos || {}).terca}
                 onValueChange={() => handleCheckboxChange('terca')}
               />
               <Checkbox
                 label="Quarta-feira"
-                isSelected={businessData.diasAbertos.quarta}
+                isSelected={(businessData.diasAbertos || {}).quarta}
                 onValueChange={() => handleCheckboxChange('quarta')}
               />
               <Checkbox
                 label="Quinta-feira"
-                isSelected={businessData.diasAbertos.quinta}
+                isSelected={(businessData.diasAbertos || {}).quinta}
                 onValueChange={() => handleCheckboxChange('quinta')}
               />
               <Checkbox
                 label="Sexta-feira"
-                isSelected={businessData.diasAbertos.sexta}
+                isSelected={(businessData.diasAbertos || {}).sexta}
                 onValueChange={() => handleCheckboxChange('sexta')}
               />
               <Checkbox
                 label="Sábado"
-                isSelected={businessData.diasAbertos.sabado}
+                isSelected={(businessData.diasAbertos || {}).sabado}
                 onValueChange={() => handleCheckboxChange('sabado')}
               />
               <Checkbox
                 label="Domingo"
-                isSelected={businessData.diasAbertos.domingo}
+                isSelected={(businessData.diasAbertos || {}).domingo}
                 onValueChange={() => handleCheckboxChange('domingo')}
               />
             </View>
@@ -413,8 +452,8 @@ useEffect(() => {
               <TextInput
                 style={styles.textInput}
                 placeholder="Página no Instagram"
-                value={businessData.instagram}
-                onChangeText={(text) => handleInputChange('instagram', text)}
+                value={businessData.redes}
+                onChangeText={(text) => handleInputChange('redes', text)}
               />
             </View>
             <View style={styles.socialEditRow}>
@@ -425,8 +464,8 @@ useEffect(() => {
               <TextInput
                 style={styles.textInput}
                 placeholder="Página no Facebook"
-                value={businessData.facebook}
-                onChangeText={(text) => handleInputChange('facebook', text)}
+                value={businessData.redes}
+                onChangeText={(text) => handleInputChange('redes', text)}
               />
             </View>
 
@@ -435,17 +474,9 @@ useEffect(() => {
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 placeholder="Rua"
-                value={businessData.endereco.rua}
+                value={businessData.endereco}
                 onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'rua')
-                }
-              />
-              <TextInput
-                style={[styles.textInput, { width: 80, marginLeft: 10 }]}
-                placeholder="Número"
-                value={businessData.endereco.numero}
-                onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'numero')
+                  handleInputChange('endereco', text)
                 }
               />
             </View>
@@ -453,17 +484,17 @@ useEffect(() => {
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 placeholder="Bairro"
-                value={businessData.endereco.bairro}
+                value={businessData.bairro}
                 onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'bairro')
+                  handleInputChange( 'bairro', text)
                 }
               />
               <TextInput
                 style={[styles.textInput, { width: 120, marginLeft: 10 }]}
                 placeholder="Cidade"
-                value={businessData.endereco.cidade}
+                value={businessData.cidade}
                 onChangeText={(text) =>
-                  handleInputChange('endereco', text, 'cidade')
+                  handleInputChange('cidade', text)
                 }
               />
             </View>
@@ -471,9 +502,9 @@ useEffect(() => {
               style={styles.textInput}
               placeholder="CEP"
               keyboardType="numeric"
-              value={businessData.endereco.cep}
+              value={businessData.cep}
               onChangeText={(text) =>
-                handleInputChange('endereco', text, 'cep')
+                handleInputChange('cep', text)
               }
             />
 
@@ -523,14 +554,14 @@ useEffect(() => {
                   <Text style={styles.contactText}>{businessData.telefone}</Text>
                   <Text style={styles.socialTitle}>Redes Sociais</Text>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{businessData.instagram}</Text>
+                    <Text style={styles.socialText}>{businessData.redes}</Text>
                     <Image
                       source={require('../Imagens/Instagram.png')}
                       style={styles.socialIconImage}
                     />
                   </View>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{businessData.facebook}</Text>
+                    <Text style={styles.socialText}>{businessData.redes}</Text>
                     <Image
                       source={require('../Imagens/Facebook.png')}
                       style={styles.socialIconImage}
@@ -548,13 +579,13 @@ useEffect(() => {
               <Text
                 style={
                   styles.addressText
-                }>{`${businessData.endereco.rua}, ${businessData.endereco.numero} - ${businessData.endereco.bairro}, ${businessData.endereco.cidade}`}</Text>
+                }>{`${businessData.endereco} - ${businessData.bairro}, ${businessData.cidade}`}</Text>
             </View>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>FOTOS</Text>
               <View style={styles.photoGrid}>
                 {isGalleryExpanded ? (
-                  businessData.fotos.map((foto, index) => (
+                  (businessData.fotos || []).map((foto, index) => (
                     <TouchableOpacity
                       key={index}
                       style={styles.photo}
@@ -568,7 +599,7 @@ useEffect(() => {
                   ))
                 ) : (
                   <>
-                    {businessData.fotos.slice(0, 4).map((foto, index) => (
+                    {(businessData.fotos || []).slice(0, 4).map((foto, index) => (
                       <TouchableOpacity
                         key={index}
                         style={styles.photo}
@@ -580,7 +611,7 @@ useEffect(() => {
                         />
                       </TouchableOpacity>
                     ))}
-                    {businessData.fotos.length > 4 && (
+                    {(businessData.fotos || []).length > 4 && (
                       <TouchableOpacity
                         onPress={() => setIsGalleryExpanded(true)}
                         style={styles.photo}>
@@ -949,6 +980,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   errorText: { color: 'red', textAlign: 'center', marginBottom: 10 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: COLORS.textPrimary,
+  },
 });
 
 export default PerfilBusiness;

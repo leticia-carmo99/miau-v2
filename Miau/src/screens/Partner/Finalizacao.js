@@ -31,11 +31,11 @@ const verificarStatusPerfil = async () => {
       const docRef = doc(db, collectionName, documento);
       const docSnap = await getDoc(docRef);
 
-      if (docSnap.exists() && docSnap.data().ativo) {
-        setPerfilAtivo(true);
-      } else {
-        setPerfilAtivo(false);
-      }
+if (docSnap.exists() && docData && docData.ativo === true) {
+    setPerfilAtivo(true);
+} else {
+    setPerfilAtivo(false);
+}
     } catch (error) {
       console.error("Erro ao verificar o status do perfil:", error);
       Alert.alert("Erro", "Não foi possível verificar o status do seu perfil.");

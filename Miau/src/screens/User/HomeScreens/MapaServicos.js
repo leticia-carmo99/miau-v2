@@ -510,12 +510,14 @@ source={{ html: mapHtmlContent }}
           </View>
 </TouchableOpacity>
 
+<TouchableOpacity onPress={() => navigation.navigate('MapaVeterinarioUser')}>
           <View style={styles.category}>
           <View style={styles.categoryPic}>
             <FontAwesome5 name="paw" size={width * 0.12} color="#9156D1" />
             </View>
             <Text style={styles.categoryText}>Veterinário</Text>
           </View>
+</TouchableOpacity>
         </View>
 
     <View style={styles.radioView}>

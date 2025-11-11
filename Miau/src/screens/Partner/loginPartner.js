@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
@@ -23,7 +24,6 @@ export default function LoginUser({ navigation }) {
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
 
-// Assumindo que getAuth, signInWithEmailAndPassword, doc, getDoc, db, e navigation estão importados e disponíveis.
 const handleLogin = async () => {
     if (user === '' || pass === '') {
         Alert.alert("Erro", "Por favor, preencha todos os campos.");

@@ -36,7 +36,7 @@ export default function MainDrawer() {
   const navigation = useNavigation();
   const { businessData } = useContext(BusinessContext); 
  const name = businessData?.nome || "Empresa";
-const pic = businessData?.logoImage || LogoPatinhasUnidas;
+const pic = businessData?.logoImage || '../../../User/assets/incognita.jpg';
 
   const handleLogout = async () => {
     try {
