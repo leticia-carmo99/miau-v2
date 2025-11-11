@@ -154,6 +154,8 @@ useEffect(() => {
     })
   ).current;
 
+  
+
   const moveMapScript = (newRegion) => {
     return `
 (function() {
@@ -176,10 +178,10 @@ const addCenterMarkerScript = (newRegion) => {
               }
               const customIcon = L.divIcon({
                   className: 'center-marker-icon',
-                  html: '<div style="background-color:#7b3aed; width:15px; height:15px; border: 3px solid white; border-radius: 50%;"></div>',
-                  iconSize: [21, 21], // Tamanho do div container
-                  iconAnchor: [10, 21], // Ponto de ancoragem (fundo do alfinete)
-                  popupAnchor: [1, -15] // Ponto para o popup
+                  html: '<div style="background-color:#7b3aed; width:15px; height:15px; border: 3px solid white; border-radius: 50%;">P</div>',
+                  iconSize: [21, 21],
+                  iconAnchor: [10, 21],
+                  popupAnchor: [1, -15] 
               });
 
               window.centerMarker = L.marker([lat, lon], { icon: customIcon })
@@ -334,7 +336,7 @@ const generateMapScript = (data, center) => {
         }).addTo(map);
         window.getCustomIcon = (initials) => L.divIcon({
             className: 'custom-div-icon',
-            html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">' + initials + '</div>',
+            html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">'P'</div>',
             iconSize: [30, 30], 
             iconAnchor: [15, 30], 
         });
@@ -343,15 +345,13 @@ const generateMapScript = (data, center) => {
             window.activeMarkers = [];
 
             petshops.forEach(p => {
-                const marker = L.marker([p.lat, p.lon], { icon: window.getCustomIcon(p.logo) })
+                const marker = L.marker([p.lat, p.lon], { icon: window.getCustomIcon(P) })
                 .addTo(map)
                 .bindPopup('<b>' + p.name + '</b><br>' + p.description + '<br>Distância: ' + p.distance);
                 
                 window.activeMarkers.push(marker);
             });
         };
-
-        // Adiciona os marcadores iniciais
 window.addMarkers(${JSON.stringify(dbPetshops)});
     })();
     true;

@@ -17,11 +17,14 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RadioButton } from "react-native-paper";
 import WebView from 'react-native-webview';
+import { db } from "../../../../firebaseConfig";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 import {
   useFonts,
   JosefinSans_400Regular,
   JosefinSans_700Bold,
+  JosefinSans_300Light,
 } from '@expo-google-fonts/josefin-sans';
 
 const { width, height } = Dimensions.get('window');
@@ -79,6 +82,77 @@ export default function MapaServicos() {
       },
     })
   ).current;
+
+    useEffect(() => {
+    if (search.trim() === '') {
+      setFiltered(dbPetshops); 
+    } else {
+      setFiltered(
+        dbPetshops.filter((item) => 
+          item.name.toLowerCase().includes(search.toLowerCase())
+        )
+      );
+    }
+  }, [search, dbPetshops]);
+
+useEffect(() => {
+    const fetchPetshops = async () => {
+        const petshopsRef = collection(db, "prestador");
+        const q = query(petshopsRef);
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            const petshopsData = [];
+            for (const docSnapshot of querySnapshot.docs) {
+                const data = docSnapshot.data();
+                const cep = data.cep;
+                if (!cep) continue;
+                try {
+                    const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${cep}&format=json&limit=1&countrycodes=br`, {
+                        headers: {
+                            'User-Agent': 'PetshopApp (seuemail@seudominio.com)',
+                        }
+                    });
+
+                    if (!geoResponse.ok) throw new Error("Falha na geocodificação.");
+
+                    const geoJson = await geoResponse.json();
+
+                    if (geoJson.length > 0) {
+                        const result = geoJson[0];
+                        petshopsData.push({
+                            id: docSnapshot.id,
+                            name: data.nome || 'Petshop Sem Nome',
+                            logo: data.logoEmpresa || '../assets/incognita.jpg', 
+                            distance: 'Aprox.', 
+                            description: data.sobre || 'Sem descrição',
+                            lat: parseFloat(result.lat),
+                            lon: parseFloat(result.lon),
+                        });
+                    }
+
+                } catch (geoError) {
+                    console.warn(`Aviso: Não foi possível geocodificar o CEP ${cep}.`, geoError.message);
+                }
+            }
+            
+            setDbPetshops(petshopsData);
+            setFiltered(petshopsData);
+            
+        } catch (error) {
+            console.error("Erro ao buscar petshops do Firestore:", error);
+            Alert.alert("Erro", "Não foi possível carregar os petshops do mapa.");
+        }
+    };
+
+    fetchPetshops();
+}, []);
+
+useEffect(() => {
+    if (webViewRef.current && dbPetshops.length > 0) {
+        webViewRef.current.injectJavaScript(updateMarkersScript(dbPetshops));
+    }
+}, [dbPetshops]);
 
   const moveMapScript = (newRegion) => {
     return `
@@ -140,77 +214,25 @@ const TILE_PROVIDERS = {
 const MAP_PROVIDER_KEY = 'CartoDB_Positron'; 
 const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStreetMap'];
 
-
-  const petshop = [
-    {
-      id: 'p1',
-      name: 'Petz',
-      logo: require('../assets/FotosInicial/petz.png'),
-      distance: '0.4 km',
-      description: 'Pet shop',
-      lat: -23.55,
-      lon: -46.63,
-    },
-    {
-      id: 'p2',
-      name: 'Pet Point',
-      logo: require('../assets/FotosInicial/petz.png'),
-      distance: '0.4 km',
-      description: 'Pet shop',
-      lat: -23.54,
-      lon: -46.64,
-    },
-    {
-      id: 'p3',
-      name: 'Pet-shop',
-      logo: require('../assets/FotosInicial/petz.png'),
-      distance: '0.8 km',
-      description: 'Produtos para cães e',
-      lat: -23.553,
-      lon: -46.635,
-    },
-  ];
-
-    const data = [
-    {
-      id: "1",
-      name: "Nicolas Cunha",
-      role: "Adestrador",
-      username: "@adenico",
-      image: require('../assets/FotosMapa/Nicolas.png'),
-    },
-    {
-      id: "2",
-      name: "Nicolas Cunha",
-      role: "Adestrador",
-      username: "@adenico",
-      image: require('../assets/FotosMapa/Nicolas.png'),
-    },
-    {
-      id: "3",
-      name: "Nicolas Cunha",
-      role: "Adestrador",
-      username: "@adenico",
-      image:  require('../assets/FotosMapa/Nicolas.png'),
-    },
-  ];
-
- useEffect(() => {
+  useEffect(() => {
     if (search.trim() === '') {
-      setFiltered(petshop);
+      setFiltered(dbPetshops);
     } else {
       setFiltered(
-        petshop.filter((item) =>
+        dbPetshops.filter((item) =>
           item.name.toLowerCase().includes(search.toLowerCase())
         )
       );
     }
   }, [search]);
+
     useEffect(() => {
     if (webViewRef.current) {
         webViewRef.current.injectJavaScript(moveMapScript(region));
     }
   }, [region]); 
+
+
   const handleCepSearch = async () => {
     if (cep.length < 8) return;
     try {
@@ -378,11 +400,9 @@ const generateMapScript = (data, center) => {
                 window.activeMarkers.push(marker);
             });
         };
-
-        // Adiciona os marcadores iniciais
-        window.addMarkers(${JSON.stringify(petshop)});
-    })();
-    true;
+window.addMarkers(${JSON.stringify(dbPetshops)});
+    })();
+    true;
 `;
 }
 
@@ -411,7 +431,7 @@ source={{ html: mapHtmlContent }}
           onLoadEnd={() => {
             setTimeout(() => {
         if (webViewRef.current) {
-            webViewRef.current.injectJavaScript(generateMapScript(petshop, centerCoord));
+            webViewRef.current.injectJavaScript(generateMapScript(dbPetshops, centerCoord));
         }
     }, 300); 
           }}
