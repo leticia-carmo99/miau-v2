@@ -127,7 +127,7 @@ export default function RevisaoCNPJ3() {
           showsVerticalScrollIndicator={false}>
           <ImageLine
             label="Logo da empresa"
-            imageUri={formCNPJ3Data.logoEmpresa}
+            imageUri={formCNPJ3Data.logoPerfil}
           />
           <ImageLine
             label="Comprovante de CNPJ"

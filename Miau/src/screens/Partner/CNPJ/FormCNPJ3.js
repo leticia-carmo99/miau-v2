@@ -27,7 +27,7 @@ export default function FormCNPJ3() {
   const allFormData = route.params?.allFormData || {};
 
    const initialUploads = allFormData.cnpj3 || {
-    logoEmpresa: null,
+    logoPerfil: null,
     comprovanteCNPJ: null,
     localFisico: null,
   };
@@ -69,7 +69,7 @@ export default function FormCNPJ3() {
       setErrorMessage('Erro de autenticação. Usuário não identificado.');
       return;
     }
-    if (!uploads.logoEmpresa || !uploads.comprovanteCNPJ) {
+    if (!uploads.logoPerfil || !uploads.comprovanteCNPJ) {
       setErrorMessage(
         'Por favor, envie os documentos obrigatórios (Logo/Foto de Perfil e Comprovante).'
       );
@@ -118,7 +118,7 @@ export default function FormCNPJ3() {
 
           {errorMessage ? <Text style={styles.errorMessage}>{errorMessage}</Text> : null}
 
-          {renderUploadBox('Logo da empresa', 'logoEmpresa', true)}
+          {renderUploadBox('Logo da empresa', 'logoPerfil', true)}
           {renderUploadBox('Comprovante de CNPJ', 'comprovanteCNPJ', true)}
           {renderUploadBox('Imagem do local físico de atendimento (se houver)', 'localFisico')}
 

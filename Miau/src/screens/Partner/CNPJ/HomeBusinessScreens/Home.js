@@ -53,7 +53,7 @@ export default function Home() {
   const navigation = useNavigation();
   const { businessData } = useContext(BusinessContext); 
  const name = businessData?.nome || "Empresa";
-const pic = businessData?.logoImage || LogoPatinhasUnidas;
+const pic = businessData?.logoPerfil || '../../../User/assets/incognita.jpg';
   const description = businessData?.sobre || "Produtos para cachorros, gatos e diversos outros pets.";
 
 

@@ -17,8 +17,7 @@ import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { updateDoc, doc } from 'firebase/firestore'; 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; 
-import { db, storage } from "../../../../../firebaseConfig"; 
+import { db } from "../../../../../firebaseConfig"; 
 import { usePerson } from "../NavigationPessoa/PersonContext"; 
 
 
@@ -79,27 +78,33 @@ export default function PerfilPessoa() {
   const [selectedImage, setSelectedImage] = useState(null);
 
 useEffect(() => {
-    if (!db || !userId || !isAuthReady) return;
-    const collectionName = 'prestadores';
-    const docRef = doc(db, collectionName, userId); 
-
-    const unsubscribe = onSnapshot(docRef, (docSnapshot) => {
-        if (docSnapshot.exists()) {
-            const fetchedData = docSnapshot.data();
-            setPersonData(fetchedData);
-            setInitialPersonData(fetchedData); 
-            setIsLoading(false);
+    if (personData && Object.keys(personData).length > 0) {
+        const defaultStructure = {
+            headerImage: '',
+            profileImage: '',
+            sobre: '',
+            horarioInicio: '00:00',
+            horarioFim: '00:00',
+            role: '', 
+            diasAbertos: {
+                segunda: false, terca: false, quarta: false,
+                quinta: false, sexta: false, sabado: false, domingo: false,
+            },
+        };
+        const sanitizedData = {
+            ...defaultStructure,
+            ...personData,
+            diasAbertos: { ...defaultStructure.diasAbertos, ...(personData.diasAbertos || {}) },
+            redes: { ...defaultStructure.redes, ...(personData.redes || {}) },
+        };
+        if (JSON.stringify(sanitizedData) !== JSON.stringify(personData)) {
+            setPersonData(sanitizedData);
+            setInitialPersonData(sanitizedData);
         } else {
-            console.log("Documento não encontrado. Inicializando dados padrão.");
-            setIsLoading(false); 
+            setInitialPersonData(sanitizedData);
         }
-    }, (error) => {
-        console.error("Erro ao carregar perfil:", error);
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe(); 
-}, [db, userId, isAuthReady]);
+    }
+}, [personData]);
 
   
   const openImageModal = (image) => {
@@ -125,9 +130,6 @@ useEffect(() => {
       handleInputChange(imageType, { uri: newImageUri });
     }
   };
-
- 
-// --- FUNÇÕES DE LÓGICA E VALIDAÇÃO ---
 
 const validateTime = (time) => /^\d{2}:\d{2}$/.test(time) && 
     (Number(time.split(':')[0]) <= 23 && Number(time.split(':')[1]) <= 59);
@@ -175,44 +177,47 @@ const handleCancelEdit = () => {
     setIsEditing(false);
 };
 
-
-// --- FUNÇÃO PRINCIPAL DE SALVAMENTO ---
-
 const handleSaveChanges = async () => {
-    if (!db || !userId) {
-        console.error('Erro: Falha na autenticação do Firebase. Não é possível salvar.');
+    if (!db || !personData.uid) { // Assumindo que o userId é personData.uid
+        Alert.alert('Erro', 'Falha na autenticação do Firebase. Não é possível salvar.');
         return;
     }
 
     if (timeError) {
-        console.error('Erro de validação: Por favor, corrija o formato do horário.'); 
+        Alert.alert('Erro', 'Por favor, corrija o formato do horário antes de salvar.');
         return;
     }
-    
-    setIsSaving(true);
-    let updatedData = { ...personData };
+
+    let dataToUpdate = { ...personData };
 
     try {
-        const collectionName = 'prestadores'; 
-        const docRef = doc(db, collectionName, userId);
-        const dataToSave = {
-            ...updatedData,
-            redes: updatedData.redes || {}, 
-            diasAbertos: updatedData.diasAbertos || {},
-        };
-
+        if (typeof personData.headerImage === 'object' && personData.headerImage.uri) {
+            dataToUpdate.headerImage = personData.headerImage.uri;
+        } else if (typeof dataToUpdate.headerImage !== 'string') {
+            dataToUpdate.headerImage = ''; 
+        }
+        if (typeof personData.profileImage === 'object' && personData.profileImage.uri) {
+            dataToUpdate.profileImage = personData.profileImage.uri;
+        } else if (typeof dataToUpdate.profileImage !== 'string') {
+            dataToUpdate.profileImage = '';
+        }
+        const collectionName = 'prestadores';
+        const docRef = doc(db, collectionName, personData.uid);
+        const { uid, ...dataToSave } = dataToUpdate; 
         await updateDoc(docRef, dataToSave);
-        setInitialPersonData(dataToSave); 
+        setBusinessData(dataToSave);
+        setInitialBusinessData(dataToSave);
+
+        Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
         setIsEditing(false);
-        console.log('Sucesso: Perfil atualizado!'); 
 
     } catch (error) {
-        console.error("Erro ao salvar perfil:", error);
-        console.error('Erro ao salvar: Não foi possível salvar as alterações.'); 
-    } finally {
-        setIsSaving(false);
+        console.error("Erro ao salvar dados no Firestore:", error);
+        Alert.alert("Erro", "Não foi possível salvar as alterações. Detalhe: " + error.message);
+        setPersonData(initialPersonData);
     }
 };
+
 
   const renderImageSource = (source) => {
     return typeof source === 'string' ? { uri: source } : source;
@@ -340,9 +345,9 @@ const handleSaveChanges = async () => {
 
             <Text style={styles.editLabel}>Horário</Text>
             <View style={styles.timeInputsContainer}>
-              <TextInput style={styles.timeInput} value={personData.horarioInicio} onChangeText={(text) => handleTimeChange('horarioInicio', text)} keyboardType="numeric" maxLength={5} />
+              <TextInput style={styles.timeInput} value={personData.horarioAbertura} onChangeText={(text) => handleTimeChange('horarioAbertura', text)} keyboardType="numeric" maxLength={5} />
               <Ionicons name="time-outline" size={24} color={COLORS.orange} />
-              <TextInput style={styles.timeInput} value={personData.horarioFim} onChangeText={(text) => handleTimeChange('horarioFim', text)} keyboardType="numeric" maxLength={5} />
+              <TextInput style={styles.timeInput} value={personData.horarioFechamento} onChangeText={(text) => handleTimeChange('horarioFechamento', text)} keyboardType="numeric" maxLength={5} />
             </View>
             {timeError ? (<Text style={styles.errorText}>{timeError}</Text>) : null}
 
@@ -350,17 +355,16 @@ const handleSaveChanges = async () => {
             <TextInput style={[styles.textInput, styles.textArea]} multiline value={personData.sobre} onChangeText={(text) => handleInputChange('sobre', text)} />
 
             <Text style={styles.sectionTitle}>CONTATO</Text>
-            <TextInput style={styles.textInput} placeholder="E-mail" value={personData.email} onChangeText={(text) => handleInputChange('email', text)} />
             <TextInput style={styles.textInput} placeholder="Telefone" keyboardType="phone-pad" value={personData.telefone} onChangeText={(text) => handleInputChange('telefone', text)} />
 
             <Text style={styles.sectionTitle}>REDES SOCIAIS</Text>
             <View style={styles.socialEditRow}>
               <Image source={require('../Images/Instagram.png')} style={styles.socialIconImage} />
-              <TextInput style={styles.textInput} placeholder="Instagram (ex: @petx.official)" value={personData.instagram} onChangeText={(text) => handleInputChange('instagram', text)} />
+              <TextInput style={styles.textInput} placeholder="Instagram (ex: @petx.official)" value={personData.redes} onChangeText={(text) => handleInputChange('redes', text)} />
             </View>
             <View style={styles.socialEditRow}>
               <Image source={require('../Images/Facebook.png')} style={styles.socialIconImage} />
-              <TextInput style={styles.textInput} placeholder="Facebook (ex: @oficialpetz)" value={personData.facebook} onChangeText={(text) => handleInputChange('facebook', text)} />
+              <TextInput style={styles.textInput} placeholder="Facebook (ex: @oficialpetz)" value={personData.redes} onChangeText={(text) => handleInputChange('redes', text)} />
             </View>
           </View>
         ) : (
@@ -409,14 +413,14 @@ const handleSaveChanges = async () => {
                   <Text style={styles.contactText}>{personData.telefone}</Text>
                   <Text style={styles.socialTitle}>Redes Sociais</Text>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{personData.instagram}</Text>
+                    <Text style={styles.socialText}>{personData.redes}</Text>
                     <Image
                       source={require('../Images/Instagram.png')}
                       style={styles.socialIconImage}
                     />
                   </View>
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{personData.facebook}</Text>
+                    <Text style={styles.socialText}>{personData.redes}</Text>
                     <Image
                       source={require('../Images/Facebook.png')}
                       style={styles.socialIconImage}

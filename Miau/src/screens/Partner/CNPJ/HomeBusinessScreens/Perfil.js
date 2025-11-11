@@ -83,6 +83,9 @@ useEffect(() => {
         const defaultStructure = {
             headerImage: '',
             logoPerfil: '',
+            sobre: '',
+            horarioAbertura: '00:00',
+            horarioFechamento: '00:00',
             diasAbertos: {
               segunda: false, terca: false, quarta: false,
               quinta: false, sexta: false, sabado: false, domingo: false,
@@ -93,6 +96,9 @@ useEffect(() => {
             ...businessData,
             headerImage: businessData.headerImage || defaultStructure.headerImage,
             logoPerfil: businessData.logoPerfil || defaultStructure.logoPerfil,
+            sobre: businessData.sobre || defaultStructure.sobre,
+            horarioAbertura: businessData.horarioAbertura || defaultStructure.horarioAbertura,
+            horarioFechamento: businessData.horarioFechamento || defaultStructure.horarioFechamento,
             diasAbertos: businessData.diasAbertos || defaultStructure.diasAbertos,
             fotos: businessData.fotos || defaultStructure.fotos,
         };
@@ -179,24 +185,29 @@ const handleSaveChanges = async () => {
         return;
     }
 
-    let dataToUpdate = { ...businessData };
-    const userId = businessData.uid;
+let dataToUpdate = { ...businessData };
+    const userId = businessData.uid;
 
-    try {
-        if (typeof businessData.headerImage === 'object' && businessData.headerImage.uri) {
-            dataToUpdate.headerImage = businessData.headerImage.uri; 
-        } 
-        if (typeof businessData.logoPerfil === 'object' && businessData.logoPerfil.uri) {
-            dataToUpdate.logoPerfil = businessData.logoPerfil.uri; 
+    try {
+        if (typeof businessData.headerImage === 'object' && businessData.headerImage.uri) {
+            dataToUpdate.headerImage = businessData.headerImage.uri; 
+        } else if (typeof dataToUpdate.headerImage !== 'string') {
+            dataToUpdate.headerImage = '';
         }
-        const fotosArraySeguro = businessData.fotos || [];
-        
-        dataToUpdate.fotos = fotosArraySeguro.map(foto => {
-            if (typeof foto === 'object' && foto.uri) {
-                return foto.uri;
-            }
-            return foto;
-        }).filter(uri => typeof uri === 'string'); 
+        if (typeof businessData.logoPerfil === 'object' && businessData.logoPerfil.uri) {
+            dataToUpdate.logoPerfil = businessData.logoPerfil.uri; 
+        } else if (typeof dataToUpdate.logoPerfil !== 'string') {
+            dataToUpdate.logoPerfil = '';
+        }
+        const fotosArraySeguro = businessData.fotos || [];
+        
+        dataToUpdate.fotos = fotosArraySeguro.map(foto => {
+            if (typeof foto === 'object' && foto.uri) {
+                return foto.uri;
+            }
+            return foto;
+        }).filter(uri => typeof uri === 'string');
+
         const docRef = doc(db, "empresa", userId);
         await updateDoc(docRef, dataToUpdate);
         setBusinessData(dataToUpdate);
@@ -318,7 +329,7 @@ const formatOpenDays = () => {
         </View>
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={() => openImageModal(businessData.logoPerfil)}>
-              <Image source={renderImageSource(businessData.fotoPerfil) || { uri: 'https://placehold.co/1200x675/A4A4A4/FFFFFF?text=FUNDO' }}
+              <Image source={renderImageSource(businessData.logoPerfil) || { uri: 'https://placehold.co/1200x675/A4A4A4/FFFFFF?text=FUNDO' }}
  style={styles.businessLogo} />
             </TouchableOpacity>
             <Text style={styles.businessNameHeader}>{businessData.nome}</Text>
@@ -402,16 +413,16 @@ const formatOpenDays = () => {
             <View style={styles.timeInputsContainer}>
               <TextInput
                 style={styles.timeInput}
-                value={businessData.horarioInicio}
-                onChangeText={(text) => handleTimeChange('horarioInicio', text)}
+                value={businessData.horarioAbertura}
+                onChangeText={(text) => handleTimeChange('horarioAbertura', text)}
                 keyboardType="numeric"
                 maxLength={5}
               />
               <Ionicons name="time-outline" size={24} color={COLORS.orange} />
               <TextInput
                 style={styles.timeInput}
-                value={businessData.horarioFim}
-                onChangeText={(text) => handleTimeChange('horarioFim', text)}
+                value={businessData.horarioFechamento}
+                onChangeText={(text) => handleTimeChange('horarioFechamento', text)}
                 keyboardType="numeric"
                 maxLength={5}
               />
@@ -429,12 +440,7 @@ const formatOpenDays = () => {
             />
 
             <Text style={styles.sectionTitle}>CONTATO</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="E-mail"
-              value={businessData.email}
-              onChangeText={(text) => handleInputChange('email', text)}
-            />
+
             <TextInput
               style={styles.textInput}
               placeholder="Telefone"
