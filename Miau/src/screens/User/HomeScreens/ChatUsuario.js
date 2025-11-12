@@ -19,6 +19,9 @@ import { TabView } from 'react-native-tab-view';
 import Menu from '../NavigationUser/MenuV1.js';
 import { Feather } from '@expo/vector-icons';
 import LogoBranca from '../assets/Logos/logobranca.png';
+import { collection, where, onSnapshot, orderBy, query, getDocs, addDoc } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig";
+import { useUser } from "../NavigationUser/UserContext";
 
 import {
   useFonts,
@@ -45,315 +48,264 @@ const COLORS = {
   blogTextGray: '#737373',
 };
 
-// Telas para cada chat (com pesquisa e outras funcionalidades)
-const OngsScreen = ({ search, setSearch, filteredData, navigationRef }) => {
-  const data = [
-    {
-      id: '1',
-      name: 'Patinhas Unidas',
-      message: 'Digitando...',
-      time: '11:08',
-      unread: 2,
-      image:
-        'https://dentistaubatuba.com.br/wp-content/uploads/2021/06/o-que-as-pessoas-bonitas-tem-em-comum-2.jpg',
-      section: 'recent',
-    },
-    {
-      id: '2',
-      name: 'Caeuzinhos',
-      message: 'Posso ir buscar às 13h?',
-      time: '09:22',
-      unread: 2,
-      image:
-        'https://i.pinimg.com/originals/75/f1/1e/75f11ef93a38c9feed58db2989c00b1e.jpg',
-      section: 'recent',
-    },
-    {
-      id: '3',
-      name: 'Gatinhos',
-      message: 'O pet está bem?',
-      time: '08:42',
-      unread: 99,
-      image:
-        'https://randomuser.me/api/portraits/women/3.jpghttps://i.pinimg.com/736x/fd/fc/ef/fdfcefc24e58a4e3ed4dd6099d530353.jpg',
-      section: 'recent',
-    },
-    {
-      id: '4',
-      name: 'Cachorrinhas',
-      message: 'Pode ser sim!',
-      time: '07:08',
-      unread: 0,
-      image:
-        'https://brasil.angloamerican.com/~/media/Images/A/Anglo-American-Group-v9/Brazil/landing-signposts/carreiras/camilaPereira.jpg?h=612&iar=0&w=606',
-      section: 'all',
-    },
-    {
-      id: '5',
-      name: 'Gatos adoção',
-      message: 'Pode ser sim!',
-      time: '07:08',
-      unread: 0,
-      image:
-        'https://thumbs.dreamstime.com/b/close-up-da-menina-de-liitle-24928523.jpg',
-      section: 'all',
-    },
-    {
-      id: '6',
-      name: 'Caes e gatos',
-      message: 'Pode ser sim!',
-      time: '07:08',
-      unread: 0,
-      image:
-        'https://gente.globo.com/wp-content/uploads/2024/10/100257-gente-olhar-em-diversidades-pessoas-com-deficiencias.jpg',
-      section: 'all',
-    },
-  ];
+function useChats(uid, tipo) {
+  const [chats, setChats] = useState([]);
 
-  const [fontsLoaded] = useFonts({
-    JosefinSans_400Regular,
-    JosefinSans_700Bold,
-  });
+  useEffect(() => {
+    if (!uid) return;
 
-  if (!fontsLoaded) {
-    return null;
-  }
+    const q = query(
+      collection(db, "chat"),
+      where("participantes", "array-contains", uid),
+      where("tipo", "==", tipo),
+      orderBy("ultima_alz", "desc")
+    );
 
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.tabContent}>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Pesquisar"
-              value={search}
-              onChangeText={setSearch}
-            />
-            <Feather
-              name="search"
-              size={20}
-              color="#999"
-              style={styles.searchIcon}
-            />
-          </View>
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const lista = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setChats(lista);
+    });
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-          {search.trim() === '' ? (
-            <>
-              <Text style={styles.sectionTitle}>Conversas recentes</Text>
-              <FlatList
-                data={data.filter((item) => item.section === 'recent')}
-                renderItem={({ item }) => renderItem({ item, navigationRef })}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={false}
-              />
+    return () => unsubscribe();
+  }, [uid, tipo]);
 
-              <Text style={styles.sectionTitle}>Todas as conversas</Text>
-              <FlatList
-                data={data.filter((item) => item.section === 'all')}
-                renderItem={({ item }) => renderItem({ item, navigationRef })}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={false}
-              />
-            </>
-          ) : (
-            <FlatList
-              data={filteredData}
-              renderItem={({ item }) => renderItem({ item, navigationRef })}
-              keyExtractor={(item) => item.id}
-            />
-          )}
-          </ScrollView>
-        </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
-  );
-};
+  return chats;
+}
 
-const ServicosScreen = ({ search, setSearch, filteredData }) => {
-  // Adicionar aqui a lógica do ServicosScreen, similar ao OngsScreen
-};
-
-
-const renderItem = ({ item, navigationRef }) => {
-  return (
-    <TouchableOpacity
-      style={styles.chatItem}
-      onPress={() =>
-        navigationRef.navigate('ChatConversa', {
-          user: item,
-        })
-      }>
-      <Image source={{ uri: item.image }} style={styles.avatar} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.message}>{item.message}</Text>
-      </View>
-      <View style={styles.infoContainer}>
-        {item.unread > 0 && (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>
-              {item.unread > 99 ? '99+' : item.unread}
-            </Text>
-          </View>
-        )}
-        <Text style={styles.time}>{item.time}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-export default function ChatUsuario() {
-  const navigationRef = useNavigation();
-
-  const [search, setSearch] = useState(''); // Estado para controle da pesquisa
-
-  const data = [
-    {
-      id: '1',
-      name: 'Patinhas Unidas',
-      message: 'Digitando...',
-      time: '11:08',
-      unread: 2,
-      image:
-        'https://dentistaubatuba.com.br/wp-content/uploads/2021/06/o-que-as-pessoas-bonitas-tem-em-comum-2.jpg',
-      section: 'recent',
-    },
-    {
-      id: '2',
-      name: 'Caeuzinhos',
-      message: 'Posso ir buscar às 13h?',
-      time: '09:22',
-      unread: 2,
-      image:
-        'https://i.pinimg.com/originals/75/f1/1e/75f11ef93a38c9feed58db2989c00b1e.jpg',
-      section: 'recent',
-    },
-    {
-      id: '3',
-      name: 'Gatinhos',
-      message: 'O pet está bem?',
-      time: '08:42',
-      unread: 99,
-      image:
-        'https://randomuser.me/api/portraits/women/3.jpghttps://i.pinimg.com/736x/fd/fc/ef/fdfcefc24e58a4e3ed4dd6099d530353.jpg',
-      section: 'recent',
-    },
-    {
-      id: '4',
-      name: 'Cachorrinhas',
-      message: 'Pode ser sim!',
-      time: '07:08',
-      unread: 0,
-      image:
-        'https://brasil.angloamerican.com/~/media/Images/A/Anglo-American-Group-v9/Brazil/landing-signposts/carreiras/camilaPereira.jpg?h=612&iar=0&w=606',
-      section: 'all',
-    },
-    {
-      id: '5',
-      name: 'Gatos adoção',
-      message: 'Pode ser sim!',
-      time: '07:08',
-      unread: 0,
-      image:
-        'https://thumbs.dreamstime.com/b/close-up-da-menina-de-liitle-24928523.jpg',
-      section: 'all',
-    },
-    {
-      id: '6',
-      name: 'Caes e gatos',
-      message: 'Pode ser sim!',
-      time: '07:08',
-      unread: 0,
-      image:
-        'https://gente.globo.com/wp-content/uploads/2024/10/100257-gente-olhar-em-diversidades-pessoas-com-deficiencias.jpg',
-      section: 'all',
-    },
-  ];
-
-  const filteredData = data.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const layout = useWindowDimensions();
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: 'ongs', title: 'Ongs' },
-    { key: 'servicos', title: 'Serviços' },
-  ]);
-
-  const renderScene = ({ route }) => {
-    switch (route.key) {
-      case 'ongs':
-        return (
-          <OngsScreen
-            search={search}
-            setSearch={setSearch}
-            filteredData={filteredData}
-            navigationRef={navigationRef}
-          />
-        );
-      case 'servicos':
-        return (
-          <ServicosScreen
-            search={search}
-            setSearch={setSearch}
-            filteredData={filteredData}
-            navigationRef={navigationRef}
-          />
-        );
-      default:
-        return null;
+const renderItemFirebase = ({ item, navigationRef }) => {
+    const { 
+        id, 
+        nomeOutroLado, 
+        fotoOutroLado, 
+        ultima_msg, 
+        ultima_alz, 
+        naoLidas 
+    } = item;
+    let hora = "Não disponível";
+    if (ultima_alz && ultima_alz.toDate) {
+        hora = ultima_alz.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } else if (typeof ultima_alz === 'string') {
+        try {
+            hora = new Date(ultima_alz).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            hora = "Data inválida";
+        }
     }
-  };
 
-  const renderTabBar = () => (
-    <View style={styles.tabBar}>
-      {routes.map((route, i) => (
-        <TouchableOpacity
-          key={route.key}
-          style={[styles.tabButton, index === i && styles.activeTab]}
-          onPress={() => setIndex(i)}>
-          <Text style={[styles.tabLabel, index === i && styles.activeTabLabel]}>
-            {route.title}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-    const [fontsLoaded] = useFonts({
-    JosefinSans_400Regular,
-    JosefinSans_700Bold,
-  });
+    const nome = nomeOutroLado || "Conversa Desconhecida"; 
+    const avatarUrl = fotoOutroLado || 'https://via.placeholder.com/150'; 
+    const ultimaMensagem = ultima_msg || "Nenhuma mensagem..."; 
+    const unread = naoLidas || 0;
+    
+  return (
+    <TouchableOpacity
+      style={styles.chatItem}
+      onPress={() =>
+        navigationRef.navigate('ChatConversa', {
+          chatId: item.id,
+        })
+      }>
+      <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name}>{nome}</Text>
+        <Text style={styles.message}>{ultimaMensagem}</Text>
+      </View>
+      <View style={styles.infoContainer}>
+        {unread > 0 && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadText}>
+              {unread > 99 ? '99+' : unread}
+            </Text>
+          </View>
+        )}
+        <Text style={styles.time}>{hora}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
-  if (!fontsLoaded) {
-    return null; 
-  }
 
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea}>
-          <View style={styles.menu}>
-            <Menu background="colorful" />
-            <Image source={LogoBranca} style={styles.logo} />
-          </View>
+// --- ONGS SCREEN (AGORA USANDO SOMENTE CHATS DO FIREBASE) ---
+const OngsScreen = ({ search, setSearch, navigationRef }) => {
+  const { userData } = useUser();
+  const chats = useChats(userData?.uid, "ongs");
 
-          {renderTabBar()}
+  const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
 
-          <TabView
-            navigationState={{ index, routes }}
-            renderScene={renderScene}
-            onIndexChange={setIndex}
-            initialLayout={{ width: layout.width }}
-            renderTabBar={() => null}
-          />
+  if (!fontsLoaded) {
+    return null;
+  }
 
-      </SafeAreaView>
-    </SafeAreaProvider>
-  );
+  // Lógica de filtro para os CHATS do Firebase
+  const filteredChats = chats.filter((item) =>
+    item.nomeOutroLado?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.tabContent}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Pesquisar"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <Feather
+              name="search"
+              size={20}
+              color="#999"
+              style={styles.searchIcon}
+            />
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Conversas (ONGs)</Text>
+            <FlatList
+              // Se a busca está vazia, mostra todos os chats. Caso contrário, mostra os filtrados.
+              data={search.trim() === '' ? chats : filteredChats}
+              renderItem={({ item }) => renderItemFirebase({ item, navigationRef })}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              ListEmptyComponent={() => (
+                <Text style={styles.emptyText}>Nenhuma conversa encontrada.</Text>
+              )}
+            />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+};
+
+const ServicosScreen = ({ search, setSearch, navigationRef }) => { 
+  const { userData } = useUser();
+  const chats = useChats(userData?.uid, "prestador");
+  const filteredChats = chats.filter((item) =>
+    item.nomeOutroLado?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <ScrollView style={styles.tabContent}>
+      <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Pesquisar"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <Feather
+              name="search"
+              size={20}
+              color="#999"
+              style={styles.searchIcon}
+            />
+      </View>
+
+      <Text style={styles.sectionTitle}>Conversas (Serviços)</Text>
+      <FlatList
+        data={search.trim() === '' ? chats : filteredChats}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => renderItemFirebase({ item, navigationRef })} // ✅ Usando renderItemFirebase
+        scrollEnabled={false}
+        ListEmptyComponent={() => (
+          <Text style={styles.emptyText}>Nenhuma conversa encontrada.</Text>
+        )}
+      />
+    </ScrollView>
+  )
+};
+
+
+// --- CHAT USUARIO (PRINCIPAL) ---
+export default function ChatUsuario() {
+  const navigationRef = useNavigation();
+
+  const [search, setSearch] = useState(''); 
+
+  const layout = useWindowDimensions();
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'ongs', title: 'Ongs' },
+    { key: 'servicos', title: 'Serviços' },
+  ]);
+
+  const renderScene = ({ route }) => {
+    switch (route.key) {
+      case 'ongs':
+        return (
+          <OngsScreen
+            search={search}
+            setSearch={setSearch}
+            navigationRef={navigationRef}
+          />
+        );
+      case 'servicos':
+        return (
+          <ServicosScreen
+            search={search}
+            setSearch={setSearch}
+            navigationRef={navigationRef} 
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderTabBar = () => (
+    <View style={styles.tabBar}>
+      {routes.map((route, i) => (
+        <TouchableOpacity
+          key={route.key}
+          style={[styles.tabButton, index === i && styles.activeTab]}
+          onPress={() => setIndex(i)}>
+          <Text style={[styles.tabLabel, index === i && styles.activeTabLabel]}>
+            {route.title}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+    const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return null; 
+  }
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safeArea}>
+          <View style={styles.menu}>
+            <Menu background="colorful" />
+            <Image source={LogoBranca} style={styles.logo} />
+          </View>
+
+          {renderTabBar()}
+
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            onIndexChange={setIndex}
+            initialLayout={{ width: layout.width }}
+            renderTabBar={() => null}
+          />
+
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
 }
 
 const styles = StyleSheet.create({

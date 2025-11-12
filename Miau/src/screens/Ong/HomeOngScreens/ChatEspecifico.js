@@ -23,6 +23,9 @@ import {
 } from '@expo-google-fonts/josefin-sans';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import PatinhaBranca from '../Images/LogoMiniPretoBranco.png';
+import { collection, query, where, onSnapshot, orderBy, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useOng } from '../NavigationOng/OngContext';
+import { db } from "../../../../firebaseConfig";
 
 const { width } = Dimensions.get('window');
 
@@ -42,126 +45,188 @@ const COLORS = {
   blogTextGray: '#737373',
 };
 
+const convertUriToBase64 = async (uri) => {
+    try {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64Data = reader.result.replace(/^data:image\/(png|jpeg|jpg);base64,/, '');
+                resolve(base64Data);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+
+    } catch (error) {
+        console.error("Erro ao converter para Base64:", error);
+        return null;
+    }
+};
+
 export default function ChatScreen() {
-  const navigation = useNavigation();
-  const route = useRoute();
+const navigation = useNavigation();
+    const route = useRoute();
+    const { ongData } = useOng();
+    const ongId = ongData?.uid; 
+    const { chatId, data } = route.params || {};
+
+    const otherUserName = data?.nomeOutroLado || 'Usuário';
+    const otherUserAvatar = data?.fotoOutroLado || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150';
+
+    const [messages, setMessages] = useState([]); 
+    const [inputText, setInputText] = useState('');
+    const flatListRef = useRef(null);
+    const [isLoading, setIsLoading] = useState(true);
 
   const INPUT_BAR_HEIGHT = 105;
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      text: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-      sender: 'user',
-      time: '11:32',
-    },
-    {
-      id: '2',
-      text: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-      sender: 'friend',
-      time: '11:35',
-    },
-    {
-      id: '3',
-      text: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-      sender: 'friend',
-      time: '11:39',
-    },
-  ]);
 
-  const [inputText, setInputText] = useState('');
-  const flatListRef = useRef(null);
+    useEffect(() => {
+        if (!chatId) return;
 
-  useEffect(() => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }, 100);
-  }, []);
+        const msgsRef = collection(db, "chat", chatId, "mensagens");
+        const q = query(msgsRef, orderBy("timestamp", "asc"));
 
-  useEffect(() => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [messages]);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedMessages = snapshot.docs.map(doc => {
+                const msgData = doc.data();
+                const senderType = msgData.remetenteId === ongId ? 'user' : 'friend';
+                
+                const timeString = msgData.timestamp?.toDate()?.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }) || '...';
 
-  const handleSend = () => {
-    if (inputText.trim()) {
-      const newMessage = {
-        id: Date.now().toString(),
-        text: inputText,
-        sender: 'user',
-        time: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      };
-      setMessages((prev) => [...prev, newMessage]);
-      setInputText('');
-    }
-  };
+                return {
+                    id: doc.id,
+                    text: msgData.texto || null,
+                    image: msgData.fotoBase64 || null, // Se for Base64
+                    sender: senderType,
+                    time: timeString,
+                };
+            });
+            setMessages(fetchedMessages);
+            setIsLoading(false);
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
+        }, (error) => {
+            console.error("Erro ao buscar mensagens:", error);
+            setIsLoading(false);
+        });
 
-  const handleImagePicker = async () => {
-    try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
+        return () => unsubscribe();
+    }, [chatId, ongId]); 
+    useEffect(() => {
+        if (messages.length > 0) {
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        }
+    }, [messages.length]);
+    const handleSend = useCallback(async () => {
+        const text = inputText.trim();
+        if (!chatId || !ongId || !text) return;
 
-      if (!permissionResult.granted) {
-        Alert.alert(
-          'Permissão necessária',
-          'É necessário permitir o acesso à galeria para enviar imagens.'
-        );
-        return;
-      }
+        try {
+            const msgsRef = collection(db, "chat", chatId, "mensagens");
+            
+            await addDoc(msgsRef, {
+                texto: text,
+                remetenteId: ongId,
+                timestamp: serverTimestamp(),
+            });
+            const chatDocRef = doc(db, "chat", chatId);
+            await updateDoc(chatDocRef, {
+                ultima_msg: text,
+                ultima_alz: serverTimestamp(),
+                naoLidasOng: 0, 
+            });
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
 
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        const newMessage = {
-          id: Date.now().toString(),
-          image: result.assets[0].uri,
-          sender: 'user',
-          time: new Date().toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        };
-        setMessages((prev) => [...prev, newMessage]);
-      }
-    } catch (err) {
-      console.warn('ImagePicker error', err);
-      Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
-    }
-  };
+            setInputText('');
+        } catch (error) {
+            console.error("Erro ao enviar mensagem de texto:", error);
+            Alert.alert("Erro", "Não foi possível enviar a mensagem.");
+        }
+    }, [inputText, chatId, ongId]);
 
-  const { user } = route.params || {};
-  const name = user?.name || 'Usuário';
-  const avatar =
-    user?.image ||
-    'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150';
+    const handleImagePicker = useCallback(async () => {
+        if (!chatId || !ongId) return;
+
+        try {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!permissionResult.granted) {
+                Alert.alert('Permissão necessária', 'É necessário permitir o acesso à galeria para enviar imagens.');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.2, 
+            });
+
+            if (!result.canceled && result.assets?.[0]?.uri) {
+                const uri = result.assets[0].uri;
+                const base64Image = await convertUriToBase64(uri);
+                
+                if (base64Image) {
+                    const msgsRef = collection(db, "chat", chatId, "mensagens");
+                    await addDoc(msgsRef, {
+                        fotoBase64: base64Image,
+                        remetenteId: ongId,
+                        timestamp: serverTimestamp(),
+                    });
+
+                    const chatDocRef = doc(db, "chat", chatId);
+                    await updateDoc(chatDocRef, {
+                        ultima_msg: "📷 Foto",
+                        ultima_alz: serverTimestamp(),
+                        naoLidasOng: 0, 
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn('ImagePicker error', err);
+            Alert.alert('Erro', 'Não foi possível selecionar ou enviar a imagem.');
+        }
+    }, [chatId, ongId]);
 
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
   });
 
-  if (!fontsLoaded) return null;
+ if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Carregando conversa...</Text>
+            </View>
+        );
+    }
+    
+    if (!chatId) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Chat inválido ou não selecionado.</Text>
+            </View>
+        );
+    }
 
-  const renderMessage = ({ item }) => (
-    <View
-      style={
-        item.sender === 'user' ? styles.userMessage : styles.friendMessage
-      }>
-      {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-      {item.image && (
-        <Image source={{ uri: item.image }} style={styles.messageImage} />
-      )}
-      <Text style={styles.timeText}>{item.time}</Text>
-    </View>
-  );
+const renderMessage = ({ item }) => {
+        const imageSource = item.image ? `data:image/jpeg;base64,${item.image}` : null;
+
+        return (
+            <View
+                style={
+                    item.sender === 'user' ? styles.userMessage : styles.friendMessage
+                }>
+                {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+                {imageSource && (
+                    <Image source={{ uri: imageSource }} style={styles.messageImage} />
+                )}
+                <Text style={styles.timeText}>{item.time}</Text>
+            </View>
+        );
+    };
 
   return (
     <KeyboardAvoidingView
@@ -175,9 +240,9 @@ export default function ChatScreen() {
           <Ionicons name="arrow-back" size={28} color={COLORS.darkGray} />
         </TouchableOpacity>
 
-        <Image source={{ uri: avatar }} style={styles.avatar} />
+        <Image source={{ uri: otherUserAvatar }} style={styles.avatar} />
         <View style={{ flex: 1, marginLeft: 15 }}>
-          <Text style={styles.username}>{name}</Text>
+          <Text style={styles.username}>{otherUserName}</Text>
           <Text style={styles.status}>Online</Text>
         </View>
 
@@ -320,4 +385,15 @@ const styles = StyleSheet.create({
   messageImage: { width: 200, height: 150, borderRadius: 10, marginBottom: 5 },
   avatar: { borderRadius: 30, height: width * 0.08, width: width * 0.08 },
   patinha: { width: width * 0.12, height: width * 0.12, marginRight: '6%' },
+  loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: COLORS.offWhite,
+    },
+    loadingText: {
+        fontFamily: 'JosefinSans_400Regular',
+        fontSize: 16,
+        color: COLORS.mediumGray,
+    },
 });

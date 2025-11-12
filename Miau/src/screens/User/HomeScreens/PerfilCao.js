@@ -13,10 +13,10 @@ import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Back from '../assets/FotosInicial/Back.png';
 import { WebView } from "react-native-webview";
-import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../../firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
-
+import { collection, doc, getDoc, setDoc, query, where, getDocs } from 'firebase/firestore';
+import { useUser } from "../NavigationUser/UserContext";
 import { Asset } from "expo-asset";
 
 import {
@@ -64,11 +64,12 @@ const DogPorteIcon = ({ porte, petPorte, size }) => {
   );
 };
 
-export default function EditarMeuPet() {
+export default function PerfilCao() {
   const navigation = useNavigation();
   const route = useRoute();
   const [ongData, setOngData] = useState(null);
-  const [loadingOng, setLoadingOng] = useState(true);
+const [loadingOng, setLoadingOng] = useState(true);
+  const [isChatting, setIsChatting] = useState(false); // <<< NOVO ESTADO DE CARREGAMENTO DO CHAT
   
 
   const [fontsLoaded] = useFonts({
@@ -81,15 +82,15 @@ export default function EditarMeuPet() {
 
 
    const { pet } = route.params || {};
+   const { userData } = useUser(); 
+  const currentUserId = userData?.uid;
 
 useEffect(() => {
     const fetchOngData = async () => {
-      if (!pet || !pet.ownerId) { // CORREÇÃO 1: Usar pet.ongid
+      if (!pet || !pet.ownerId) {
         setLoadingOng(false);
         return;
       }
-
-      // CORREÇÃO 2: Usar pet.ongid para referenciar o documento
       const ongRef = doc(db, 'ongs', pet.ownerId); 
       try {
         const docSnap = await getDoc(ongRef);
@@ -98,7 +99,7 @@ useEffect(() => {
           setOngData({
             id: docSnap.id,
             nome: data.nomeOng,         
-            telefone: data.telefoneContato,     // Seu campo de telefone/número
+            telefone: data.telefoneContato,
             logo: data.logoInstituicao, 
           });
         } else {
@@ -131,7 +132,66 @@ useEffect(() => {
         </SafeAreaView>
     );
   }
+// ... (código antes do startChat)
 
+const startChat = async () => {
+    if (!currentUserId || !pet || !ongData || !ongData.id) {
+        Alert.alert("Atenção", "Os dados da ONG ou do usuário não foram carregados completamente.");
+        return;
+    }
+
+    const ongId = ongData.id;
+    const userDisplayName = userData?.nomeCompleto || 'Adotante'; // Supondo que userData tenha 'nomeCompleto'
+    const userPhoto = userData?.fotoPerfil || 'URL_DEFAULT_USER'; 
+    const participants = [currentUserId, ongId].sort();
+    const finalChatId = `${participants[0]}_${participants[1]}_ongs`;
+
+    setIsChatting(true); // Começa o carregamento
+
+    try {
+        const chatRef = doc(db, "chat", finalChatId);
+        const chatSnap = await getDoc(chatRef);
+        if (!chatSnap.exists()) {
+            const newChatData = {
+                participantes: [currentUserId, ongId],
+                tipo: "ongs",
+                nomeOutroLado: ongData.nome || pet.ownerName || 'ONG Desconhecida', 
+                fotoOutroLado: ongData.logo || 'URL_DEFAULT_ONG',
+                nomeUsuario: userDisplayName,
+                fotoUsuario: userPhoto,
+                
+                ultima_msg: `Gostaria de saber mais sobre a adoção do(a) ${pet.nome}.`,
+                ultima_alz: serverTimestamp(),
+                naoLidas: 1, // 1 mensagem não lida para a ONG (a mensagem inicial)
+                aba: 'para_adotar',
+            };
+            
+            await setDoc(chatRef, newChatData);
+            const msgsRef = collection(db, "chat", finalChatId, "mensagens");
+            await addDoc(msgsRef, {
+                texto: newChatData.ultima_msg,
+                remetenteId: currentUserId,
+                timestamp: serverTimestamp(),
+            });
+            
+            Alert.alert("Sucesso", `Conversa com ${ongData.nome} iniciada!`);
+
+        }
+        navigation.navigate('ChatConversa', {
+            chatId: finalChatId,
+            data: { 
+                nomeOutroLado: ongData.nome || pet.ownerName, 
+                fotoOutroLado: ongData.logo 
+            }
+        });
+
+    } catch (error) {
+        console.error("Erro ao iniciar chat:", error);
+        Alert.alert("Erro", "Não foi possível iniciar a conversa. Tente novamente.");
+    } finally {
+        setIsChatting(false);
+    }
+};
 
   const petParaExibicao = { ...pet, ong: ongData || { name: 'ONG Indisponível', telefone: '...', logo: null } };
 
@@ -219,9 +279,11 @@ useEffect(() => {
                 </View>
 
 
-          <TouchableOpacity style={styles.adoptButton} >
-            <Text style={styles.adoptButtonText}>Quero Adotar!</Text>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.adoptButton} onPress={startChat} disabled={loadingOng || isChatting}> {/* Desabilita se a ONG ou o Chat estiver carregando */}
+            <Text style={styles.adoptButtonText}>
+                {isChatting ? 'Iniciando...' : 'Quero Adotar!'}
+            </Text>
+          </TouchableOpacity>
         
               </View>
             </View>
@@ -243,6 +305,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 80, 
   },
+  adoptButtonDisabled: {
+    opacity: 0.6,
+},
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,

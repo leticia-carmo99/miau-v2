@@ -1,4 +1,3 @@
-// IMPORTANTE: ESSE COLCHETE NAS MENSAGENS SÓ APARECE NO WEB, NO ANDROID E IOS FICA NORMAL. NAO SEI O QUE É MAS DECIDI NAO MEXER.
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -29,6 +28,11 @@ import ChatUsuario from './ChatUsuario';
 import { useNavigation } from '@react-navigation/native';
 import PatinhaBranca from '../assets/Logos/patinhabrancapreenchida.png';
 import Back from '../assets/FotosInicial/Back.png';
+import { useUser } from "../NavigationUser/UserContext";
+import { collection, addDoc, onSnapshot, orderBy, query, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig";
+import * as FileSystem from 'expo-file-system';
+
 
 const { width } = Dimensions.get('window');
 
@@ -50,103 +54,114 @@ const COLORS = {
 
 export default function ChatScreen() {
   const navigation = useNavigation();
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      text: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-      sender: 'user',
-      time: '11:32',
-    },
-    {
-      id: '2',
-      text: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-      sender: 'friend',
-      time: '11:35',
-    },
-    {
-      id: '3',
-      text: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-      sender: 'friend',
-      time: '11:39',
-    },
-  ]);
+      const route = useRoute();
+const { chatId, user, data } = route.params || {}; 
+    const { userData } = useUser(); 
+    const currentUserId = userData?.uid; 
+    const name = user?.name || data?.nomeOutroLado || 'Usuário';
+    const avatar = user?.image || data?.fotoOutroLado || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150';
 
-  const [inputText, setInputText] = useState('');
-  const flatListRef = useRef(null);
+    const [messages, setMessages] = useState([]);
+    const [inputText, setInputText] = useState('');
+    const flatListRef = useRef(null);
+    const [loading, setLoading] = useState(true)
+  
 
-  // Rola para baixo quando o componente é montado
-  useEffect(() => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }, 100);
-  }, []);
+    // --- HOOK PARA CARREGAR MENSAGENS EM TEMPO REAL ---
+    useEffect(() => {
+        if (!chatId) return;
+        const messagesRef = collection(db, "chat", chatId, "msg");
+        const q = query(messagesRef, orderBy("createdAt", "asc"));
 
-  // Rola para baixo quando novas mensagens são adicionadas
-  useEffect(() => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [messages]);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const msgs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                time: doc.data().createdAt?.toDate()?.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }) || '...',
+                sender: doc.data().senderId === currentUserId ? 'user' : 'friend',
+            }));
+            setMessages(msgs);
+            setLoading(false);
+        });
 
-  const handleSend = () => {
-    if (inputText.trim()) {
-      const newMessage = {
-        id: Date.now().toString(),
-        text: inputText,
-        sender: 'user',
-        time: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      };
-      setMessages([...messages, newMessage]);
-      setInputText('');
-    }
-  };
+        return () => unsubscribe();
+    }, [chatId, currentUserId]);
 
-  const handleImagePicker = async () => {
-    // Solicita permissão para acessar a galeria
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    useEffect(() => {
+        if (!loading) {
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [messages, loading]);
 
+const handleSend = async (messageText = inputText, imageUri = null) => {
+        if (!chatId || !currentUserId || (!messageText.trim() && !imageUri)) return;
+
+        try {
+            const newMessageData = {
+                text: messageText,
+                image: imageUri,
+                senderId: currentUserId,
+                createdAt: serverTimestamp(),
+            };
+
+            await addDoc(collection(db, "chat", chatId, "msg"), newMessageData);
+            const chatRef = doc(db, "chat", chatId);
+            await updateDoc(chatRef, {
+                ultima_msg: messageText || "Imagem",
+                ultima_alz: serverTimestamp(),
+            });
+
+            setInputText('');
+
+        } catch (error) {
+            console.error("Erro ao enviar mensagem: ", error);
+            Alert.alert("Erro", "Não foi possível enviar a mensagem.");
+        }
+    };
+
+const handleImagePicker = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert(
-        'Permissão necessária',
-        'É necessário permitir o acesso à galeria para enviar imagens.'
-      );
-      return;
+        Alert.alert( /* ... */ );
+        return;
     }
-
-    // Abre o seletor de imagens
+    
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.2,
     });
 
     if (!result.canceled) {
-      const newMessage = {
-        id: Date.now().toString(),
-        image: result.assets[0].uri,
-        sender: 'user',
-        time: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      };
-      setMessages([...messages, newMessage]);
+        const uri = result.assets[0].uri;
+        const base64Data = await convertUriToBase64(uri);
+        
+        if (base64Data) {
+            await handleSend(null, base64Data); 
+        } else {
+             Alert.alert("Erro", "Não foi possível processar a imagem.");
+        }
     }
-  };
+};
 
+const convertUriToBase64 = async (uri) => {
+    try {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        return `data:image/jpeg;base64,${base64}`;
+    } catch (e) {
+        console.error("Erro ao converter para Base64:", e);
+        return null;
+    }
+}
 
-  const route = useRoute();
-  const { user } = route.params || {};
-  const { data } = route.params || {};
-  const name = user?.name || data?.nome ||  'Usuário';
-  const avatar = user?.image || data?.image|| 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150';
-
-  // Para fontes
 
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
@@ -203,32 +218,29 @@ export default function ChatScreen() {
         <View style={styles.dateContainer}>
           <Text style={styles.dateText}>Hoje - 26/05/2025</Text>
         </View>
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={({ item }) => (
-            <View
-              style={
-                item.sender === 'user'
-                  ? styles.userMessage
-                  : styles.friendMessage
-              }>
-              {item.text && <Text>{item.text}</Text>}
-              {item.image && (
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.messageImage}
+<FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    renderItem={({ item }) => (
+                        <View
+                            style={
+                                item.sender === 'user'
+                                    ? styles.userMessage
+                                    : styles.friendMessage
+                            }>
+                            {item.text && <Text>{item.text}</Text>}
+                            {item.image && (
+                                <Image
+                                    source={{ uri: item.image }}
+                                    style={styles.messageImage}
+                                />
+                            )}
+                            <Text style={styles.timeText}>{item.time}</Text>
+                        </View>
+                    )}
+                    keyExtractor={(item) => item.id}
+                    style={styles.messageList}
                 />
-              )}
-              <Text style={styles.timeText}>{item.time}</Text>
-            </View>
-          )}
-          keyExtractor={(item) => item.id}
-          style={styles.messageList}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }
-        />
         <View style={styles.inputContainer}>
           <TouchableOpacity
             onPress={handleImagePicker}
@@ -241,7 +253,7 @@ export default function ChatScreen() {
             value={inputText}
             onChangeText={setInputText}
           />
-          <TouchableOpacity onPress={handleSend}>
+          <TouchableOpacity onPress={() => handleSend(inputText)}>
             <Ionicons name="send" size={width * 0.07} color="#FF5733" />
           </TouchableOpacity>
         </View>

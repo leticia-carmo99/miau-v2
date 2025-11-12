@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,9 @@ import {
   JosefinSans_400Regular,
   JosefinSans_700Bold,
 } from '@expo-google-fonts/josefin-sans';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig";
+import { useOng } from '../NavigationOng/OngContext';
 
 import AddPosAdocao from '../Modal/AddPosAdocao'; 
 
@@ -42,69 +45,74 @@ const COLORS = {
 };
 
 
-const initialOngConversationsData = [
-  {
-    id: '1',
-    name: 'Família Silva',
-    message: 'Olá! Vimos seu interesse no Bidu.',
-    time: '11:08',
-    unread: 2,
-    image: 'https://placehold.co/50x50/9156D1/FFFFFF?text=FS',
-    section: 'recent',
-  },
-  {
-    id: '2',
-    name: 'Carlos Andrade',
-    message: 'Digitando...',
-    time: '10:55',
-    unread: 1,
-    image: 'https://placehold.co/50x50/FFAB36/FFFFFF?text=CA',
-    section: 'recent',
-  },
-  {
-    id: '3',
-    name: 'Juliana Pereira',
-    message: 'O pet está bem?',
-    time: '09:42',
-    unread: 5,
-    image: 'https://placehold.co/50x50/333333/FFFFFF?text=JP',
-    section: 'recent',
-  },
-  {
-    id: '4',
-    name: 'Marcos Rocha',
-    message: 'Pode ser sim!',
-    time: 'Ontem',
-    unread: 0,
-    image: 'https://placehold.co/50x50/666666/FFFFFF?text=MR',
-    section: 'all',
-  },
-  {
-    id: '5',
-    name: 'Ana Beatriz',
-    message: 'Obrigada pelo retorno!',
-    time: 'Ontem',
-    unread: 0,
-    image: 'https://placehold.co/50x50/E6E6FA/333333?text=AB',
-    section: 'all',
-  },
-  {
-    id: '6',
-    name: 'Adotante do Rex',
-    message: 'O Rex está se adaptando bem?',
-    time: 'Sexta',
-    unread: 0,
-    image: 'https://placehold.co/50x50/FFDAB9/333333?text=AR',
-    section: 'all',
-  },
-];
+function useOngChats(ongId, type = "ongs") {
+    const [chats, setChats] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!ongId) {
+            setLoading(false);
+            return;
+        }
+
+        const chatsRef = collection(db, "chat");
+        const q = query(
+            chatsRef,
+            where("participantes", "array-contains", ongId),
+            where("tipo", "==", type),
+            orderBy("ultima_alz", "desc") // Ordena pelo mais recente
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedChats = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const chatData = {
+                    id: doc.id,
+                    ...data,
+                };
+                const otherParticipantId = data.participantes.find(id => id !== ongId);
+
+                const timeString = data.ultima_alz?.toDate()?.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }) || '...';
+                return {
+                    id: doc.id,
+                    name: data.nomeOutroLado || "Usuário", // Nome do adotante
+                    image: data.fotoOutroLado || "URL_DEFAULT", // Foto do adotante
+                    message: data.ultima_msg || "Sem mensagem",
+                    time: timeString,
+                    unread: data.naoLidas || 0,
+                    aba: data.aba || 'para_adotar', 
+                    chatId: doc.id,
+                    user: { name: data.nomeOutroLado, image: data.fotoOutroLado },
+                };
+            });
+            setChats(fetchedChats);
+            setLoading(false);
+        }, (error) => {
+            console.error("Erro ao buscar chats da ONG:", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [ongId, type]);
+
+    return { chats, loading };
+}
 
 
 const renderChatItem = ({ item, index, navigationRef }) => (
   <TouchableOpacity
     style={styles.chatItem}
     onPress={() => {
-      navigationRef.navigate('ChatEspecifico', { user: item });
+      navigationRef.navigate('ChatEspecifico', {
+       chatId: item.chatId || item.id, 
+                    data: {
+                        nomeOutroLado: item.name,
+                        fotoOutroLado: item.image,
+                    }
+    });
     }}>
     <Image source={{ uri: item.image }} style={styles.avatar} />
     <View style={{ flex: 1 }}>
@@ -243,12 +251,20 @@ const ConversasScreen = ({
 };
 
 export default function ChatOng() {
-  const navigationRef = useNavigation();
+const navigationRef = useNavigation();
+const { ongData } = useOng();
+    const ongId = ongData?.uid;
+    const { chats: firebaseChats, loading: loadingChats } = useOngChats(ongId, "ongs");
+    const [conversas, setConversas] = useState([]);
+
+    useEffect(() => {
+        if (firebaseChats.length > 0) {
+            setConversas(firebaseChats);
+        }
+    }, [firebaseChats]);
+
   const [search, setSearch] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [conversas, setConversas] = useState(
-    initialOngConversationsData.map((c) => ({ ...c, aba: 'para_adotar' }))
-  );
 
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
@@ -257,27 +273,30 @@ export default function ChatOng() {
     { key: 'pos_adocao', title: 'Pós-adoção' },
   ]);
 
-  const getFilteredByAba = (abaKey) => {
-    return conversas
-      .filter((c) => c.aba === abaKey)
-      .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
-  };
+const getFilteredByAba = (abaKey) => {
+        return conversas
+            .filter((c) => c.aba === abaKey)
+            .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+    };
 
-  const handleAddToPosAdocao = (selecionadas) => {
-    const ids = selecionadas.map((s) => s.id);
-    setConversas((prev) =>
-      prev.map((c) => (ids.includes(c.id) ? { ...c, aba: 'pos_adocao' } : c))
-    );
-    setModalVisible(false);
-    setIndex(1);
-  };
+const handleAddToPosAdocao = (selecionadas) => {
+        const ids = selecionadas.map((s) => s.id);
+        setConversas((prev) =>
+            prev.map((c) => (ids.includes(c.id) ? { ...c, aba: 'pos_adocao' } : c))
+        );
+        setModalVisible(false);
+        setIndex(1);
+    };
 
-  const conversasParaAdotar = conversas.filter((c) => c.aba === 'para_adotar');
-
+    const conversasParaAdotar = conversas.filter((c) => c.aba === 'para_adotar');
   const ConversasSceneWrapper = ({ isPosAdocao }) => {
     const dataForThisTab = isPosAdocao
       ? getFilteredByAba('pos_adocao')
       : getFilteredByAba('para_adotar');
+
+      if (loadingChats || !fontsLoaded) {
+        return <View style={styles.loadingContainer}><Text>Carregando chats...</Text></View>; 
+    }
 
     
     if (isPosAdocao && dataForThisTab.length === 0) {
@@ -574,4 +593,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 6,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.offWhite,
+    },
 });
