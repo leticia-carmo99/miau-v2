@@ -99,7 +99,7 @@ export default function ChatScreen() {
       return id;
   };
   
-  // EFEITO PRINCIPAL CORRIGIDO: Agora não retorna mais uma Promise!
+// EFEITO PRINCIPAL CORRIGIDO: Implementando um cleanup mais seguro para Promises assíncronas
   useEffect(() => {
     if (!currentUserId || !friendId) {
         Alert.alert("Erro de Usuário", "IDs de usuário ou prestador ausentes.");
@@ -107,14 +107,19 @@ export default function ChatScreen() {
         return;
     }
     
-    let unsubscribe = () => {};
+    // Declara a variável de unsubscribe. Começa como undefined.
+    let unsubscribe;
 
     const initializeChat = async () => {
         try {
             const generatedChatId = getOrCreateChatId(currentUserId, friendId);
+            
+            // 1. GARANTE que o documento pai exista E AGUARDA A CONCLUSÃO
             await ensureChatDocument(generatedChatId, currentUserId, friendId);
             
             setChatId(generatedChatId); 
+            
+            // 2. SOMENTE AGORA, INICIA O LISTENER DE MENSAGENS E ATRIBUI À VARIÁVEL
             const messagesRef = collection(db, "chat", generatedChatId, "msg");
             const q = query(messagesRef, orderBy("createdAt", "asc"));
 
@@ -131,6 +136,7 @@ export default function ChatScreen() {
                 setMessages(msgs);
                 setLoading(false);
             }, (error) => {
+                // Captura o erro de permissão aqui
                 console.error("Erro no onSnapshot (Listener de mensagens): ", error);
                 Alert.alert("Erro de Permissão", "Não foi possível carregar as mensagens. Verifique as regras do Firebase.");
                 setLoading(false);
@@ -142,8 +148,14 @@ export default function ChatScreen() {
             setLoading(false);
         }
     };
+    
+    // Chama a função assíncrona imediatamente
     initializeChat();
-    return () => unsubscribe(); 
+    return () => {
+        if (typeof unsubscribe === 'function') {
+            unsubscribe();
+        }
+    }; 
 
   }, [currentUserId, friendId, getOrCreateChatId]);
 

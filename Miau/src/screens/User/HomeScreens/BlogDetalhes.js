@@ -63,10 +63,10 @@ export default function BlogDetalhes() {
 
   // valores com fallback
   const title = post?.title || post?.description || 'Lorem Ipsum is simply dummy text';
-  const author = post?.author || 'John Smith';
+  const autor = post?.autor || 'John Smith';
   const date = post?.date || '10 Jan, 2020';
-  const content =
-    post?.content ||
+  const conteudo =
+    post?.conteudo ||
     `Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. \n \n It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.`;
   const subtitle = post?.subtitle ||'Lorem Ipsum is simply dummy text';
 
@@ -105,7 +105,7 @@ export default function BlogDetalhes() {
               style={styles.authorAvatar}
             />
             <View style={{ marginLeft: 10 }}>
-              <Text style={styles.authorName}>{author}</Text>
+              <Text style={styles.authorName}>{autor}</Text>
               <Text style={styles.date}>{date}</Text>
             </View>
             <View style={{alignItems: 'flex-end', width: '60%', flexDirection: 'row'}}>
@@ -114,7 +114,7 @@ export default function BlogDetalhes() {
             </View>
           </View>
 
-          <Text style={styles.blogContent}>{content}</Text>
+          <Text style={styles.blogContent}>{conteudo}</Text>
         </View>
 
 

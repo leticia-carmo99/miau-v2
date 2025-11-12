@@ -100,6 +100,7 @@ useEffect(() => {
                             description: data.sobre || 'Sem descrição',
                             lat: parseFloat(result.lat),
                             lon: parseFloat(result.lon),
+                            cidade: data.cidade || 'São Paulo',
                         });
                     }
 
@@ -479,7 +480,7 @@ setTimeout(() => {
           <Image source={item.logo} style={styles.cardImage} />
           <View style={styles.cardTitleContainer}>
             <Text style={styles.cardTitle}>{item.name}</Text>
-            <Text style={styles.cardText}> {'• ' + item.distance} </Text>
+            <Text style={styles.cardText}> {'• ' + item.cidade} </Text>
           </View>
           <Text style={styles.cardText}>{item.description}</Text>
         </View>

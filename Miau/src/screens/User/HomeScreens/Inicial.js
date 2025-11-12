@@ -109,29 +109,6 @@ const petshops = [
   },
 ];
 
-const services = [
-  {
-    id: '1',
-    name: 'Nome do Cuidador',
-    image: 'https://placehold.co/80x80/FFA07A/FFFFFF?text=Cuidador',
-    role: 'Cuidador - SP',
-    location: 'Capital - SP',
-  },
-  {
-    id: '2',
-    name: 'Nome do Cuidador',
-    image: 'https://placehold.co/80x80/98FB98/FFFFFF?text=Cuidador',
-    role: 'Cuidador - SP',
-    location: 'Capital - SP',
-  },
-  {
-    id: '3',
-    name: 'Nome do Cuidador',
-    image: 'https://placehold.co/80x80/ADD8E6/FFFFFF?text=Cuidador',
-    role: 'Cuidador - SP',
-    location: 'Capital - SP',
-  },
-];
 
 export default function Inicial() {
   const navigation = useNavigation();
@@ -139,6 +116,8 @@ export default function Inicial() {
   // 💡 NOVO ESTADO PARA ARMAZENAR OS BLOGS DO FIREBASE
   const [blogPostsState, setBlogPostsState] = useState([]);
   const [isLoadingBlogs, setIsLoadingBlogs] = useState(true);
+const [serviceProvidersState, setServiceProvidersState] = useState([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
 
   const [fontsLoaded] = useFonts({
     Nunito_400Regular,
@@ -167,6 +146,8 @@ export default function Inicial() {
             date: data.data || '00.00.0000', 
             type: postType, 
             imageSource: postImage,
+            autor: data.autor,
+            conteudo: data.conteudo,
             ...data
           };
         });
@@ -181,6 +162,38 @@ export default function Inicial() {
     fetchBlogPosts();
   }, []);
 
+
+useEffect(() => {
+    const fetchServiceProviders = async () => {
+      try {
+        // Referência à coleção 'prestador'
+        const prestadorCollectionRef = collection(db, 'prestador');
+        const snapshot = await getDocs(prestadorCollectionRef);
+        
+        const fetchedProviders = snapshot.docs.map(doc => {
+          const data = doc.data();
+          
+          return {
+            id: doc.id, 
+            name: data.nome || 'Prestador de Serviço', 
+            image: data.fotoPerfil || 'https://placehold.co/80x80/666666/FFFFFF?text=Foto', 
+            role: `${data.servico || 'Serviço'} - ${data.estado || 'BR'}`, 
+            // Usando Cidade e Estado
+            location: `${data.cidade || ''} - ${data.estado || ''}`.trim().replace(/^ - | - $/, ''), 
+            ...data 
+          };
+        });
+
+        setServiceProvidersState(fetchedProviders);
+      } catch (error) {
+        console.error("Erro ao buscar prestadores de serviço:", error);
+      } finally {
+        setIsLoadingServices(false);
+      }
+    };
+
+    fetchServiceProviders();
+  }, []);
 
   useEffect(() => {
     // prevenir flicker do splash
@@ -266,22 +279,26 @@ export default function Inicial() {
     );
   };
 
-  const renderService = ({ item }) => (
-    <TouchableOpacity
-      style={styles.serviceCard}
-      onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}
-    >
-      <Image source={{ uri: item.image }} style={styles.serviceImage} />
-      <Text style={styles.serviceName}>{item.name}</Text>
-      <Text style={styles.serviceRole}>{item.role}</Text>
-      <Text style={styles.serviceLocation}>{item.location}</Text>
-      <TouchableOpacity
-        style={styles.serviceButton}
-        onPress={() => navigation.navigate('ServicoUser', { cuidadorId: item.id })}>
-        <Text style={styles.serviceButtonText}>Ver perfil</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
+const renderService = ({ item }) => (
+    <TouchableOpacity
+      style={styles.serviceCard}
+      onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}
+    >
+      <Image 
+        source={{ uri: item.image }} 
+        style={styles.serviceImage} 
+        defaultSource={UserIcon} // Opção de imagem de fallback, se o UserIcon for uma imagem local
+      />
+      <Text style={styles.serviceName}>{item.name}</Text>
+      <Text style={styles.serviceRole}>{item.role}</Text>
+      <Text style={styles.serviceLocation}>{item.location}</Text>
+      <TouchableOpacity
+        style={styles.serviceButton}
+        onPress={() => navigation.navigate('ServicoUser', { cuidadorId: item.id })}>
+        <Text style={styles.serviceButtonText}>Ver perfil</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -398,7 +415,7 @@ export default function Inicial() {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={services}
+            data={serviceProvidersState}
             renderItem={renderService}
             keyExtractor={(item) => item.id + 'service'}
             horizontal

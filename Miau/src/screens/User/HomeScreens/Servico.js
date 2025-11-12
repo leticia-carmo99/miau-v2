@@ -196,7 +196,6 @@ export default function ServicoDetalhes() {
 
   const handleChatPress = () => {
     navigation.navigate('ChatConversa', { 
-      // CORRIGIDO: Usando 'uid' e 'nome' para o chat
       targetUser: uid, 
       targetName: nome 
     });
