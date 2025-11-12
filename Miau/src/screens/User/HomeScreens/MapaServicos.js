@@ -27,6 +27,11 @@ import {
   JosefinSans_300Light,
 } from '@expo-google-fonts/josefin-sans';
 
+import {
+  Nunito_400Regular,
+  Nunito_700Bold,
+} from '@expo-google-fonts/nunito';
+
 const { width, height } = Dimensions.get('window');
 const SNAP_POINTS = [height * 0.25, height * 0.65]; // fechado e aberto
 const COLORS = {
@@ -51,6 +56,7 @@ export default function MapaServicos() {
      const [value, setValue] = React.useState("1");
   const [search, setSearch] = useState('');
   const [cep, setCep] = useState('');
+  const [dbPetshops, setDbPetshops] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [region, setRegion] = useState({
     latitude: -23.55052,
@@ -122,9 +128,8 @@ useEffect(() => {
                         const result = geoJson[0];
                         petshopsData.push({
                             id: docSnapshot.id,
-                            name: data.nome || 'Petshop Sem Nome',
+                            name: data.nome || 'Prestador Sem Nome',
                             logo: data.logoEmpresa || '../assets/incognita.jpg', 
-                            distance: 'Aprox.', 
                             description: data.sobre || 'Sem descrição',
                             lat: parseFloat(result.lat),
                             lon: parseFloat(result.lon),
@@ -544,7 +549,7 @@ source={{ html: mapHtmlContent }}
       {value === "1" && (
         <View style={styles.box}>
          <FlatList
-        data={data}
+        data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
@@ -559,7 +564,7 @@ source={{ html: mapHtmlContent }}
             </View>
 
             {/* Botão */}
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ServicoUser', {data})}>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ServicoUser', { uid: item.id })}>
               <Text style={styles.buttonText}>Ver perfil</Text>
             </TouchableOpacity>
           </View>
@@ -570,7 +575,7 @@ source={{ html: mapHtmlContent }}
       {value === "2" && (
         <View style={styles.box}>
          <FlatList
-        data={data}
+        data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
@@ -585,7 +590,7 @@ source={{ html: mapHtmlContent }}
             </View>
 
             {/* Botão */}
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Servico', {data})}>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Servico', { uid: item.id })}>
               <Text style={styles.buttonText}>Ver perfil</Text>
             </TouchableOpacity>
           </View>
@@ -596,7 +601,7 @@ source={{ html: mapHtmlContent }}
       {value === "3" && (
         <View style={styles.box}>
          <FlatList
-        data={data}
+        data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
@@ -611,7 +616,7 @@ source={{ html: mapHtmlContent }}
             </View>
 
             {/* Botão */}
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Servico', {data})}>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Servico', { uid: item.id })}>
               <Text style={styles.buttonText}>Ver perfil</Text>
             </TouchableOpacity>
           </View>

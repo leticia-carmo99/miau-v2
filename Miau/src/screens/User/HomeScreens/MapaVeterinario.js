@@ -441,8 +441,8 @@ setTimeout(() => {
     <View style={styles.row}>
       <TouchableOpacity>
         <View style={styles.category}>
-          <View style={styles.categoryPicSelected}>
-            <MaterialIcons name="store" size={width * 0.12} color="#fff" />
+          <View style={styles.categoryPic}>
+            <MaterialIcons name="store" size={width * 0.12} color="#9156D1" />
           </View>
           <Text style={styles.categoryText}>Petshops</Text>
         </View>
@@ -462,24 +462,29 @@ setTimeout(() => {
       </TouchableOpacity>
 
       <View style={styles.category}>
-        <View style={styles.categoryPic}>
-          <FontAwesome5 name="paw" size={width * 0.12} color="#9156D1" />
+        <View style={styles.categoryPicSelected}>
+          <FontAwesome5 name="paw" size={width * 0.12}  color="#fff" />
         </View>
         <Text style={styles.categoryText}>Veterinário</Text>
       </View>
     </View>
 
     {/* Cards */}
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View key={item.id} style={styles.card}>
-          <Image source={item.logo} style={styles.cardImage} />
-          <View style={styles.cardTitleContainer}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            <Text style={styles.cardText}> {'• ' + item.distance} </Text>
-          </View>
-          <Text style={styles.cardText}>{item.description}</Text>
-        </View>
-    </ScrollView>
+<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+  {filtered.map((item) => (
+    <TouchableOpacity
+      key={item.id}
+      style={styles.card}
+    >
+      <Image source={{ uri: item.logo }} style={styles.cardImage} />
+      <View style={styles.cardTitleContainer}>
+        <Text style={styles.cardTitle}>{item.name}</Text>
+        <Text style={styles.cardText}> {'• ' + (item.distance || '... Km')} </Text>
+      </View>
+      <Text style={styles.cardText} numberOfLines={2}>{item.description}</Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
 
 </ScrollView>
 

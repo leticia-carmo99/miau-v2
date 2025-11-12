@@ -7,7 +7,8 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  ImageBackground
+  ImageBackground,
+  Alert
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -15,7 +16,7 @@ import Back from '../assets/FotosInicial/Back.png';
 import { WebView } from "react-native-webview";
 import { db } from '../../../../firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, doc, getDoc, setDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, query, where, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useUser } from "../NavigationUser/UserContext";
 import { Asset } from "expo-asset";
 
@@ -69,7 +70,7 @@ export default function PerfilCao() {
   const route = useRoute();
   const [ongData, setOngData] = useState(null);
 const [loadingOng, setLoadingOng] = useState(true);
-  const [isChatting, setIsChatting] = useState(false); // <<< NOVO ESTADO DE CARREGAMENTO DO CHAT
+  const [isChatting, setIsChatting] = useState(false);
   
 
   const [fontsLoaded] = useFonts({
@@ -132,7 +133,6 @@ useEffect(() => {
         </SafeAreaView>
     );
   }
-// ... (código antes do startChat)
 
 const startChat = async () => {
     if (!currentUserId || !pet || !ongData || !ongData.id) {
@@ -141,12 +141,12 @@ const startChat = async () => {
     }
 
     const ongId = ongData.id;
-    const userDisplayName = userData?.nomeCompleto || 'Adotante'; // Supondo que userData tenha 'nomeCompleto'
+    const userDisplayName = userData?.nomeCompleto || 'Adotante';
     const userPhoto = userData?.fotoPerfil || 'URL_DEFAULT_USER'; 
     const participants = [currentUserId, ongId].sort();
     const finalChatId = `${participants[0]}_${participants[1]}_ongs`;
 
-    setIsChatting(true); // Começa o carregamento
+    setIsChatting(true); 
 
     try {
         const chatRef = doc(db, "chat", finalChatId);
@@ -162,7 +162,7 @@ const startChat = async () => {
                 
                 ultima_msg: `Gostaria de saber mais sobre a adoção do(a) ${pet.nome}.`,
                 ultima_alz: serverTimestamp(),
-                naoLidas: 1, // 1 mensagem não lida para a ONG (a mensagem inicial)
+                naoLidas: 1,
                 aba: 'para_adotar',
             };
             

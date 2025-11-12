@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react'; // Adicionado React e Hooks faltantes
 import {
   View,
   Text,
@@ -7,24 +7,17 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-    Modal,
-    ImageBackground,
+  ImageBackground,
+  Alert,
 } from 'react-native';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import Back from '../assets/FotosInicial/Back.png';
-import Nicolas from '../assets/FotosMapa/Nicolas.png';
-import LogoOng from '../assets/FotosPerfisAnimais/LogoOng.png';
-import { WebView } from "react-native-webview";
-import { FontAwesome } from "@expo/vector-icons";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { Ionicons } from '@expo/vector-icons';
-
-import { Asset } from "expo-asset";
-
-import PorteMenorRoxo from '../assets/FotosPerfisAnimais/PorteMenorRoxo.png';
-import PorteMenorLaranja from '../assets/FotosPerfisAnimais/PorteMenorLaranja.png';
-
+// Importação do Firebase ajustada para usar a sua instância 'db'
+import { db } from "../../../../firebaseConfig"; 
+import { doc, getDoc, getFirestore } from 'firebase/firestore'; 
+// Importe as fontes
 import {
   useFonts,
   JosefinSans_400Regular,
@@ -33,17 +26,19 @@ import {
 } from '@expo-google-fonts/josefin-sans';
 import { Nunito_700Bold, Nunito_400Regular } from '@expo-google-fonts/nunito';
 
-import BackgroundCao from '../assets/FotosPerfisAnimais/BackgroundCao.png';
+// Mock de assets
+import Back from '../assets/FotosInicial/Back.png';
+import CatImage from '../assets/FotosMapa/GatoCaindo.png';
+import CardBg from '../assets/FotosMapa/CaixaPerfilLaranja.png';
+import InstagramIcon from '../assets/FotosMapa/InstagramLaranja.png';
+import FacebookIcon from '../assets/FotosMapa/FacebookLaranja.png';
 
-import * as SplashScreen from 'expo-splash-screen';
 
 const { width } = Dimensions.get('window');
 
 const COLORS = {
   primaryOrange: '#FFAB36',
   primaryPurple: '#9156D1',
-  lightPurple: '#E6E6FA',
-  lightOrange: '#FFDAB9',
   white: '#FFFFFF',
   black: '#000000',
   darkGray: '#333333',
@@ -51,29 +46,15 @@ const COLORS = {
   lightGray: '#999999',
   offWhite: '#f8f8f8',
   yellowStar: '#FFD700',
-  redHeart: '#FF6347',
-  blogTextGray: '#737373',
 };
 
-const data =
-  {
-  id: 1,
-  image: require('../assets/FotosMapa/Nicolas.png'),
-  nome: 'Nicolas Cunha'
-}
-
-export default function EditarMeuPet() {
-  const navigation = useNavigation();
-
-// AVALIACAO CLICAVEL
+// --- Funções de Avaliação (Mantidas no escopo principal) ---
 
 function AvaliacaoEstrelas({ max = 5, onChange }) {
   const [rating, setRating] = useState(0);
 
   const handlePress = (index) => {
     let newRating = index;
-
-    // se clicar na mesma estrela -> alterna entre cheia ↔ meia
     if (rating === index) {
       newRating = index - 0.5;
     } else if (rating === index - 0.5) {
@@ -86,11 +67,11 @@ function AvaliacaoEstrelas({ max = 5, onChange }) {
 
   const renderIcon = (starNumber) => {
     if (rating >= starNumber) {
-      return "star"; // cheia
+      return "star"; 
     } else if (rating >= starNumber - 0.5) {
-      return "star-half-full"; // meia
+      return "star-half-full"; 
     } else {
-      return "star-o"; // vazia
+      return "star-o"; 
     }
   };
 
@@ -102,8 +83,8 @@ function AvaliacaoEstrelas({ max = 5, onChange }) {
           <TouchableOpacity key={index} onPress={() => handlePress(starNumber)}>
             <FontAwesome
               name={renderIcon(starNumber)}
-              size={width * 0.15}
-              color="#FFD700"
+              size={width * 0.1} 
+              color={COLORS.yellowStar}
               style={{ marginHorizontal: 2 }}
             />
           </TouchableOpacity>
@@ -113,8 +94,6 @@ function AvaliacaoEstrelas({ max = 5, onChange }) {
   );
 }
 
-// AVALIAÇAO GERAL NO HEADER
-
 const StarRating = ({ rating, maxStars = 5 }) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 !== 0;
@@ -123,21 +102,29 @@ const StarRating = ({ rating, maxStars = 5 }) => {
   return (
     <View style={{ flexDirection: 'row', marginTop: width * 0.01 }}>
       {[...Array(fullStars)].map((_, index) => (
-        <Icon key={`full-${index}`} name="star" size={width * 0.05} color="#FFD700" />
+        <Icon key={`full-${index}`} name="star" size={width * 0.05} color={COLORS.yellowStar} />
       ))}
-      {halfStar && <Icon name="star-half" size={width * 0.05} color="#FFD700" />}
+      {halfStar && <Icon name="star-half" size={width * 0.05} color={COLORS.yellowStar} />}
       {[...Array(emptyStars)].map((_, index) => (
-        <Icon key={`empty-${index}`} name="star-o" size={width * 0.05} color="#FFD700" />
+        <Icon key={`empty-${index}`} name="star-o" size={width * 0.05} color={COLORS.yellowStar} />
       ))}
     </View>
   );
 };
 
-const nota = 4.5;
 
+export default function ServicoDetalhes() {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { uid } = route.params || {}; 
+  const [servicoData, setServicoData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [favorited, setFavorited] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(0); // Estado para a nota selecionada
+  const nota = 4.5; 
+  const mockImage = require('../assets/FotosMapa/Nicolas.png'); 
 
- const [favorited, setFavorited] = useState(false)
-
+  // Carregamento de fontes
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -145,95 +132,176 @@ const nota = 4.5;
     Nunito_400Regular,
     Nunito_700Bold,
   });
+  
+  // Efeito para buscar dados do serviço
+  useEffect(() => {
+    if (!uid) {
+      console.error("ID do Serviço não fornecido!");
+      setIsLoading(false);
+      return;
+    }
+    
+    // Removemos getFirestore() se 'db' já está importado e inicializado
+
+    const fetchServicoDetails = async () => {
+      try {
+        // CORRIGIDO: Coleção "prestador" e variável "uid"
+        const docRef = doc(db, "prestador", uid); 
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setServicoData(data);
+        } else {
+          Alert.alert("Erro", "Prestador de Serviço não encontrado.");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar detalhes do Prestador:", error);
+        Alert.alert("Erro", "Não foi possível carregar os dados do Prestador.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchServicoDetails();
+  // CORRIGIDO: Dependência do useEffect usando 'uid'
+  }, [uid]);
+
 
   if (!fontsLoaded) {
     return null;
   }
+
+  if (isLoading || !servicoData) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ fontFamily: 'JosefinSans_400Regular', fontSize: 18, color: COLORS.darkGray }}>Carregando dados do Serviço...</Text>
+      </View>
+    );
+  }
+  
+  // =========================================================
+  // ✅ 3. VARIÁVEIS DE DADOS
+  // =========================================================
+  // Mapeamento dos campos do Firestore (prestador)
+  const { 
+    nome = 'Serviço Não Informado', 
+    email = 'contato@servico.com', // Este campo pode não existir em 'prestador'
+    telefone = '(00) 90000-0000',
+    redes = { instagram: '@perfil', facebook: '@perfil' }, 
+    descricao = 'Nenhuma descrição fornecida.', // Este campo pode não existir em 'prestador'
+    horarioFuncionamento = 'Não informado', // Ajustado o fallback
+    logoPerfil = mockImage // Usando o nome correto do campo da imagem
+  } = servicoData; 
+
+  const handleChatPress = () => {
+    navigation.navigate('ChatConversa', { 
+      // CORRIGIDO: Usando 'uid' e 'nome' para o chat
+      targetUser: uid, 
+      targetName: nome 
+    });
+  };
+  
+  // 💡 NOVA FUNÇÃO: Salvar avaliação
+  const handleSaveRating = () => {
+      if (selectedRating === 0) {
+          Alert.alert("Atenção", "Por favor, selecione uma nota antes de salvar.");
+          return;
+      }
+      
+      // Aqui você implementaria a lógica para salvar a nota no Firestore
+      // Exemplo: Salvar na subcoleção 'avaliacoes' do documento 'prestador/uid'
+      console.log(`Salvando avaliação de ${selectedRating} estrelas para o prestador ${uid}`);
+      
+      Alert.alert("Sucesso", `Obrigado! Sua nota de ${selectedRating} estrelas foi registrada.`);
+      // TODO: Implementar addDoc/setDoc no Firestore aqui
+  };
+
+  // =========================================================
+  // ✅ 4. RETURN FINAL (JSX)
+  // =========================================================
+  
   return (
-    <ScrollView style={{flex:1}}>
+    <ScrollView style={{flex:1, backgroundColor: COLORS.white}}>
       <SafeAreaView style={styles.container}>
-        <Image source={data.image} style={styles.background} />
+        {/* Usar a imagem do BD ou fallback */}
+        <Image source={logoPerfil} style={styles.background} />
 
         <View style={styles.menuView}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Image source={Back} style={styles.back} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
 
-      <View style={styles.head}>
-      <View style={styles.headInfos}>
-
-      <Text style={styles.headTitle}>{data.nome || 'Nicolas Cunha'}</Text>
-      <View style={{flexDirection: 'row'}}>
-<StarRating rating={nota} />
-            <Text style={styles.headRating}>4,5</Text></View>
-
-      <Text style={styles.headDate}> Seg a Dom | 08 às 22h</Text>
-      </View>
-        <TouchableOpacity onPress={() => setFavorited(!favorited)}>
-          <Ionicons
-            name={favorited ? "heart" : "heart-outline"}
-            size={width * 0.1}
-            color={COLORS.primaryOrange}
-          />
-        </TouchableOpacity>
-      </View>
-
-
-    <Text style={styles.paragraph}>
-Aqui na nossa petshop, você encontra tudo para o bem-estar do seu pet: alimentação de qualidade, acessórios, cuidados especiais e muito carinho! Trabalhamos com dedicação para oferecer um atendimento confiável e um ambiente acolhedor para você e seu melhor amigo. Também apoiamos a adoção responsável, porque acreditamos que todo pet merece um lar cheio de amor.
-    </Text>
-
-
-            <View style={styles.contactSectionWrapper}>
-              <Image
-                source={require('../assets/FotosMapa/GatoCaindo.png')}
-                style={styles.catImage}
-              />
-              <ImageBackground
-                source={require('../assets/FotosMapa/CaixaPerfilLaranja.png')}
-                style={styles.contactCardBackground}
-                resizeMode="stretch">
-                <View style={styles.contactContent}>
-                  <Text style={styles.contactTitle}>Contato</Text>
-                  <Text style={styles.contactText}>petszcontato@gmail.com</Text>
-                  <Text style={styles.contactText}>+55 11 99262-4521</Text>
-                  <Text style={styles.socialTitle}>Redes Sociais</Text>
-                  <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>@petx.official</Text>
-                    <Image
-                      source={require('../assets/FotosMapa/InstagramLaranja.png')}
-                      style={styles.socialIconImage}
-                    />
-                  </View>
-                  <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>@oficialpetz</Text>
-                    <Image
-                      source={require('../assets/FotosMapa/FacebookLaranja.png')}
-                      style={styles.socialIconImage}
-                    />
-                  </View>
-                </View>
-              </ImageBackground>
+          <View style={styles.head}>
+            <View style={styles.headInfos}>
+              <Text style={styles.headTitle}>{nome}</Text>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <StarRating rating={nota} />
+                <Text style={styles.headRating}>{nota.toFixed(1)}</Text>
+              </View>
+              <Text style={styles.headDate}>{horarioFuncionamento}</Text>
             </View>
+            <TouchableOpacity onPress={() => setFavorited(!favorited)}>
+              <Ionicons
+                name={favorited ? "heart" : "heart-outline"}
+                size={width * 0.1}
+                color={COLORS.primaryOrange}
+              />
+            </TouchableOpacity>
+          </View>
 
-<View>
-      <TouchableOpacity style={styles.chatButton} onPress={() => navigation.navigate('ChatConversaUser', {data})}>
-      <Text style={styles.chatButtonText}>Ir para o chat</Text>
-      </TouchableOpacity>
-</View>
+          <Text style={styles.paragraph}>
+            {descricao}
+          </Text>
 
+          <View style={styles.contactSectionWrapper}>
+            <Image
+              source={CatImage}
+              style={styles.catImage}
+            />
+            <ImageBackground
+              source={CardBg}
+              style={styles.contactCardBackground}
+              resizeMode="stretch">
+              <View style={styles.contactContent}>
+                <Text style={styles.contactTitle}>Contato</Text>
+                <Text style={styles.contactText}>{email}</Text>
+                <Text style={styles.contactText}>{telefone}</Text>
+                <Text style={styles.socialTitle}>Redes Sociais</Text>
+                
+                {redes.instagram && (
+                  <View style={styles.socialRow}>
+                    <Text style={styles.socialText}>{redes.instagram}</Text>
+                    <Image source={InstagramIcon} style={styles.socialIconImage} />
+                  </View>
+                )}
+                
+                {redes.facebook && (
+                  <View style={styles.socialRow}>
+                    <Text style={styles.socialText}>{redes.facebook}</Text>
+                    <Image source={FacebookIcon} style={styles.socialIconImage} />
+                  </View>
+                )}
+                
+              </View>
+            </ImageBackground>
+          </View>
 
-<Text style={styles.avaliationTitle}>Avalie esta loja</Text>
+          {/* Botão de Chat com a função implementada */}
+          <View>
+            <TouchableOpacity style={styles.chatButton} onPress={handleChatPress}>
+              <Text style={styles.chatButtonText}>Ir para o chat</Text>
+            </TouchableOpacity>
+          </View>
 
-      <AvaliacaoEstrelas onChange={(nota) => console.log("Nota escolhida:", nota)} />
-
-      <TouchableOpacity style={styles.saveButton}>
-      <Text style={styles.saveButtonText}>Salvar</Text>
-      </TouchableOpacity>
-
+          <Text style={styles.avaliationTitle}>Avalie este serviço</Text>
+          <AvaliacaoEstrelas onChange={setSelectedRating} />
+          <TouchableOpacity style={styles.saveButton} onPress={handleSaveRating}>
+            <Text style={styles.saveButtonText}>Salvar Avaliação</Text>
+          </TouchableOpacity>
 
         </View>
       </SafeAreaView>

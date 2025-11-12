@@ -474,7 +474,7 @@ setTimeout(() => {
     {/* Cards */}
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       {filtered.map((item) => (
-        <TouchableOpacity key={item.id} onPress={() => navigation.navigate('PetshopUser', { nome: item.name, foto: item.logo})}>
+        <TouchableOpacity key={item.id} onPress={() => navigation.navigate('PetshopUser', { uid: item.id })}>
         <View key={item.id} style={styles.card}>
           <Image source={item.logo} style={styles.cardImage} />
           <View style={styles.cardTitleContainer}>

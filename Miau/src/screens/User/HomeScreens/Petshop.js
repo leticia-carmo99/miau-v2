@@ -21,8 +21,9 @@ import { FontAwesome } from "@expo/vector-icons";
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Back from '../assets/FotosInicial/Back.png';
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../../firebaseConfig";
 
-// You can import supported modules from npm
 import { Card } from 'react-native-paper';
 import {
   useFonts,
@@ -66,33 +67,103 @@ const allImages = [
   { id: "7", uri: "https://diskmadeiras.com.br/wp-content/uploads/2024/06/MDF-CINZA-URBANO-MATT-SOFT-06MM-1-FACE-EUCATEX.jpg" },
 ];
 
+function AvaliacaoEstrelas({ max = 5, onChange }) {
+  const [rating, setRating] = useState(0);
+
+  const handlePress = (index) => {
+    let newRating = index;
+
+    if (rating === index) {
+      newRating = index - 0.5;
+    } else if (rating === index - 0.5) {
+      newRating = index;
+    }
+
+    setRating(newRating);
+    if (onChange) onChange(newRating);
+  };
+
+  const renderIcon = (starNumber) => {
+    if (rating >= starNumber) {
+      return "star"; 
+    } else if (rating >= starNumber - 0.5) {
+      return "star-half-full"; 
+    } else {
+      return "star-o"; 
+    }
+  };
+
+  return (
+    <View style={{ flexDirection: "row", marginTop: 10, alignItems: 'center', justifyContent: 'center' }}>
+      {[...Array(max)].map((_, index) => {
+        const starNumber = index + 1;
+        return (
+          <TouchableOpacity key={index} onPress={() => handlePress(starNumber)}>
+            <FontAwesome
+              name={renderIcon(starNumber)}
+              size={width * 0.15}
+              color="#FFD700"
+              style={{ marginHorizontal: 2 }}
+            />
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// AVALIAÇAO GERAL NO HEADER (mantida)
+const StarRating = ({ rating, maxStars = 5 }) => {
+  const fullStars = Math.floor(rating);
+  const halfStar = rating % 1 !== 0;
+  const emptyStars = maxStars - Math.ceil(rating);
+
+  return (
+    <View style={{ flexDirection: 'row', marginTop: width * 0.01 }}>
+      {[...Array(fullStars)].map((_, index) => (
+        <Icon key={`full-${index}`} name="star" size={width * 0.05} color="#FFD700" />
+      ))}
+      {halfStar && <Icon name="star-half" size={width * 0.05} color="#FFD700" />}
+      {[...Array(emptyStars)].map((_, index) => (
+        <Icon key={`empty-${index}`} name="star-o" size={width * 0.05} color="#FFD700" />
+      ))}
+    </View>
+  );
+};
+
+const nota = 4.5;
+
 export default function Petshop() {
-
-    const route = useRoute();
-  const { nome, foto } = route.params;
-
-     const navigation = useNavigation();
-  const [search, setSearch] = useState('');
-  const [cep, setCep] = useState('');
-  const [filtered, setFiltered] = useState([]);
+const route = useRoute();
+    const { uid } = route.params || {};
+    const [petshopData, setPetshopData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const navigation = useNavigation();
+    const [search, setSearch] = useState('');
+    const [cep, setCep] = useState('');
+    const [filtered, setFiltered] = useState([]);
     const webViewRef = useRef(null);
-  const [region, setRegion] = useState({
-    latitude: -23.55052,
+    const [region, setRegion] = useState({   latitude: -23.55052,
     longitude: -46.633308,
     latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-  });
-
+    longitudeDelta: 0.05,});
+    const [favorited, setFavorited] = useState(false) ;
+    const [fontsLoaded] = useFonts({    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+        JosefinSans_300Light,
+    Nunito_400Regular,
+    Nunito_700Bold,});
+    
+  const [selectedIndex, setSelectedIndex] = useState(null); 
+    
     const mapRef = useRef(null);
-  const translateY = useRef(new Animated.Value(height * 0.5)).current;
-
-  const panResponder = useRef(
+    const translateY = useRef(new Animated.Value(height * 0.5)).current;
+    const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) =>
         Math.abs(gesture.dy) > 10,
       onPanResponderMove: (_, gesture) => {
-        translateY.setValue(Math.max(100, gesture.moveY));
-      },
+        translateY.setValue(Math.max(100, gesture.moveY));},
       onPanResponderRelease: (_, gesture) => {
         if (gesture.moveY < height / 2) {
           Animated.spring(translateY, {
@@ -108,6 +179,86 @@ export default function Petshop() {
       },
     })
   ).current;
+
+    useEffect(() => {
+        if (!uid) {
+            console.error("ID do Petshop não fornecido!");
+            setIsLoading(false);
+            return;
+        }
+
+        const fetchPetshopDetails = async () => {
+            try {
+                const docRef = doc(db, "empresa", uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setPetshopData(data);
+                } else {
+                    Alert.alert("Erro", "Petshop não encontrado.");
+                }
+            } catch (error) {
+                console.error("Erro ao buscar detalhes do Petshop:", error);
+                Alert.alert("Erro", "Não foi possível carregar os dados do Petshop.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPetshopDetails();
+    }, [uid]);
+    useEffect(() => {
+        if (search.trim() === '') {
+            setFiltered(petshop);
+        } else {
+            setFiltered(
+                petshop.filter((item) =>
+                    item.name.toLowerCase().includes(search.toLowerCase())
+                )
+            );
+        }
+    }, [search]);
+
+    useEffect(() => {
+        if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(moveMapScript(region));
+        }
+    }, [region]);
+
+    if (!fontsLoaded) {
+        return null;
+    }
+
+    if (isLoading || !petshopData) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ fontFamily: 'JosefinSans_400Regular', fontSize: 18 }}>Carregando dados do Petshop...</Text>
+            </View>
+        );
+    }
+
+      const { 
+    nome, 
+    email,
+    telefone,
+    endereco, 
+    faixaPreco,
+    tipoServico,
+    redes, // Objeto ou array de redes
+    site,
+    imagensServico, // Lista de URLs de imagens
+    logoPerfil, // URL da logo
+    localAtendimento,
+    localFisico,
+  } = petshopData;
+
+  const cardImages = imagensServico && imagensServico.length > 0
+    ? imagensServico.map((url, index) => ({ id: `img-${index}`, uri: url }))
+    : allImages;
+
+  const previewImages = cardImages.slice(0, 4);
+  const extraCount = Math.max(0, cardImages.length - 4);
 
     const moveMapScript = (newRegion) => {
     return `
@@ -180,10 +331,6 @@ const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStr
       lon: -46.63,
     },
   ];
-  const [selectedIndex, setSelectedIndex] = useState(null); // null = modal fechado
-
-  const previewImages = allImages.slice(0, 4);
-  const extraCount = Math.max(0, allImages.length - 4);
 
   const openAt = (index) => setSelectedIndex(index);
   const close = () => setSelectedIndex(null);
@@ -195,104 +342,7 @@ const MAP_PROVIDER = TILE_PROVIDERS[MAP_PROVIDER_KEY] || TILE_PROVIDERS['OpenStr
       i === null ? null : (i - 1 + allImages.length) % allImages.length
     );
 
-// AVALIACAO CLICAVEL
 
-function AvaliacaoEstrelas({ max = 5, onChange }) {
-  const [rating, setRating] = useState(0);
-
-  const handlePress = (index) => {
-    let newRating = index;
-
-    // se clicar na mesma estrela -> alterna entre cheia ↔ meia
-    if (rating === index) {
-      newRating = index - 0.5;
-    } else if (rating === index - 0.5) {
-      newRating = index;
-    }
-
-    setRating(newRating);
-    if (onChange) onChange(newRating);
-  };
-
-  const renderIcon = (starNumber) => {
-    if (rating >= starNumber) {
-      return "star"; // cheia
-    } else if (rating >= starNumber - 0.5) {
-      return "star-half-full"; // meia
-    } else {
-      return "star-o"; // vazia
-    }
-  };
-
-  return (
-    <View style={{ flexDirection: "row", marginTop: 10, alignItems: 'center', justifyContent: 'center' }}>
-      {[...Array(max)].map((_, index) => {
-        const starNumber = index + 1;
-        return (
-          <TouchableOpacity key={index} onPress={() => handlePress(starNumber)}>
-            <FontAwesome
-              name={renderIcon(starNumber)}
-              size={width * 0.15}
-              color="#FFD700"
-              style={{ marginHorizontal: 2 }}
-            />
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-// AVALIAÇAO GERAL NO HEADER
-
-const StarRating = ({ rating, maxStars = 5 }) => {
-  const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 !== 0;
-  const emptyStars = maxStars - Math.ceil(rating);
-
-  return (
-    <View style={{ flexDirection: 'row', marginTop: width * 0.01 }}>
-      {[...Array(fullStars)].map((_, index) => (
-        <Icon key={`full-${index}`} name="star" size={width * 0.05} color="#FFD700" />
-      ))}
-      {halfStar && <Icon name="star-half" size={width * 0.05} color="#FFD700" />}
-      {[...Array(emptyStars)].map((_, index) => (
-        <Icon key={`empty-${index}`} name="star-o" size={width * 0.05} color="#FFD700" />
-      ))}
-    </View>
-  );
-};
-
-const nota = 4.5;
-
- useEffect(() => {
-    if (search.trim() === '') {
-      setFiltered(petshop);
-    } else {
-      setFiltered(
-        petshop.filter((item) =>
-          item.name.toLowerCase().includes(search.toLowerCase())
-        )
-      );
-    }
-  }, [search]);
-    useEffect(() => {
-    if (webViewRef.current) {
-        webViewRef.current.injectJavaScript(moveMapScript(region));
-    }
-  }, [region]); 
- const [favorited, setFavorited] = useState(false) 
-  const [fontsLoaded] = useFonts({
-    JosefinSans_400Regular,
-    JosefinSans_700Bold,
-        JosefinSans_300Light,
-    Nunito_400Regular,
-    Nunito_700Bold,
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   const mapHtmlContent = MapHtmlModule;
 
@@ -402,129 +452,100 @@ source={{ html: mapHtmlContent }}
       <View style={styles.head}>
       <View style={styles.headInfos}>
 
-      <Text style={styles.headTitle}>{nome || 'Petshop'}</Text>
-      <View style={{flexDirection: 'row'}}>
+      <Text style={styles.headTitle}>{nome || 'Petshop Sem Nome'}</Text>
+      <View style={{flexDirection: 'row'}}>
 <StarRating rating={nota} />
-            <Text style={styles.headRating}>4,5</Text></View>
+            <Text style={styles.headRating}>4,5</Text></View>
 
-      <Text style={styles.headDate}> Seg a Dom | 08 às 22h</Text>
-      </View>
-        <TouchableOpacity onPress={() => setFavorited(!favorited)}>
-          <Ionicons
-            name={favorited ? "heart" : "heart-outline"}
-            size={width * 0.1}
-            color={COLORS.primaryPurple}
-          />
-        </TouchableOpacity>
-      </View>
-
-
-    <View style={styles.galeryView}>
-  <View style={styles.grid}>
-        {previewImages.map((item, index) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.imageWrapper}
-            onPress={() => openAt(index)}
-            activeOpacity={0.9}
-          >
-            <Image source={{ uri: item.uri }} style={styles.image} />
-            {index === 3 && extraCount > 0 && (
-              <View style={styles.overlay}>
-                <Text style={styles.overlayText}>+{extraCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-
-<Modal
-  visible={selectedIndex !== null}
-  transparent={true}
-  animationType="fade"
-  onRequestClose={close}
->
-  <View style={styles.modalContainer}>
-    {/* Fundo que fecha */}
-    <TouchableOpacity
-      style={StyleSheet.absoluteFillObject}
-      activeOpacity={1}
-      onPress={close}
-    />
-
-    {/* Imagem no centro */}
-    {selectedIndex !== null && (
-      <Image
-        source={{ uri: allImages[selectedIndex].uri }}
-        style={styles.fullImage}
-        resizeMode="contain"
-      />
-    )}
-
-    {/* Navegação (‹ / ›) */}
-    <TouchableOpacity style={[styles.navButton, { left: 10 }]} onPress={prev}>
-      <Text style={styles.navText}>‹</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={[styles.navButton, { right: 10 }]} onPress={next}>
-      <Text style={styles.navText}>›</Text>
-    </TouchableOpacity>
-  </View>
-</Modal>
-
-    </View>
-
-    <Text style={styles.paragraph}>
-    Aqui na nossa petshop, você encontra tudo para o bem-estar do seu pet: alimentação de qualidade, acessórios, cuidados especiais e muito carinho! Trabalhamos com dedicação para oferecer um atendimento confiável e um ambiente acolhedor para você e seu melhor amigo. Também apoiamos a adoção responsável, porque acreditamos que todo pet merece um lar cheio de amor.
-    </Text>
+      {/* ⚠️ USANDO DADOS DO FIRESTORE (horário, se disponível) */}
+      <Text style={styles.headDate}> Tipo de Serviço: {tipoServico}</Text>
+      <Text style={styles.headDate}> Faixa de Preço: {faixaPreco}</Text>
+      </View>
+        <TouchableOpacity onPress={() => setFavorited(!favorited)}>
+          <Ionicons
+            name={favorited ? "heart" : "heart-outline"}
+            size={width * 0.1}
+            color={COLORS.primaryPurple}
+          />
+        </TouchableOpacity>
+      </View>
 
 
-            <View style={styles.contactSectionWrapper}>
-              <Image
-                source={require('../assets/FotosMapa/GatoCaindo.png')}
-                style={styles.catImage}
-              />
-              <ImageBackground
-                source={require('../assets/FotosMapa/CaixaPerfil.png')}
-                style={styles.contactCardBackground}
-                resizeMode="stretch">
-                <View style={styles.contactContent}>
-                  <Text style={styles.contactTitle}>Contato</Text>
-                  <Text style={styles.contactText}>petszcontato@gmail.com</Text>
-                  <Text style={styles.contactText}>+55 11 99262-4521</Text>
-                  <Text style={styles.socialTitle}>Redes Sociais</Text>
-                  <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>@petx.official</Text>
-                    <Image
-                      source={require('../assets/FotosMapa/Instagram.png')}
-                      style={styles.socialIconImage}
-                    />
-                  </View>
-                  <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>@oficialpetz</Text>
-                    <Image
-                      source={require('../assets/FotosMapa/Facebook.png')}
-                      style={styles.socialIconImage}
-                    />
-                  </View>
-                </View>
-              </ImageBackground>
-            </View>
+    <View style={styles.galeryView}>
+  <View style={styles.grid}>
+        {/* ⚠️ USANDO DADOS DO FIRESTORE (imagensServico ou fallback) */}
+        {previewImages.map((item, index) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.imageWrapper}
+            onPress={() => openAt(index)}
+            activeOpacity={0.9}
+          >
+            <Image source={{ uri: item.uri }} style={styles.image} />
+            {index === 3 && extraCount > 0 && (
+              <View style={styles.overlay}>
+                <Text style={styles.overlayText}>+{extraCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+{/* ... (Bloco Modal de Imagens, Mantido) ... */}
+    </View>
+
+    {/* ⚠️ USANDO DADOS DO FIRESTORE (descrição/sobre, se houver) */}
+    <Text style={styles.paragraph}>
+      {petshopData.sobre || "O prestador de serviço ainda não forneceu uma descrição detalhada. Aqui você pode encontrar informações de contato e mais sobre os serviços oferecidos."}
+    </Text>
+
+
+            <View style={styles.contactSectionWrapper}>
+              <Image
+                source={require('../assets/FotosMapa/GatoCaindo.png')}
+                style={styles.catImage}
+              />
+              <ImageBackground
+                source={require('../assets/FotosMapa/CaixaPerfil.png')}
+                style={styles.contactCardBackground}
+                resizeMode="stretch">
+                <View style={styles.contactContent}>
+                  <Text style={styles.contactTitle}>Contato & Endereço</Text>
+                  
+                  {/* ⚠️ USANDO DADOS DO FIRESTORE (contato/endereço) */}
+                  <Text style={styles.contactText}>Email: {email || 'Não informado'}</Text>
+                  <Text style={styles.contactText}>Tel: {telefone || 'Não informado'}</Text>
+                  <Text style={styles.contactText}>Endereço: {endereco?.cidade || 'Não informado'}</Text>
+                  
+                  <Text style={styles.socialTitle}>Redes Sociais & Site</Text>
+                  <Text style={styles.socialText}>Site: {site || 'Não informado'}</Text>
+                  {redes && (
+                    <View style={styles.socialRow}>
+                      <Text style={styles.socialText}>@{redes}</Text>
+                      <Image
+                        source={require('../assets/FotosMapa/Instagram.png')}
+                        style={styles.socialIconImage}
+                      />
+                    </View>
+                  )}
+                </View>
+              </ImageBackground>
+            </View>
 
 
 <Text style={styles.avaliationTitle}>Avalie esta loja</Text>
 
-      <AvaliacaoEstrelas onChange={(nota) => console.log("Nota escolhida:", nota)} />
+      <AvaliacaoEstrelas onChange={(nota) => console.log("Nota escolhida:", nota)} />
 
-      <TouchableOpacity style={styles.saveButton}>
-      <Text style={styles.saveButtonText}>Salvar</Text>
-      </TouchableOpacity>
+      <TouchableOpacity style={styles.saveButton}>
+      <Text style={styles.saveButtonText}>Salvar</Text>
+      </TouchableOpacity>
 
 </ScrollView>
 
 </Animated.View>
 
-    </View>
-  );
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

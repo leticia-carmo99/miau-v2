@@ -127,8 +127,6 @@ const renderItemFirebase = ({ item, navigationRef }) => {
   );
 };
 
-
-// --- ONGS SCREEN (AGORA USANDO SOMENTE CHATS DO FIREBASE) ---
 const OngsScreen = ({ search, setSearch, navigationRef }) => {
   const { userData } = useUser();
   const chats = useChats(userData?.uid, "ongs");
@@ -142,7 +140,6 @@ const OngsScreen = ({ search, setSearch, navigationRef }) => {
     return null;
   }
 
-  // Lógica de filtro para os CHATS do Firebase
   const filteredChats = chats.filter((item) =>
     item.nomeOutroLado?.toLowerCase().includes(search.toLowerCase())
   );
@@ -169,7 +166,6 @@ const OngsScreen = ({ search, setSearch, navigationRef }) => {
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Conversas (ONGs)</Text>
             <FlatList
-              // Se a busca está vazia, mostra todos os chats. Caso contrário, mostra os filtrados.
               data={search.trim() === '' ? chats : filteredChats}
               renderItem={({ item }) => renderItemFirebase({ item, navigationRef })}
               keyExtractor={(item) => item.id}
@@ -214,7 +210,7 @@ const ServicosScreen = ({ search, setSearch, navigationRef }) => {
       <FlatList
         data={search.trim() === '' ? chats : filteredChats}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => renderItemFirebase({ item, navigationRef })} // ✅ Usando renderItemFirebase
+        renderItem={({ item }) => renderItemFirebase({ item, navigationRef })}
         scrollEnabled={false}
         ListEmptyComponent={() => (
           <Text style={styles.emptyText}>Nenhuma conversa encontrada.</Text>
@@ -225,17 +221,14 @@ const ServicosScreen = ({ search, setSearch, navigationRef }) => {
 };
 
 
-// --- CHAT USUARIO (PRINCIPAL) ---
 export default function ChatUsuario() {
   const navigationRef = useNavigation();
-
   const [search, setSearch] = useState(''); 
-
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: 'ongs', title: 'Ongs' },
-    { key: 'servicos', title: 'Serviços' },
+    { key: 'prestador', title: 'Serviços' },
   ]);
 
   const renderScene = ({ route }) => {
@@ -248,7 +241,7 @@ export default function ChatUsuario() {
             navigationRef={navigationRef}
           />
         );
-      case 'servicos':
+      case 'prestador':
         return (
           <ServicosScreen
             search={search}

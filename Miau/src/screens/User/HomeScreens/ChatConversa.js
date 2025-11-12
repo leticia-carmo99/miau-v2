@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +9,6 @@ import {
   Image,
   Alert,
   Dimensions,
-  Button,
   useWindowDimensions,
   KeyboardAvoidingView, 
   Platform
@@ -23,13 +21,20 @@ import {
   JosefinSans_700Bold,
 } from '@expo-google-fonts/josefin-sans';
 import * as SplashScreen from 'expo-splash-screen';
-import { useRoute } from '@react-navigation/native';
-import ChatUsuario from './ChatUsuario';
-import { useNavigation } from '@react-navigation/native';
-import PatinhaBranca from '../assets/Logos/patinhabrancapreenchida.png';
-import Back from '../assets/FotosInicial/Back.png';
-import { useUser } from "../NavigationUser/UserContext";
-import { collection, addDoc, onSnapshot, orderBy, query, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { useUser } from "../NavigationUser/UserContext"; 
+import { 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  orderBy, 
+  query, 
+  serverTimestamp, 
+  doc, 
+  updateDoc,
+  getDoc,
+  setDoc, 
+} from 'firebase/firestore';
 import { db } from "../../../../firebaseConfig";
 import * as FileSystem from 'expo-file-system';
 
@@ -39,95 +44,145 @@ const { width } = Dimensions.get('window');
 const COLORS = {
   primaryOrange: '#FFAB36',
   primaryPurple: '#9156D1',
-  lightPurple: '#E6E6FA',
-  lightOrange: '#FFDAB9',
   white: '#FFFFFF',
   black: '#000000',
   darkGray: '#333333',
   mediumGray: '#666666',
-  lightGray: '#999999',
   offWhite: '#f8f8f8',
-  yellowStar: '#FFD700',
-  redHeart: '#FF6347',
-  blogTextGray: '#737373',
+};
+
+const getFormattedDate = (date) => {
+    return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
 };
 
 export default function ChatScreen() {
   const navigation = useNavigation();
-      const route = useRoute();
-const { chatId, user, data } = route.params || {}; 
-    const { userData } = useUser(); 
-    const currentUserId = userData?.uid; 
-    const name = user?.name || data?.nomeOutroLado || 'Usuário';
-    const avatar = user?.image || data?.fotoOutroLado || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150';
-
-    const [messages, setMessages] = useState([]);
-    const [inputText, setInputText] = useState('');
-    const flatListRef = useRef(null);
-    const [loading, setLoading] = useState(true)
+  const route = useRoute();
   
+  const { targetUser, targetName } = route.params || {}; 
+  
+  const { userData } = useUser(); 
+  const currentUserId = userData?.uid; 
+  const friendId = targetUser;
+  const name = targetName || 'Prestador de Serviço';
+  const avatar = 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'; // Usando o avatar mockado
 
-    // --- HOOK PARA CARREGAR MENSAGENS EM TEMPO REAL ---
-    useEffect(() => {
-        if (!chatId) return;
-        const messagesRef = collection(db, "chat", chatId, "msg");
-        const q = query(messagesRef, orderBy("createdAt", "asc"));
+  const [messages, setMessages] = useState([]);
+  const [inputText, setInputText] = useState('');
+  const [chatId, setChatId] = useState(null); 
+  const flatListRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  
+  const getOrCreateChatId = useCallback((user1, user2) => {
+    const sortedIds = [user1, user2].sort();
+    return sortedIds.join('_');
+  }, []);
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const msgs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                time: doc.data().createdAt?.toDate()?.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                }) || '...',
-                sender: doc.data().senderId === currentUserId ? 'user' : 'friend',
-            }));
-            setMessages(msgs);
-            setLoading(false);
-        });
 
-        return () => unsubscribe();
-    }, [chatId, currentUserId]);
+  // FUNÇÃO PARA GARANTIR A ESTRUTURA BASE DO CHAT
+  const ensureChatDocument = async (id, userA, userB) => {
+      const chatRef = doc(db, "chat", id);
+      const chatSnap = await getDoc(chatRef);
 
-    useEffect(() => {
-        if (!loading) {
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
-        }
-    }, [messages, loading]);
+      if (!chatSnap.exists()) {
+          console.log(`Criando novo chat document com ID: ${id}`);
+          await setDoc(chatRef, {
+              participantes: [userA, userB],
+              ultima_msg: "Chat iniciado.",
+              ultima_alz: serverTimestamp(),
+          });
+      }
+      return id;
+  };
+  
+  // EFEITO PRINCIPAL CORRIGIDO: Agora não retorna mais uma Promise!
+  useEffect(() => {
+    if (!currentUserId || !friendId) {
+        Alert.alert("Erro de Usuário", "IDs de usuário ou prestador ausentes.");
+        setLoading(false);
+        return;
+    }
+    
+    let unsubscribe = () => {};
 
-const handleSend = async (messageText = inputText, imageUri = null) => {
-        if (!chatId || !currentUserId || (!messageText.trim() && !imageUri)) return;
-
+    const initializeChat = async () => {
         try {
-            const newMessageData = {
-                text: messageText,
-                image: imageUri,
-                senderId: currentUserId,
-                createdAt: serverTimestamp(),
-            };
+            const generatedChatId = getOrCreateChatId(currentUserId, friendId);
+            await ensureChatDocument(generatedChatId, currentUserId, friendId);
+            
+            setChatId(generatedChatId); 
+            const messagesRef = collection(db, "chat", generatedChatId, "msg");
+            const q = query(messagesRef, orderBy("createdAt", "asc"));
 
-            await addDoc(collection(db, "chat", chatId, "msg"), newMessageData);
-            const chatRef = doc(db, "chat", chatId);
-            await updateDoc(chatRef, {
-                ultima_msg: messageText || "Imagem",
-                ultima_alz: serverTimestamp(),
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                const msgs = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    time: doc.data().createdAt?.toDate()?.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    }) || '...',
+                    sender: doc.data().senderId === currentUserId ? 'user' : 'friend',
+                }));
+                setMessages(msgs);
+                setLoading(false);
+            }, (error) => {
+                console.error("Erro no onSnapshot (Listener de mensagens): ", error);
+                Alert.alert("Erro de Permissão", "Não foi possível carregar as mensagens. Verifique as regras do Firebase.");
+                setLoading(false);
             });
-
-            setInputText('');
-
+            
         } catch (error) {
-            console.error("Erro ao enviar mensagem: ", error);
-            Alert.alert("Erro", "Não foi possível enviar a mensagem.");
+            console.error("Erro ao inicializar o chat: ", error);
+            Alert.alert("Erro", "Falha crítica ao iniciar o chat.");
+            setLoading(false);
         }
     };
+    initializeChat();
+    return () => unsubscribe(); 
 
+  }, [currentUserId, friendId, getOrCreateChatId]);
+
+  useEffect(() => {
+    if (!loading && flatListRef.current) {
+        setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+        }, 300); 
+    }
+  }, [messages, loading]);
+
+const handleSend = async (messageText = inputText, imageUri = null) => {
+    if (!chatId || !currentUserId || (!messageText.trim() && !imageUri)) return;
+
+    try {
+        const message = messageText.trim() || "Imagem";
+        const newMessageData = {
+            text: messageText.trim(),
+            image: imageUri,
+            senderId: currentUserId,
+            createdAt: serverTimestamp(),
+        };
+        await addDoc(collection(db, "chat", chatId, "msg"), newMessageData);
+        const chatRef = doc(db, "chat", chatId);
+        await updateDoc(chatRef, {
+            ultima_msg: message,
+            ultima_alz: serverTimestamp(),
+        });
+
+        setInputText('');
+    } catch (error) {
+        console.error("Erro ao enviar mensagem: ", error);
+        Alert.alert("Erro", "Não foi possível enviar a mensagem.");
+    }
+};
 const handleImagePicker = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-        Alert.alert( /* ... */ );
+        Alert.alert("Permissão Necessária", "Precisamos de permissão para acessar suas fotos para enviar uma imagem.");
         return;
     }
     
@@ -145,7 +200,7 @@ const handleImagePicker = async () => {
         if (base64Data) {
             await handleSend(null, base64Data); 
         } else {
-             Alert.alert("Erro", "Não foi possível processar a imagem.");
+            Alert.alert("Erro", "Não foi possível processar a imagem.");
         }
     }
 };
@@ -168,98 +223,101 @@ const convertUriToBase64 = async (uri) => {
     JosefinSans_700Bold,
   });
 
-  useEffect(() => {
-    async function prepare() {
-      try {
-        await SplashScreen.preventAutoHideAsync();
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        if (fontsLoaded) {
-        await SplashScreen.hideAsync();
-        }
-      }
-    }
-    prepare();
-  }, [fontsLoaded]);
-
   if (!fontsLoaded) {
     return null;
   }
-
+  
+  const today = getFormattedDate(new Date());
   return (
     <View style={{backgroundColor: COLORS.offWhite, flex:1}}>
       <KeyboardAvoidingView 
-    style={styles.container} 
-    behavior={Platform.OS === "ios" ? "padding" : "height"}
-    keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-  >
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()}
-          style={{ marginRight: 15 }}
-        >
-          <Image source={Back} style={styles.back}/>
-        </TouchableOpacity>
-
-        <Image
-          source={{ uri: avatar }}
-          style={styles.avatar}
-        />
-        <View style={{ flex: 1, marginLeft: 15 }}>
-          <Text style={styles.username}>{name}</Text>
-          <Text style={styles.status}>Online</Text>
-        </View>
-
-        <Image source={PatinhaBranca} style={styles.patinha}/>
-      </View>
-
-      <View style={styles.chatContent}>
-        <View style={styles.dateContainer}>
-          <Text style={styles.dateText}>Hoje - 26/05/2025</Text>
-        </View>
-<FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    renderItem={({ item }) => (
-                        <View
-                            style={
-                                item.sender === 'user'
-                                    ? styles.userMessage
-                                    : styles.friendMessage
-                            }>
-                            {item.text && <Text>{item.text}</Text>}
-                            {item.image && (
-                                <Image
-                                    source={{ uri: item.image }}
-                                    style={styles.messageImage}
-                                />
-                            )}
-                            <Text style={styles.timeText}>{item.time}</Text>
-                        </View>
-                    )}
-                    keyExtractor={(item) => item.id}
-                    style={styles.messageList}
-                />
-        <View style={styles.inputContainer}>
-          <TouchableOpacity
-            onPress={handleImagePicker}
-            style={styles.clipButton}>
-            <Ionicons name="attach" size={width * 0.07} color="#666" />
+        style={styles.container} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            style={{ marginRight: 15 }}
+          >
+            <Image 
+                source={require('../assets/FotosInicial/Back.png')} // Caminho ajustado para evitar erros de mock
+                style={styles.back}
+            />
           </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite sua mensagem"
-            value={inputText}
-            onChangeText={setInputText}
+
+          <Image
+            source={{ uri: avatar }}
+            style={styles.avatar}
           />
-          <TouchableOpacity onPress={() => handleSend(inputText)}>
-            <Ionicons name="send" size={width * 0.07} color="#FF5733" />
-          </TouchableOpacity>
+          <View style={{ flex: 1, marginLeft: 15 }}>
+            <Text style={styles.username}>{name}</Text>
+            <Text style={styles.status}>Online</Text>
+          </View>
+
+          <Image 
+            source={require('../assets/Logos/patinhabrancapreenchida.png')} // Caminho ajustado para evitar erros de mock
+            style={styles.patinha}
+          />
         </View>
-      </View>
+
+        <View style={styles.chatContent}>
+          {/* CORRIGIDO: Data dinâmica */}
+          <View style={styles.dateContainer}>
+            <Text style={styles.dateText}>Hoje - {today}</Text>
+          </View>
+          
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={({ item }) => (
+                <View
+                    style={
+                        item.sender === 'user'
+                            ? styles.userMessage
+                            : styles.friendMessage
+                    }>
+                    {item.text.length > 0 && <Text style={styles.messageText}>{item.text}</Text>}
+                    {item.image && (
+                        <Image
+                            source={{ uri: item.image }}
+                            style={styles.messageImage}
+                        />
+                    )}
+                    <Text style={styles.timeText}>{item.time}</Text>
+                </View>
+            )}
+            keyExtractor={(item) => item.id}
+            style={styles.messageList}
+            contentContainerStyle={{paddingBottom: 20}}
+          />
+          
+          <View style={styles.inputContainer}>
+            <TouchableOpacity
+              onPress={handleImagePicker}
+              style={styles.clipButton}>
+              <Ionicons name="attach" size={width * 0.07} color="#666" />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite sua mensagem"
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={() => handleSend(inputText)} // Permite enviar pelo Enter/Return
+              returnKeyType="send"
+            />
+            <TouchableOpacity onPress={() => handleSend(inputText)}>
+              <Ionicons 
+                name="send" 
+                size={width * 0.07} 
+                // Ícone laranja se tiver texto, cinza se estiver vazio
+                color={inputText.trim() ? COLORS.primaryOrange : COLORS.mediumGray} 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAvoidingView>
-      </View>
+    </View>
   );
 }
 
