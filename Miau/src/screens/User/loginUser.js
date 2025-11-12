@@ -9,14 +9,13 @@ import {
   Dimensions,
   Image,
   Alert,
-  // 💡 Importei ScrollView para manter a consistência com telas irmãs se a intenção for usá-lo,
-  // mas o componente principal continua sendo View. 
+
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../firebaseConfig"; // Importe apenas o que precisa
 import { useUser } from "./NavigationUser/UserContext";
-// 💡 AS FONTES JÁ ESTAVAM IMPORTADAS
+
 import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 
 
@@ -28,7 +27,6 @@ export default function LoginUser({ navigation }) {
   const { userData, setUserData } = useUser();
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('');
-  // ⚠️ Removi o estado `user` que não estava sendo usado e causava aviso
   const [pass, setPass] = useState('');
 
   const [fontsLoaded] = useFonts({
@@ -36,14 +34,13 @@ export default function LoginUser({ navigation }) {
     JosefinSans_700Bold,
   });
 
-  // Retorna nulo ou um loader enquanto as fontes carregam
+
   if (!fontsLoaded) {
     return <SafeAreaView style={styles.safe} />;
   }
 
 
   const handleLogin = async () => {
-    // 💡 Adicionando validação de campo vazio (boa prática)
     if (email === '' || pass === '') {
       Alert.alert("Erro", "Por favor, preencha todos os campos.");
       return;
@@ -55,7 +52,7 @@ export default function LoginUser({ navigation }) {
       navigation.navigate('MainDrawerUser')
 
     } catch (error) {
-      // Adicionando tratamento de erros para o usuário
+
       console.error("Erro no login:", error.message);
       let errorMessage = "Erro no login. Tente novamente.";
       if (error.code === 'auth/invalid-email') {
@@ -77,17 +74,11 @@ export default function LoginUser({ navigation }) {
       </TouchableOpacity>
       <View style={styles.topPurple} />
 
-      <Image
-        source={require('../../assets/gatoPreto1.png')}
-        style={styles.catImage}
-        resizeMode="contain"
-      />
       <View style={styles.card}>
-        {/* 💡 FONTE APLICADA (Bold) */}
+
         <Text style={[styles.title, { fontFamily: 'JosefinSans_700Bold' }]}>Login</Text>
 
         <TextInput
-          // 💡 FONTE APLICADA (Regular)
           style={[styles.input, { fontFamily: 'JosefinSans_400Regular' }]}
           placeholder="Email:"
           placeholderTextColor="#AAA"

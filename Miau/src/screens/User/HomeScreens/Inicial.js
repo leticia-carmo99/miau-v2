@@ -345,7 +345,7 @@ export default function Inicial() {
               <Text style={styles.seeMoreText}>Ver mais</Text>
              </TouchableOpacity>
           </View>
-          {/* 💡 ATUALIZADO: Usando o novo estado blogPostsState */}
+          {/* Usando o novo estado blogPostsState */}
           {isLoadingBlogs ? (
             <Text style={styles.loadingText}>Carregando blogs...</Text>
           ) : (

@@ -74,11 +74,7 @@ export default function LoginUser({ navigation }) {
       </TouchableOpacity>
 
       <View style={styles.topPurple} />
-      <Image
-        source={require('../../assets/gatoPreto1.png')}
-        style={styles.catImage}
-        resizeMode="contain"
-      />
+     
 
       <View style={styles.card}>
         <Text style={[styles.title, { fontFamily: 'JosefinSans_700Bold' }]}>Login</Text>

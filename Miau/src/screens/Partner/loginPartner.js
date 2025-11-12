@@ -83,11 +83,7 @@ const handleLogin = async () => {
       </TouchableOpacity>
       <View style={styles.topPurple} />
 
-      <Image
-        source={require('../../assets/gatoPreto1.png')}
-        style={styles.catImage}
-        resizeMode="contain"
-      />
+
       <View style={styles.card}>
         <Text style={styles.title}>Login</Text>
 
