@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: Colors.primaryPurple,
-    width: '55%',
+    width: '25%',
     marginTop: 30,
     paddingVertical: 8,
     borderRadius: 18,
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     color: Colors.cardWhite,
-    fontSize: 18,
+    fontSize: 12,
     fontFamily: 'Nunito_700Bold',
   },
   errorText: {
@@ -532,6 +532,6 @@ const styles = StyleSheet.create({
     fontFamily: 'JosefinSans_700Bold',
     color: '#fff',
     padding: width * 0.04,
-    fontSize: width * 0.08,
+    fontSize: width * 0.05,
   },
 });

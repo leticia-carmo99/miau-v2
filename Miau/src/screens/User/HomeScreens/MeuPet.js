@@ -262,13 +262,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.offWhite,
   },
   back: {
-    height: width * 0.1,
-    width: width * 0.1,
+    height: width * 0.05,
+    width: width * 0.05,
     padding: width * 0.1,
     marginRight: width * 0.6,
   },
   menuView: {
-    height: width * 0.4,
+    height: width * 0.3,
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   infos: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    flexWrap: 'wrap', // quebra linha se não couber
+    flexWrap: 'wrap', 
     padding: 20,
   },
   card: {
@@ -368,8 +368,8 @@ const styles = StyleSheet.create({
     paddingVertical: width * 0.03,
     paddingHorizontal: width * 0.06,
     borderRadius: width * 0.05,
-    borderWidth: 1.5,
-    borderColor: '#8a5408',
+    borderWidth: 1,
+    borderColor: '#c09559ff',
     width: width * 0.65,
     marginVertical: 5,
     justifyContent: 'center',
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     padding: width * 0.05,
     backgroundColor: COLORS.primaryPurple,
-    width: width * 0.6,
+    width: width * 0.5,
     borderBottomLeftRadius: 10,
     borderTopLeftRadius: 10,
     shadowColor: '#000',
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   },
   editProfileText: {
     alignSelf: 'center',
-    fontSize: width * 0.06,
+    fontSize: width * 0.04,
     color: COLORS.white,
     fontFamily: 'JosefinSans_700Bold',
   },

@@ -523,7 +523,7 @@ const startChat = async () => {
      fontFamily: 'JosefinSans_700Bold',
      color: '#fff',
      padding: width * 0.04,
-     fontSize: width * 0.08,
+     fontSize: width * 0.05,
    },
  });
  

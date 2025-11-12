@@ -257,8 +257,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 50,
-    paddingBottom: 5,
+    paddingVertical: 30,
+    paddingBottom: 15,
   },
   scrollableOrangeSection: {
     backgroundColor: '#FFA726',

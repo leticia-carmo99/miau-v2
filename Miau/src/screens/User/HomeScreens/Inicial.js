@@ -4,11 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Menu from '../NavigationUser/MenuV1.js';
-import * as ImagePicker from "expo-image-picker"; // para trocar foto
+import * as ImagePicker from "expo-image-picker"; 
 import { useUser } from "../NavigationUser/UserContext";
 
 import { collection, getDocs } from 'firebase/firestore';
-// Assumindo que você tem o arquivo de configuração do Firebase acessível aqui
 import { db } from "../../../../firebaseConfig"; 
 
 
@@ -450,9 +449,9 @@ const styles = StyleSheet.create({
   left: 0, 
   right: 0, 
   zIndex: 10,
-  marginBottom: 15,
+  marginBottom: 10,
   paddingHorizontal: width * 0.06,
-  paddingTop: width * 0.08,
+  paddingTop: width * 0.03,
   },
   addPetBanner: {
     width: width * 0.9,
@@ -524,12 +523,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   adoptOption: {
-    width: width * 0.3,
-    height: width * 0.4,
+    width: width * 0.32,
+    height: width * 0.42,
     borderRadius: 15,
     overflow: 'hidden',
     shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -651,9 +650,11 @@ const styles = StyleSheet.create({
     paddingVertical: width * 0.025,
   },
   establishmentLogo: {
-    width: '80%',
-    height: '80%',
+    width: '100%',
+    height: '100%',
     resizeMode: 'contain',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   establishmentInfo: {
     flex: 1,

@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
-    height: width * 0.3,
+    height: width * 0.33,
     width: width * 0.85,
     alignSelf: 'center',
     justifyContent: 'center'
