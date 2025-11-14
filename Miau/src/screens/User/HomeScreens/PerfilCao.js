@@ -143,6 +143,9 @@ const startChat = async () => {
     const ongId = ongData.id;
     const userDisplayName = userData?.nomeCompleto || 'Adotante';
     const userPhoto = userData?.fotoPerfil || 'URL_DEFAULT_USER'; 
+    const petName = pet.nome || 'o Pet';
+    
+    // Cria um ID de chat determinístico e ordenado
     const participants = [currentUserId, ongId].sort();
     const finalChatId = `${participants[0]}_${participants[1]}_ongs`;
 
@@ -151,43 +154,65 @@ const startChat = async () => {
     try {
         const chatRef = doc(db, "chat", finalChatId);
         const chatSnap = await getDoc(chatRef);
-        if (!chatSnap.exists()) {
+        
+        // 1. CHAT JÁ EXISTE: APENAS NAVEGA
+        if (chatSnap.exists()) {
+            console.log("Chat já existe, navegando...");
+            // Opcional: Se o chat já existe, você pode querer zerar o contador do lado do usuário
+            // await updateDoc(chatRef, { naoLidasPerson: 0 }); 
+            
+            Alert.alert("Atenção", `Você já tem uma conversa em andamento sobre ${petName} com ${ongData.nome}.`);
+            
+        } else {
+            // 2. CHAT NÃO EXISTE: CRIA O NOVO CHAT + PRIMEIRA MENSAGEM
+
+            const initialMessage = `Olá! Gostaria de saber mais sobre a adoção do(a) ${petName}.`;
+
             const newChatData = {
                 participantes: [currentUserId, ongId],
                 tipo: "ongs",
+                
+                // Dados do Outro Lado (ONG)
                 nomeOutroLado: ongData.nome || pet.ownerName || 'ONG Desconhecida', 
                 fotoOutroLado: ongData.logo || 'URL_DEFAULT_ONG',
+                
+                // Dados do Usuário (para a ONG saber quem você é)
                 nomeUsuario: userDisplayName,
                 fotoUsuario: userPhoto,
                 
-                ultima_msg: `Gostaria de saber mais sobre a adoção do(a) ${pet.nome}.`,
+                ultima_msg: initialMessage,
                 ultima_alz: serverTimestamp(),
-                naoLidas: 1,
-                aba: 'para_adotar',
+                
+                // Contadores específicos de não lidas (CONFORME CORRIGIDO)
+                naoLidasPerson: 0, // Usuário que envia
+                naoLidasOng: 1,    // ONG que recebe
+                
+                aba: 'para_adotar', // Define a aba inicial na ONG
             };
             
+            // Cria o documento do chat
             await setDoc(chatRef, newChatData);
+            
+            // Adiciona a primeira mensagem na subcoleção 'mensagens'
             const msgsRef = collection(db, "chat", finalChatId, "mensagens");
             await addDoc(msgsRef, {
-                texto: newChatData.ultima_msg,
+                texto: initialMessage,
                 remetenteId: currentUserId,
                 timestamp: serverTimestamp(),
             });
             
             Alert.alert("Sucesso", `Conversa com ${ongData.nome} iniciada!`);
-
         }
         navigation.navigate('ChatConversa', {
             chatId: finalChatId,
-            data: { 
-                nomeOutroLado: ongData.nome || pet.ownerName, 
-                fotoOutroLado: ongData.logo 
-            }
+            targetUser: ongId, 
+            targetName: ongData.nome || pet.ownerName,
+            targetImage: ongData.logo 
         });
 
     } catch (error) {
         console.error("Erro ao iniciar chat:", error);
-        Alert.alert("Erro", "Não foi possível iniciar a conversa. Tente novamente.");
+        Alert.alert("Erro", "Não foi possível iniciar a conversa. Verifique as permissões do Firebase.");
     } finally {
         setIsChatting(false);
     }

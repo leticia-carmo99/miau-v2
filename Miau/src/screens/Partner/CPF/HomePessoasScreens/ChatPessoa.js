@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,15 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
-import { usePerson } from "../NavigationPessoa/PersonContext";
+import { TabView } from 'react-native-tab-view';
 import {
   useFonts,
   JosefinSans_400Regular,
   JosefinSans_700Bold,
 } from '@expo-google-fonts/josefin-sans';
+import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
+import { db } from "../../../../../firebaseConfig";
+import { usePerson } from "../NavigationPessoa/PersonContext";
 
 const { width } = Dimensions.get('window');
 
@@ -38,25 +41,113 @@ const COLORS = {
   offWhite: '#f8f8f8',
 };
 
-const conversationsData = [
 
-  {
-    id: '1',
-    name: 'Juliana',
-    message: 'Digitando...',
-    time: '11:08',
-    unread: 2,
-    image: 'https://placehold.co/50x50/9156D1/FFFFFF?text=FS',
-    section: 'recent',
-  },
-]
+function usePersonChats(personData) {
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-const renderChatItem = ({ item, navigationRef }) => (
+  useEffect(() => {
+    if (!personData?.uid) {
+      setLoading(false);
+      return;
+    }
+
+    const chatsRef = collection(db, "chat");
+
+    const q = query(
+      chatsRef,
+      where("participantes", "array-contains", personData.uid),
+      orderBy("ultima_alz", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const fetched = [];
+
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const chatId = docSnap.id;
+        const outroId = data.participantes?.find((p) => p !== personData.uid);
+
+        let outroPerfil = null;
+
+if (outroId) {
+          try { // <-- NOVO: Começa o bloco try
+            const colecoes = ["usuarios"];
+            for (let col of colecoes) {
+              const ref = doc(db, col, outroId);
+              const snap = await getDoc(ref);
+              if (snap.exists()) {
+                outroPerfil = snap.data();
+                console.log(`[DEBUG] Perfil do usuário ${outroId} encontrado.`); // <-- NOVO LOG
+                break;
+              }
+            }
+          } catch (error) { // <-- NOVO: Bloco catch
+            console.error(`[ERRO CRÍTICO] Falha ao buscar perfil ${outroId} para o chat ${chatId}:`, error); // <-- LOG DE ERRO CRÍTICO
+          }
+        }
+
+const nome = outroPerfil?.nome || data.nomeOutroLado || "Usuário";
+const foto = outroPerfil?.profileImage || data.fotoOutroLado || null;
+
+let timeString = "...";
+
+try {
+  if (data.ultima_alz?.toDate) {
+    // Caso seja Timestamp REAL
+    timeString = data.ultima_alz.toDate().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else if (typeof data.ultima_alz === "string") {
+    // Caso seja string → converte
+    const date = new Date(data.ultima_alz);
+    if (!isNaN(date.getTime())) {
+      timeString = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+} catch (e) {
+  console.log("erro convertendo ultima_alz:", e);
+}
+        fetched.push({
+          id: chatId,
+          chatId,
+          name: nome,
+          image: foto,
+          message: data.ultima_msg || "Sem mensagem",
+          time: timeString,
+          unread: data.naoLidas || 0,
+          outroId,
+        });
+      }
+
+      setChats(fetched);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [personData?.uid]);
+
+  return { chats, loading };
+}
+
+
+
+const renderChatItem = ({ item, index, navigationRef }) => (
   <TouchableOpacity
     style={styles.chatItem}
     onPress={() => {
-      navigationRef.navigate('ChatConversa', { user: item });
+navigationRef.navigate("ChatConversa", { 
+        chatId: item.chatId,
+        targetUser: item.outroId,
+        targetName: item.name,
+          targetImage: item.image,
+      })
     }}>
+
     <Image source={{ uri: item.image }} style={styles.avatar} />
     <View style={{ flex: 1 }}>
       <Text style={styles.name}>{item.name}</Text>
@@ -115,7 +206,7 @@ const ListaConversas = ({
 
             <Text style={styles.sectionTitle}>Todas as conversas</Text>
             <FlatList
-              data={filteredData.filter((item) => item.section === 'all')}
+              data={filteredData}
               renderItem={({ item }) =>
                 renderChatItem({ item, navigationRef })
               }
@@ -145,16 +236,28 @@ const ListaConversas = ({
 export default function ChatPessoa() {
   const navigationRef = useNavigation();
   const [search, setSearch] = useState('');
-  const { personData, setPersonData } =  usePerson();
-  const [fontsLoaded] = useFonts({
+const { personData } = usePerson();
+    const personId = personData?.uid;
+const { chats: firebaseChats } = usePersonChats(personData);
+     const [conversas, setConversas] = useState([]);
+
+
+    useEffect(() => {
+        if (firebaseChats.length > 0) {
+            setConversas(firebaseChats);
+        }
+    }, [firebaseChats]);
+
+      const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
   });
   if (!fontsLoaded) return null;
 
-  const filteredData = conversationsData.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+const filteredData = conversas.filter((c) => 
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+
 
   return (
     <SafeAreaProvider>
