@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -71,11 +71,16 @@ const navigation = useNavigation();
     const route = useRoute();
     const { ongData } = useOng();
     const ongId = ongData?.uid; 
-    const { chatId, data } = route.params || {};
+    const { 
+     chatId, 
+     targetName, 
+     targetUser, 
+     targetImage,
+     data
+    } = route.params || {};
 
-    const otherUserName = data?.nomeOutroLado || 'Usuário';
-    const otherUserAvatar = data?.fotoOutroLado || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150';
-
+const otherUserName = targetName || data?.nomeOutroLado || 'Usuário';
+const otherUserAvatar = targetImage || data?.fotoOutroLado || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150';
     const [messages, setMessages] = useState([]); 
     const [inputText, setInputText] = useState('');
     const flatListRef = useRef(null);

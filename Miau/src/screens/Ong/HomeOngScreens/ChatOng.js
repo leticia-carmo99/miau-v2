@@ -73,20 +73,25 @@ function useOngChats(ongData) {
 
         let outroPerfil = null;
 
-        if (outroId) {
-          const colecoes = ["usuarios"];
-          for (let col of colecoes) {
-            const ref = doc(db, col, outroId);
-            const snap = await getDoc(ref);
-            if (snap.exists()) {
-              outroPerfil = snap.data();
-              break;
-            }
-          }
-        }
+if (outroId) {
+          try { // <-- NOVO: Começa o bloco try
+            const colecoes = ["usuarios"];
+            for (let col of colecoes) {
+              const ref = doc(db, col, outroId);
+              const snap = await getDoc(ref);
+              if (snap.exists()) {
+                outroPerfil = snap.data();
+                console.log(`[DEBUG] Perfil do usuário ${outroId} encontrado.`); // <-- NOVO LOG
+                break;
+              }
+            }
+          } catch (error) { // <-- NOVO: Bloco catch
+            console.error(`[ERRO CRÍTICO] Falha ao buscar perfil ${outroId} para o chat ${chatId}:`, error); // <-- LOG DE ERRO CRÍTICO
+          }
+        }
 
-const nome = data.nomeOutroLado || "Usuário";
-const foto = data.fotoOutroLado || null;
+const nome = outroPerfil?.nome || data.nomeOutroLado || "Usuário";
+const foto = outroPerfil?.profileImage || data.fotoOutroLado || null;
 
 let timeString = "...";
 
@@ -136,7 +141,34 @@ try {
 }
 
 
-
+const renderChatItem = ({ item, index, navigationRef }) => (
+  <TouchableOpacity
+    style={styles.chatItem}
+    onPress={() => {
+navigationRef.navigate("ChatEspecificoOng", { 
+        chatId: item.chatId,
+        targetUser: item.outroId,
+        targetName: item.name,
+          targetImage: item.image,
+      })
+    }}>
+    <Image source={{ uri: item.image }} style={styles.avatar} />
+    <View style={{ flex: 1 }}>
+      <Text style={styles.name}>{item.name}</Text>
+      <Text style={styles.message}>{item.message}</Text>
+    </View>
+    <View style={styles.infoContainer}>
+      {item.unread > 0 && (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadText}>
+            {item.unread > 99 ? '99+' : item.unread}
+          </Text>
+        </View>
+      )}
+      <Text style={styles.time}>{item.time}</Text>
+    </View>
+  </TouchableOpacity>
+);
 
 
 const ConversasScreen = ({
@@ -207,22 +239,21 @@ const ConversasScreen = ({
               scrollEnabled={false}
             />
 
-            <Text style={styles.sectionTitle}>Todas as conversas</Text>
-            <FlatList
-              data={filteredData.filter((item) => item.section === 'all')}
-              renderItem={({ item, index }) =>
-                renderChatItem({
-                  item,
-                  index:
-                    filteredData.filter((it) => it.section === 'recent')
-                      .length + index,
-                  navigationRef,
-                })
-              }
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-            />
-          </>
+<Text style={styles.sectionTitle}>Todas as conversas</Text>
+            <FlatList
+              data={filteredData} // Usar a lista completa da aba (filteredData)
+              renderItem={({ item, index }) =>
+                renderChatItem({ item, index, navigationRef })
+              }
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+              ListEmptyComponent={ // Adicionado para dar feedback
+                <Text style={styles.emptySearchText}>
+                  Nenhuma conversa para esta aba
+                </Text>
+              }
+            />
+          </>
         ) : (
           <FlatList
             data={filteredData}
@@ -361,34 +392,6 @@ const handleAddToPosAdocao = (selecionadas) => {
     );
   };
 
-
-const renderChatItem = ({ item, index, navigationRef }) => (
-  <TouchableOpacity
-    style={styles.chatItem}
-    onPress={() => {
-        navigation.navigate("ChatConversa", {
-        chatId: item.chatId,
-        targetUser: item.outroId,
-        targetName: item.name,
-      })
-    }}>
-    <Image source={{ uri: item.image }} style={styles.avatar} />
-    <View style={{ flex: 1 }}>
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.message}>{item.message}</Text>
-    </View>
-    <View style={styles.infoContainer}>
-      {item.unread > 0 && (
-        <View style={styles.unreadBadge}>
-          <Text style={styles.unreadText}>
-            {item.unread > 99 ? '99+' : item.unread}
-          </Text>
-        </View>
-      )}
-      <Text style={styles.time}>{item.time}</Text>
-    </View>
-  </TouchableOpacity>
-);
 
   const renderScene = ({ route }) => {
     switch (route.key) {
