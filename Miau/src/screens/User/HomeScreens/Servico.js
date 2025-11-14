@@ -25,6 +25,7 @@ import {
   JosefinSans_300Light,
 } from '@expo-google-fonts/josefin-sans';
 import { Nunito_700Bold, Nunito_400Regular } from '@expo-google-fonts/nunito';
+import { useUser } from "../NavigationUser/UserContext";
 
 // Mock de assets
 import Back from '../assets/FotosInicial/Back.png';
@@ -123,6 +124,7 @@ export default function ServicoDetalhes() {
   const [selectedRating, setSelectedRating] = useState(0); // Estado para a nota selecionada
   const nota = 4.5; 
   const mockImage = require('../assets/FotosMapa/Nicolas.png'); 
+   const { userData, setUserData } = useUser();
 
   // Carregamento de fontes
   const [fontsLoaded] = useFonts({
@@ -180,10 +182,6 @@ export default function ServicoDetalhes() {
     );
   }
   
-  // =========================================================
-  // ✅ 3. VARIÁVEIS DE DADOS
-  // =========================================================
-  // Mapeamento dos campos do Firestore (prestador)
   const { 
     nome = 'Serviço Não Informado', 
     email = 'contato@servico.com', // Este campo pode não existir em 'prestador'
@@ -194,32 +192,60 @@ export default function ServicoDetalhes() {
     logoPerfil = mockImage // Usando o nome correto do campo da imagem
   } = servicoData; 
 
-  const handleChatPress = () => {
-    navigation.navigate('ChatConversa', { 
-      targetUser: uid, 
-      targetName: nome 
-    });
-  };
-  
-  // 💡 NOVA FUNÇÃO: Salvar avaliação
+const handleChatPress = async () => {
+
+  if (!userData) return;
+
+  const chatId = `${userData.uid}_${uid}`; // uid = prestadorId
+
+  const chatRef = doc(db, "chat", chatId);
+  const chatSnap = await getDoc(chatRef);
+
+  if (!chatSnap.exists()) {
+    const prestadorRef = doc(db, "prestador", uid);
+    const prestadorSnap = await getDoc(prestadorRef);
+    const prestador = prestadorSnap.data();
+
+await setDoc(chatRef, {
+  participantes: [userData.uid, uid], // ← AGORA SIM
+  tipo: "prestador",
+
+  nome_usuario: userData.nome || "Usuário",
+  nome_prestador: prestador.nome || "Prestador",
+
+  foto_prestador: prestador.logoPerfil?.toString() || null,
+  foto_usuario: userData.foto || null,
+
+  ultima_msg: "",
+  ultima_alz: serverTimestamp()
+});
+
+
+
+  } else {
+await updateDoc(chatRef, {
+  ultima_alz: serverTimestamp()
+});
+
+  }
+
+  navigation.navigate("ChatConversa", {
+    targetUser: uid,
+    targetName: nome
+  });
+};
+
   const handleSaveRating = () => {
       if (selectedRating === 0) {
           Alert.alert("Atenção", "Por favor, selecione uma nota antes de salvar.");
           return;
       }
       
-      // Aqui você implementaria a lógica para salvar a nota no Firestore
-      // Exemplo: Salvar na subcoleção 'avaliacoes' do documento 'prestador/uid'
       console.log(`Salvando avaliação de ${selectedRating} estrelas para o prestador ${uid}`);
       
       Alert.alert("Sucesso", `Obrigado! Sua nota de ${selectedRating} estrelas foi registrada.`);
-      // TODO: Implementar addDoc/setDoc no Firestore aqui
   };
 
-  // =========================================================
-  // ✅ 4. RETURN FINAL (JSX)
-  // =========================================================
-  
   return (
     <ScrollView style={{flex:1, backgroundColor: COLORS.white}}>
       <SafeAreaView style={styles.container}>

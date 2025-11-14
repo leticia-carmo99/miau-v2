@@ -20,7 +20,7 @@ import {
   JosefinSans_400Regular,
   JosefinSans_700Bold,
 } from '@expo-google-fonts/josefin-sans';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from "../../../../firebaseConfig";
 import { useOng } from '../NavigationOng/OngContext';
 
@@ -45,92 +45,99 @@ const COLORS = {
 };
 
 
-function useOngChats(ongId, type = "ongs") {
-    const [chats, setChats] = useState([]);
-    const [loading, setLoading] = useState(true);
+function useOngChats(ongData) {
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (!ongId) {
-            setLoading(false);
-            return;
+  useEffect(() => {
+    if (!ongData?.uid) {
+      setLoading(false);
+      return;
+    }
+
+    const chatsRef = collection(db, "chat");
+
+    const q = query(
+      chatsRef,
+      where("participantes", "array-contains", ongData.uid),
+      orderBy("ultima_alz", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const fetched = [];
+
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const chatId = docSnap.id;
+        const outroId = data.participantes?.find((p) => p !== ongData.uid);
+
+        let outroPerfil = null;
+
+        if (outroId) {
+          const colecoes = ["usuarios"];
+          for (let col of colecoes) {
+            const ref = doc(db, col, outroId);
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+              outroPerfil = snap.data();
+              break;
+            }
+          }
         }
 
-        const chatsRef = collection(db, "chat");
-        const q = query(
-            chatsRef,
-            where("participantes", "array-contains", ongId),
-            where("tipo", "==", type),
-            orderBy("ultima_alz", "desc") // Ordena pelo mais recente
-        );
+const nome = data.nomeOutroLado || "Usuário";
+const foto = data.fotoOutroLado || null;
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedChats = snapshot.docs.map(doc => {
-                const data = doc.data();
-                const chatData = {
-                    id: doc.id,
-                    ...data,
-                };
-                const otherParticipantId = data.participantes.find(id => id !== ongId);
+let timeString = "...";
 
-                const timeString = data.ultima_alz?.toDate()?.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                }) || '...';
-                return {
-                    id: doc.id,
-                    name: data.nomeOutroLado || "Usuário", // Nome do adotante
-                    image: data.fotoOutroLado || "URL_DEFAULT", // Foto do adotante
-                    message: data.ultima_msg || "Sem mensagem",
-                    time: timeString,
-                    unread: data.naoLidas || 0,
-                    aba: data.aba || 'para_adotar', 
-                    chatId: doc.id,
-                    user: { name: data.nomeOutroLado, image: data.fotoOutroLado },
-                };
-            });
-            setChats(fetchedChats);
-            setLoading(false);
-        }, (error) => {
-            console.error("Erro ao buscar chats da ONG:", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [ongId, type]);
-
-    return { chats, loading };
+try {
+  if (data.ultima_alz?.toDate) {
+    // Caso seja Timestamp REAL
+    timeString = data.ultima_alz.toDate().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else if (typeof data.ultima_alz === "string") {
+    // Caso seja string → converte
+    const date = new Date(data.ultima_alz);
+    if (!isNaN(date.getTime())) {
+      timeString = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+} catch (e) {
+  console.log("erro convertendo ultima_alz:", e);
 }
 
 
-const renderChatItem = ({ item, index, navigationRef }) => (
-  <TouchableOpacity
-    style={styles.chatItem}
-    onPress={() => {
-      navigationRef.navigate('ChatEspecifico', {
-       chatId: item.chatId || item.id, 
-                    data: {
-                        nomeOutroLado: item.name,
-                        fotoOutroLado: item.image,
-                    }
+        fetched.push({
+          id: chatId,
+          chatId,
+          name: nome,
+          image: foto,
+          message: data.ultima_msg || "Sem mensagem",
+          time: timeString,
+          unread: data.naoLidas || 0,
+          aba: data.aba || "para_adotar",
+          outroId,
+        });
+      }
+
+      setChats(fetched);
+      setLoading(false);
     });
-    }}>
-    <Image source={{ uri: item.image }} style={styles.avatar} />
-    <View style={{ flex: 1 }}>
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.message}>{item.message}</Text>
-    </View>
-    <View style={styles.infoContainer}>
-      {item.unread > 0 && (
-        <View style={styles.unreadBadge}>
-          <Text style={styles.unreadText}>
-            {item.unread > 99 ? '99+' : item.unread}
-          </Text>
-        </View>
-      )}
-      <Text style={styles.time}>{item.time}</Text>
-    </View>
-  </TouchableOpacity>
-);
+
+    return () => unsubscribe();
+  }, [ongData?.uid]);
+
+  return { chats, loading };
+}
+
+
+
+
 
 const ConversasScreen = ({
   search,
@@ -252,9 +259,12 @@ const ConversasScreen = ({
 
 export default function ChatOng() {
 const navigationRef = useNavigation();
+
+
 const { ongData } = useOng();
     const ongId = ongData?.uid;
-    const { chats: firebaseChats, loading: loadingChats } = useOngChats(ongId, "ongs");
+const { chats: firebaseChats } = useOngChats(ongData);
+
     const [conversas, setConversas] = useState([]);
 
     useEffect(() => {
@@ -266,6 +276,8 @@ const { ongData } = useOng();
   const [search, setSearch] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
 
+
+
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [routes] = useState([
@@ -273,10 +285,21 @@ const { ongData } = useOng();
     { key: 'pos_adocao', title: 'Pós-adoção' },
   ]);
 
+      const [fontsLoaded] = useFonts({
+    JosefinSans_400Regular,
+    JosefinSans_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
+
 const getFilteredByAba = (abaKey) => {
-        return conversas
-            .filter((c) => c.aba === abaKey)
-            .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+return conversas
+  .filter((c) => {
+if (abaKey === "para_adotar") return !c.aba || c.aba === "para_adotar";
+return c.aba === "pos_adocao";
+  })
+  .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+
     };
 
 const handleAddToPosAdocao = (selecionadas) => {
@@ -288,15 +311,15 @@ const handleAddToPosAdocao = (selecionadas) => {
         setIndex(1);
     };
 
-    const conversasParaAdotar = conversas.filter((c) => c.aba === 'para_adotar');
+    const conversasParaAdotar = conversas.filter(
+  (c) => !c.aba || c.aba === "para_adotar"
+);
+
   const ConversasSceneWrapper = ({ isPosAdocao }) => {
     const dataForThisTab = isPosAdocao
       ? getFilteredByAba('pos_adocao')
       : getFilteredByAba('para_adotar');
 
-      if (loadingChats || !fontsLoaded) {
-        return <View style={styles.loadingContainer}><Text>Carregando chats...</Text></View>; 
-    }
 
     
     if (isPosAdocao && dataForThisTab.length === 0) {
@@ -338,6 +361,35 @@ const handleAddToPosAdocao = (selecionadas) => {
     );
   };
 
+
+const renderChatItem = ({ item, index, navigationRef }) => (
+  <TouchableOpacity
+    style={styles.chatItem}
+    onPress={() => {
+        navigation.navigate("ChatConversa", {
+        chatId: item.chatId,
+        targetUser: item.outroId,
+        targetName: item.name,
+      })
+    }}>
+    <Image source={{ uri: item.image }} style={styles.avatar} />
+    <View style={{ flex: 1 }}>
+      <Text style={styles.name}>{item.name}</Text>
+      <Text style={styles.message}>{item.message}</Text>
+    </View>
+    <View style={styles.infoContainer}>
+      {item.unread > 0 && (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadText}>
+            {item.unread > 99 ? '99+' : item.unread}
+          </Text>
+        </View>
+      )}
+      <Text style={styles.time}>{item.time}</Text>
+    </View>
+  </TouchableOpacity>
+);
+
   const renderScene = ({ route }) => {
     switch (route.key) {
       case 'para_adotar':
@@ -349,11 +401,6 @@ const handleAddToPosAdocao = (selecionadas) => {
     }
   };
 
-  const [fontsLoaded] = useFonts({
-    JosefinSans_400Regular,
-    JosefinSans_700Bold,
-  });
-  if (!fontsLoaded) return null;
 
   const renderTabBar = () => (
     <View style={styles.tabBar}>

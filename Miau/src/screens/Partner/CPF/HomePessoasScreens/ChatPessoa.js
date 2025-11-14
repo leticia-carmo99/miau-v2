@@ -13,6 +13,7 @@ import {
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { usePerson } from "../NavigationPessoa/PersonContext";
 import {
   useFonts,
   JosefinSans_400Regular,
@@ -48,34 +49,7 @@ const conversationsData = [
     image: 'https://placehold.co/50x50/9156D1/FFFFFF?text=FS',
     section: 'recent',
   },
-  {
-    id: '2',
-    name: 'Tainá',
-    message: 'Posso ir buscar as 15h??',
-    time: '10:55',
-    unread: 1,
-    image: 'https://placehold.co/50x50/FFAB36/FFFFFF?text=CA',
-    section: 'recent',
-  },
-  {
-    id: '3',
-    name: 'Karina',
-    message: 'O pet está bem?',
-    time: '09:42',
-    unread: 5,
-    image: 'https://placehold.co/50x50/333333/FFFFFF?text=JP',
-    section: 'recent',
-  },
-  {
-    id: '4',
-    name: 'Marcos Rocha',
-    message: 'Pode ser sim!',
-    time: 'Ontem',
-    unread: 0,
-    image: 'https://placehold.co/50x50/666666/FFFFFF?text=MR',
-    section: 'all',
-  },
-];
+]
 
 const renderChatItem = ({ item, navigationRef }) => (
   <TouchableOpacity
@@ -171,7 +145,7 @@ const ListaConversas = ({
 export default function ChatPessoa() {
   const navigationRef = useNavigation();
   const [search, setSearch] = useState('');
-
+  const { personData, setPersonData } =  usePerson();
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,

@@ -5,9 +5,11 @@ import { DrawerContentScrollView} from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import Tabs from './MainTabsPessoa';
 import { useNavigation } from '@react-navigation/native';
-import { useContext } from "react";
-import { PersonContext } from "./PersonContext";
+import { usePerson } from "./PersonContext";
+
 import Perfil from '../Images/Perfil.png';
+import { signOut } from "firebase/auth";
+import { auth, db } from "../../../../../firebaseConfig"; 
 
 import Sobre from '../HomePessoasScreens/SobreApp';
 
@@ -30,14 +32,15 @@ function ConfiguracoesScreen() {
 
 export default function MainDrawer() {
   const navigation = useNavigation();
-  const { personData } = useContext(PersonContext); 
+  const { personData, setPersonData } =  usePerson();
  const nome = personData?.nome || "Prestador";
-const pic = personData?.logoImage;
+ 
+const pic = personData?.logoPerfil || '../../../User/assets/incognita.jpg';
 
   const handleLogout = async () => {
     try {
         await signOut(auth);
-        setUserData(null);
+      setPersonData(null);
         navigation.navigate('InitialStack', { screen: 'Welcome' }); 
     } catch (error) {
         console.error("Erro ao fazer logout:", error);
@@ -54,7 +57,7 @@ const pic = personData?.logoImage;
 
             onPress={() => props.navigation.navigate('HomeWithTabs', { screen: 'PerfilTab' })}
           >
-            <Image source={pic} style={styles.profileImage} />
+                        <Image source={pic} style={styles.profileImage} />
             <Text style={styles.profileName}>{nome}</Text>
             <Text style={styles.viewProfileText}>Ver perfil</Text>
           </TouchableOpacity>

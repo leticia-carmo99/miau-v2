@@ -18,7 +18,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { updateDoc, doc } from 'firebase/firestore'; 
 import { db } from "../../../../../firebaseConfig"; 
-import { usePerson } from "../NavigationPessoa/PersonContext"; 
+import { usePerson } from "../NavigationPessoa/PersonContext";
 
 
 import {
@@ -60,7 +60,7 @@ const Checkbox = ({ label, isSelected, onValueChange }) => (
 
 export default function PerfilPessoa() {
   const navigation = useNavigation();
-  const { personData, setPersonData } = useContext(PersonContext); 
+  const { personData, setPersonData } =  usePerson();
   const [isEditing, setIsEditing] = useState(false);
   const [initialPersonData, setInitialPersonData] = useState({});
   
@@ -74,6 +74,7 @@ export default function PerfilPessoa() {
   });
 
   const [timeError, setTimeError] = useState('');
+  const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -94,7 +95,6 @@ useEffect(() => {
             ...defaultStructure,
             ...personData,
             diasAbertos: { ...defaultStructure.diasAbertos, ...(personData.diasAbertos || {}) },
-            redes: { ...defaultStructure.redes, ...(personData.redes || {}) },
         };
         if (JSON.stringify(sanitizedData) !== JSON.stringify(personData)) {
             setPersonData(sanitizedData);
@@ -107,11 +107,11 @@ useEffect(() => {
 
   
 useEffect(() => {
-    if (businessData && Object.keys(businessData).length > 0) {
-      setInitialBusinessData({ ...businessData }); 
+    if (personData && Object.keys(personData).length > 0) {
+      setInitialPersonData({ ...personData }); 
       setIsGalleryExpanded(true); 
     }
-  }, [businessData]);
+  }, [personData]);
 
   const openImageModal = (image) => {
     setSelectedImage(image);
@@ -125,28 +125,19 @@ useEffect(() => {
 
 
   const pickImage = async (imageType) => {
-    const allowsMultipleSelection = imageType === 'gallery';
-
+ 
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: !allowsMultipleSelection,
       aspect: imageType === 'headerImage' ? [16, 9] : [1, 1],
       quality: 0.2,
-      allowsMultipleSelection: allowsMultipleSelection,
+      allowsEditing: true,
+      allowsMultipleSelection: false,
     });
 
     if (!result.canceled) {
-      if (allowsMultipleSelection && result.assets) {
-        const newImageUris = result.assets.map((asset) => asset.uri);
-        setPersonData((prev) => ({
-          ...prev,
-          fotos: [...prev.fotos, ...newImageUris],
-        }));
-      } else if (result.assets && result.assets.length > 0) {
         const newImageUri = result.assets[0].uri;
         handleInputChange(imageType, { uri: newImageUri });
       }
-    }
   };
 
   const validateTime = (time) => {
@@ -192,18 +183,11 @@ let dataToUpdate = { ...personData };
         } else if (typeof dataToUpdate.logoPerfil !== 'string') {
             dataToUpdate.logoPerfil = '';
         }
-        
-        dataToUpdate.fotos = fotosArraySeguro.map(foto => {
-            if (typeof foto === 'object' && foto.uri) {
-                return foto.uri;
-            }
-            return foto;
-        }).filter(uri => typeof uri === 'string');
 
         const docRef = doc(db, "prestador", userId);
         await updateDoc(docRef, dataToUpdate);
         setPersonData(dataToUpdate);
-        setInitialBusinessData(dataToUpdate); 
+        setInitialPersonData(dataToUpdate); 
         
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
         setIsEditing(false);
@@ -336,7 +320,7 @@ const formatOpenDays = () => {
                   <Text style={styles.photoEditButtonText}>Trocar Fundo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => pickImage('profileImage')}
+                  onPress={() => pickImage('logoPerfil')}
                   style={styles.photoEditButton}>
                   <Text style={styles.photoEditButtonText}>Trocar Foto</Text>
                 </TouchableOpacity>

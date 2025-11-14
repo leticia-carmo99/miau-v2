@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useContext } from "react";
-import { PersonContext } from "../NavigationPessoa/PersonContext";
+import { usePerson } from "../NavigationPessoa/PersonContext";
 
 import {
   useFonts,
@@ -51,7 +50,7 @@ const COLORS = {
 
 export default function HomePessoa() {
   const navigation = useNavigation();
-  const { personData } = useContext(PersonContext); 
+  const { personData, setPersonData } =  usePerson();
   const nome = personData?.nome || "Prestador";
   const pic = personData?.logoPerfil || Perfil;
   const description = personData?.sobre || "Produtos para cachorros, gatos e diversos outros pets.";

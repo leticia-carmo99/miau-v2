@@ -20,6 +20,7 @@ import {
   JosefinSans_700Bold,
 } from '@expo-google-fonts/josefin-sans';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { usePerson } from "../NavigationPessoa/PersonContext";
 import PatinhaBranca from '../Images/LogoMiniPretoBranco.png';
 
 const { width } = Dimensions.get('window');
@@ -44,7 +45,7 @@ const COLORS = {
 export default function ChatEspecificoPessoa() {
   const navigation = useNavigation();
   const route = useRoute();
-
+  const { personData, setPersonData } =  usePerson();
   const INPUT_BAR_HEIGHT = 70;
 
   const [messages, setMessages] = useState([

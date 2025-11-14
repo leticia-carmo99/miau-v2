@@ -52,6 +52,7 @@ const COLORS = {
 function useChats(uid, tipo) {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
+   const { userData, setUserData } = useUser();
 
   const fetchProfileData = async (outroLadoId, chatTipo) => {
     let profileData = null;
@@ -88,8 +89,7 @@ function useChats(uid, tipo) {
     }
     
     if (profileData) {
-      // ✅ CORREÇÃO DO NOME: Incluindo 'nomeOng' e removendo 'razaoSocial' se não usa
-      const nome = profileData.nome || profileData.nomeOng || profileData.nomeFantasia || "Usuário Não Nomeado";
+      const nome = profileData.nome || profileData.nomeOng || profileData.nome || "Usuário Não Nomeado";
       const profileImageField = profileData.logoPerfil || profileData.foto || profileData.logo;
       const foto = profileImageField || 'https://placehold.co/150x150/FFAB36/FFFFFF?text=PET+CARE';
       
@@ -122,8 +122,7 @@ function useChats(uid, tipo) {
 
     const q = query(
       collection(db, "chat"),
-      where("participantes", "array-contains", uid),
-      where("tipo", "==", tipo), 
+  where("participantes", "array-contains", userData.uid),
       orderBy("ultima_alz", "desc")
     );
     
