@@ -155,31 +155,19 @@ const startChat = async () => {
         const chatRef = doc(db, "chat", finalChatId);
         const chatSnap = await getDoc(chatRef);
         
-        // 1. CHAT JÁ EXISTE: APENAS NAVEGA
         if (chatSnap.exists()) {
             console.log("Chat já existe, navegando...");
-            // Opcional: Se o chat já existe, você pode querer zerar o contador do lado do usuário
-            // await updateDoc(chatRef, { naoLidasPerson: 0 }); 
-            
             Alert.alert("Atenção", `Você já tem uma conversa em andamento sobre ${petName} com ${ongData.nome}.`);
             
         } else {
-            // 2. CHAT NÃO EXISTE: CRIA O NOVO CHAT + PRIMEIRA MENSAGEM
-
             const initialMessage = `Olá! Gostaria de saber mais sobre a adoção do(a) ${petName}.`;
-
             const newChatData = {
                 participantes: [currentUserId, ongId],
                 tipo: "ongs",
-                
-                // Dados do Outro Lado (ONG)
                 nomeOutroLado: ongData.nome || pet.ownerName || 'ONG Desconhecida', 
                 fotoOutroLado: ongData.logo || 'URL_DEFAULT_ONG',
-                
-                // Dados do Usuário (para a ONG saber quem você é)
                 nomeUsuario: userDisplayName,
                 fotoUsuario: userPhoto,
-                
                 ultima_msg: initialMessage,
                 ultima_alz: serverTimestamp(),
                 

@@ -12,7 +12,6 @@ import {
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
-
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../../firebaseConfig";
@@ -30,9 +29,7 @@ export default function CadUser() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [tipoUsuario, setTipoUsuario] = useState('comum'); // Estado para o tipo de usuário
-
-  // 💡 HOOK DE FONTES ADICIONADO
+  const [tipoUsuario, setTipoUsuario] = useState('comum'); 
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -49,16 +46,11 @@ export default function CadUser() {
       Alert.alert("Ops!", "As senhas não coincidem. Por favor, verifique.");
       return;
     }
-    
-    // Você pode adicionar mais validações aqui (ex: email válido, senha forte)
 
     try {
-      // 2. Cria o usuário no Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
       const user = userCredential.user;
 
-      // 3. Salva os dados no Firestore, incluindo o tipo de usuário
-      // O ID do documento é o mesmo ID do usuário do Firebase Auth (user.uid)
       const userDocRef = doc(db, "usuarios", user.uid);
       
       await setDoc(userDocRef, {
@@ -70,11 +62,9 @@ export default function CadUser() {
 
       Alert.alert("Sucesso!", "Seu cadastro foi realizado com sucesso!");
       
-      // Navega para a tela principal (o UserContext já vai ter os dados)
       navigation.navigate('AboutUs1');
 
     } catch (error) {
-      // Lidar com erros do Firebase
       let errorMessage = "Erro no cadastro. Tente novamente mais tarde.";
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = 'Este email já está em uso!';
