@@ -182,7 +182,7 @@ const startChat = async () => {
             await setDoc(chatRef, newChatData);
             
             // Adiciona a primeira mensagem na subcoleção 'mensagens'
-            const msgsRef = collection(db, "chat", finalChatId, "mensagens");
+            const msgsRef = collection(db, "chat", finalChatId, "msg");
             await addDoc(msgsRef, {
                 texto: initialMessage,
                 remetenteId: currentUserId,

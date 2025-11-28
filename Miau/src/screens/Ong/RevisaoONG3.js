@@ -13,7 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; 
 import { db } from '../../../firebaseConfig';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useFonts, JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 import emailjs from '@emailjs/react-native'; 
 
@@ -35,6 +35,8 @@ export default function RevisaoONG3() {
 
   const allFormData = route.params?.allFormData || {};
   const formONG3Data = allFormData.ong3 || {};
+  const formONG2Data = allFormData.ong2 || {};
+  const formONG1Data = allFormData.ong1 || {};
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,7 +51,7 @@ const imageToBase64 = async (uri) => {
     if (!uri) return null;
     try {
         const base64Data = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
+            encoding: 'base64', 
         });
         return base64Data;
     } catch (error) {
@@ -58,7 +60,6 @@ const imageToBase64 = async (uri) => {
     }
 };
 
-  // -- ENVIAR EMAIL --
   const sendApprovalEmail = async (data, userUid) => {
     if (!EMAILJS_USER_ID || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
       console.error("Configurações do EmailJS ausentes. Verifique as constantes.");
@@ -99,19 +100,17 @@ const imageToBase64 = async (uri) => {
     }
   };
 
-  const handleFinalize = async () => {
+
+const handleFinalize = async () => {
     setIsLoading(true);
-
-    const email = allFormData.ong1?.emailContato;
-    const senha = allFormData.ong1?.senha;
-    const cnpjCpf = allFormData.ong1?.cnpjCpf; 
-
+    const email = formONG1Data?.emailContato;
+    const senha = formONG1Data?.senha;
+    const cnpjCpf = formONG1Data?.cnpjCpf; 
     if (!email || !senha || !cnpjCpf) {
         Alert.alert("Erro", "Dados essenciais (e-mail, senha ou CNPJ) não encontrados. Retorne e verifique as telas anteriores.");
         setIsLoading(false);
         return;
     }
-
     let userUid = null;
     let userCredential = null;
 
@@ -119,50 +118,48 @@ const imageToBase64 = async (uri) => {
         const auth = getAuth();
         userCredential = await createUserWithEmailAndPassword(auth, email, senha);
         userUid = userCredential.user.uid;
-
         const comprovanteCNPJouEstatutoBase64 = await imageToBase64(formONG3Data.comprovanteCNPJouEstatuto);
         const fotoFachadaEspacoBase64 = await imageToBase64(formONG3Data.fotoFachadaEspaco);
         const documentoResponsavelBase64 = await imageToBase64(formONG3Data.documentoResponsavel);
         const logoInstituicaoBase64 = await imageToBase64(formONG3Data.logoInstituicao);
-
         const finalData = {
-            ...allFormData.ong1,
-            ...allFormData.ong2,
+            ...formONG1Data, 
+            ...formONG2Data, 
             ...formONG3Data,
             uid: userUid,
             dataCadastro: new Date().toISOString(),
-            tipoInstituicao: 'ONG',
-            ativo: false, 
+            ativo: false,
             comprovanteCNPJouEstatuto: comprovanteCNPJouEstatutoBase64,
             fotoFachadaEspaco: fotoFachadaEspacoBase64,
             documentoResponsavel: documentoResponsavelBase64,
             logoInstituicao: logoInstituicaoBase64,
         };
-
         delete finalData.senha;
-
         try {
-          await setDoc(doc(db, 'ongs', userUid), finalData);
-          await sendApprovalEmail(finalData, userUid);
-    } catch (firestoreError) { 
-        console.error("Erro ao salvar no Firestore:", firestoreError);
-        if (userCredential && userCredential.user) {
-            try {
-                await userCredential.user.delete();
-                console.log("Conta Auth deletada com sucesso após falha no Firestore.");
-            } catch (deleteError) {
-                console.error("ERRO GRAVE: Falha ao deletar a conta Auth.", deleteError);
+            await setDoc(doc(db, 'ongs', userUid), finalData);
+            await sendApprovalEmail(finalData, userUid);
+            
+        } catch (firestoreError) { 
+            console.error("Erro ao salvar no Firestore:", firestoreError);
+            if (userCredential && userCredential.user) {
+                try {
+                    await userCredential.user.delete();
+                    console.log("Conta Auth deletada com sucesso após falha no Firestore (ROLLBACK).");
+                } catch (deleteError) {
+                    console.error("ERRO GRAVE: Falha ao deletar a conta Auth.", deleteError);
+                }
             }
+            throw new Error(`Falha ao salvar os dados da ONG no Firestore. Erro: ${firestoreError.message}`);
         }
-        throw new Error(`Falha ao salvar os dados da ONG no Firestore. Erro: ${firestoreError.message}`);
-    }
+        navigation.navigate('FinalizacaoONG', { documento: userUid });
 
-        Alert.alert("Sucesso!", "Seu cadastro foi enviado para análise e será ativado em breve. Você pode logar agora.");
-
+    } catch (error) {
+        console.error("Erro no fluxo principal (Auth/Firestore):", error);
+        Alert.alert("Erro de Cadastro", `Ocorreu um erro ao finalizar o seu cadastro: ${error.message || 'Erro desconhecido'}. Tente novamente.`);
     } finally {
         setIsLoading(false);
     }
-  };
+};
 
   function ImageLine({ label, imageUri }) {
     return (

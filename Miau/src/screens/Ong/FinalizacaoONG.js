@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Modal,
 } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { db } from '../../../firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
