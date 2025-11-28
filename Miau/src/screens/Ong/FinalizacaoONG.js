@@ -42,7 +42,6 @@ const verificarStatusPerfil = async () => {
       }
     } catch (error) {
       console.error("Erro ao verificar o status do perfil:", error);
-      // Não exibe Alert, apenas loga e define como inativo
       setPerfilAtivo(false); 
     } finally {
         setIsLoading(false);

@@ -110,7 +110,6 @@ function useChats(uid, tipo) {
   };
 
 
-
   useEffect(() => {
     // 1. LOG INICIAL
     console.log(`[DEBUG CHAT] Tentando buscar chats. UID: ${uid}, Tipo: ${tipo}`); // <-- ALTERAÇÃO AQUI
@@ -122,7 +121,7 @@ function useChats(uid, tipo) {
 
     const q = query(
       collection(db, "chat"),
-  where("participantes", "array-contains", userData.uid),
+  where("participantes", "array-contains", uid),
       orderBy("ultima_alz", "desc")
     );
     

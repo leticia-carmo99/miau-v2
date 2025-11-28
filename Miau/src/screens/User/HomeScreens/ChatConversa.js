@@ -63,7 +63,7 @@ export default function ChatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   
-  const { targetUser, targetName } = route.params || {}; 
+const { targetUser, targetName, chatId: routeChatId } = route.params || {};
   
   const { userData } = useUser(); 
   const currentUserId = userData?.uid; 
@@ -77,49 +77,26 @@ export default function ChatScreen() {
   const flatListRef = useRef(null);
   const [loading, setLoading] = useState(true);
   
-  const getOrCreateChatId = useCallback((user1, user2) => {
-    const sortedIds = [user1, user2].sort();
-    return sortedIds.join('_');
-  }, []);
 
-
-  // FUNÇÃO PARA GARANTIR A ESTRUTURA BASE DO CHAT
-  const ensureChatDocument = async (id, userA, userB) => {
-      const chatRef = doc(db, "chat", id);
-      const chatSnap = await getDoc(chatRef);
-
-      if (!chatSnap.exists()) {
-          console.log(`Criando novo chat document com ID: ${id}`);
-          await setDoc(chatRef, {
-              participantes: [userA, userB],
-              ultima_msg: "Chat iniciado.",
-              ultima_alz: serverTimestamp(),
-          });
-      }
-      return id;
-  };
   
 // EFEITO PRINCIPAL CORRIGIDO: Implementando um cleanup mais seguro para Promises assíncronas
   useEffect(() => {
-    if (!currentUserId || !friendId) {
-        Alert.alert("Erro de Usuário", "IDs de usuário ou prestador ausentes.");
-        setLoading(false);
-        return;
-    }
+if (!currentUserId || !friendId || !routeChatId) {
+            Alert.alert("Erro", "IDs de chat ou usuário ausentes. Não foi possível iniciar.");
+            setLoading(false);
+            return;
+        }
     
     // Declara a variável de unsubscribe. Começa como undefined.
     let unsubscribe;
 
     const initializeChat = async () => {
         try {
-            const generatedChatId = getOrCreateChatId(currentUserId, friendId);
+            const generatedChatId = routeChatId;
             
-            // 1. GARANTE que o documento pai exista E AGUARDA A CONCLUSÃO
-            await ensureChatDocument(generatedChatId, currentUserId, friendId);
             
             setChatId(generatedChatId); 
             
-            // 2. SOMENTE AGORA, INICIA O LISTENER DE MENSAGENS E ATRIBUI À VARIÁVEL
             const messagesRef = collection(db, "chat", generatedChatId, "msg");
             const q = query(messagesRef, orderBy("createdAt", "asc"));
 
@@ -157,7 +134,7 @@ export default function ChatScreen() {
         }
     }; 
 
-  }, [currentUserId, friendId, getOrCreateChatId]);
+  }, [currentUserId, friendId, routeChatId]);
 
   useEffect(() => {
     if (!loading && flatListRef.current) {
@@ -264,7 +241,7 @@ const convertUriToBase64 = async (uri) => {
           />
           <View style={{ flex: 1, marginLeft: 15 }}>
             <Text style={styles.username}>{name}</Text>
-            <Text style={styles.status}>Online</Text>
+            <Text style={styles.status}>Offline</Text>
           </View>
 
           <Image 

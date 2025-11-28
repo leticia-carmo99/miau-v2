@@ -83,7 +83,7 @@ const [loadingOng, setLoadingOng] = useState(true);
 
 
    const { pet } = route.params || {};
-   const { userData } = useUser(); 
+   const { userData, isLoadingUser } = useUser(); 
   const currentUserId = userData?.uid;
 
 useEffect(() => {
@@ -135,8 +135,14 @@ useEffect(() => {
   }
 
 const startChat = async () => {
-    if (!currentUserId || !pet || !ongData || !ongData.id) {
-        Alert.alert("Atenção", "Os dados da ONG ou do usuário não foram carregados completamente.");
+    if (isLoadingUser || !currentUserId || !pet || !ongData || !ongData.id) {
+if (isLoadingUser) {
+            Alert.alert("Atenção", "Aguarde, os dados do seu perfil ainda estão sendo carregados.");
+        } else if (!currentUserId) {
+            Alert.alert("Erro de Autenticação", "Você precisa estar logado para iniciar um chat.");
+        } else {
+             Alert.alert("Atenção", "Os dados da ONG ou do Pet não foram carregados completamente.");
+        }
         return;
     }
 
@@ -144,8 +150,6 @@ const startChat = async () => {
     const userDisplayName = userData?.nomeCompleto || 'Adotante';
     const userPhoto = userData?.fotoPerfil || 'URL_DEFAULT_USER'; 
     const petName = pet.nome || 'o Pet';
-    
-    // Cria um ID de chat determinístico e ordenado
     const participants = [currentUserId, ongId].sort();
     const finalChatId = `${participants[0]}_${participants[1]}_ongs`;
 
@@ -170,18 +174,11 @@ const startChat = async () => {
                 fotoUsuario: userPhoto,
                 ultima_msg: initialMessage,
                 ultima_alz: serverTimestamp(),
-                
-                // Contadores específicos de não lidas (CONFORME CORRIGIDO)
-                naoLidasPerson: 0, // Usuário que envia
-                naoLidasOng: 1,    // ONG que recebe
-                
-                aba: 'para_adotar', // Define a aba inicial na ONG
+                naoLidasPerson: 0,
+                naoLidasOng: 1,
+                aba: 'para_adotar',
             };
-            
-            // Cria o documento do chat
             await setDoc(chatRef, newChatData);
-            
-            // Adiciona a primeira mensagem na subcoleção 'mensagens'
             const msgsRef = collection(db, "chat", finalChatId, "msg");
             await addDoc(msgsRef, {
                 texto: initialMessage,

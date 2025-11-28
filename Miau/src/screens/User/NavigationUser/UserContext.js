@@ -9,6 +9,7 @@ const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -41,6 +42,7 @@ export const UserProvider = ({ children }) => {
       } else {
         setUserData(null);
       }
+setIsLoadingUser(false);
     });
 
     return () => unsubscribe();
