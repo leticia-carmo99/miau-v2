@@ -7,7 +7,7 @@ import Menu from '../NavigationUser/MenuV1.js';
 import * as ImagePicker from "expo-image-picker"; 
 import { useUser } from "../NavigationUser/UserContext";
 
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from "../../../../firebaseConfig"; 
 
 
@@ -79,41 +79,9 @@ const establishments = [
   },
 ];
 
-const petshops = [
-  {
-    id: 'p1',
-    name: 'Petz',
-    logo: require('../assets/FotosInicial/PetzRedondo.png'),
-    rating: 4.9,
-    distance: '0.4 km',
-    category: 'Pet shop',
-    favoriteId: 'fav_p1',
-  },
-  {
-    id: 'p2',
-    name: 'Pet Point',
-    logo: require('../assets/FotosInicial/PetPoint.png'),
-    rating: 3.9,
-    distance: '0.4 km',
-    category: 'Pet shop',
-    favoriteId: 'fav_p2',
-  },
-  {
-    id: 'p3',
-    name: 'Pet-shop',
-    logo: require('../assets/FotosInicial/PetShop.png'),
-    rating: 4.2,
-    distance: '0.8 km',
-    category: 'Pet shop',
-    favoriteId: 'fav_p3',
-  },
-];
-
 
 export default function Inicial() {
   const navigation = useNavigation();
-  
-  // 💡 NOVO ESTADO PARA ARMAZENAR OS BLOGS DO FIREBASE
   const [blogPostsState, setBlogPostsState] = useState([]);
   const [isLoadingBlogs, setIsLoadingBlogs] = useState(true);
 const [serviceProvidersState, setServiceProvidersState] = useState([]);
@@ -126,7 +94,6 @@ const [serviceProvidersState, setServiceProvidersState] = useState([]);
 
   const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([]);
 
-  // 💡 NOVO useEffect para buscar os blogs do Firestore
   useEffect(() => {
     const fetchBlogPosts = async () => {
       try {
@@ -135,12 +102,10 @@ const [serviceProvidersState, setServiceProvidersState] = useState([]);
         const fetchedBlogs = snapshot.docs.map(doc => {
           const data = doc.data();
           const isCat = data.tipo && (data.tipo.toLowerCase() === 'cat' || data.tipo.toLowerCase() === 'gato');
-          const postType = isCat ? 'cat' : 'dog'; // Mapeia para a string 'cat' ou 'dog' que seu componente usa
+          const postType = isCat ? 'cat' : 'dog'; 
           const postImage = isCat ? BlogGato : BlogCao;
-
-          // Mapeando campos do Firestore para a estrutura esperada pelo seu renderBlogPost
           return {
-            id: doc.id, // ID do documento
+            id: doc.id,
             description: data.titulo || 'Sem título', 
             subtitle: data.subtitulo || 'Sem subtítulo',
             date: data.data || '00.00.0000', 
@@ -162,11 +127,42 @@ const [serviceProvidersState, setServiceProvidersState] = useState([]);
     fetchBlogPosts();
   }, []);
 
+useEffect(() => {
+    const fetchPetshops = async () => {
+        try {
+            const petshopsCollectionRef = collection(db, 'empresa');
+            const q = query(petshopsCollectionRef, where("tipoServico", "==", "Petshop"));
+            
+            const snapshot = await getDocs(q);
+            
+            const fetchedPetshops = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id, 
+                    nome: data.nome || 'Petshop', 
+                    logoEmpresa: data.logoEmpresa || require('../assets/FotosInicial/PetShop.png'), 
+                    nota: data.nota || 4.0,
+                    distance: '3km', 
+                    sobre: data.sobre || 'Pet shop',
+                };
+            });
+
+            setDbPetshops(fetchedPetshops);
+        } catch (error) {
+            console.error("Erro ao buscar petshops do Firestore:", error);
+            Alert.alert("Erro", "Não foi possível carregar a lista de Petshops.");
+        } finally {
+            setIsLoadingPetshops(false);
+        }
+    };
+
+    fetchPetshops();
+}, []); 
+
 
 useEffect(() => {
     const fetchServiceProviders = async () => {
       try {
-        // Referência à coleção 'prestador'
         const prestadorCollectionRef = collection(db, 'prestador');
         const snapshot = await getDocs(prestadorCollectionRef);
         
@@ -249,30 +245,34 @@ useEffect(() => {
   );
 
   const renderPetshop = ({ item }) => {
-  const isFavorited = favoritedPetshopIds.includes(item.favoriteId);
+const logoSource = typeof item.logoEmpresa === 'string' && item.logoEmpresa.startsWith('http') 
+        ? { uri: item.logoEmpresa } 
+        : item.logoEmpresa; 
+    
+    const isFavorited = favoritedPetshopIds.includes(item.favoriteId);
     return (
       <TouchableOpacity
         style={styles.petshopCard}
         onPress={() => navigation.navigate('PetshopUser', { petshopId: item.id })}
       >
         <View style={styles.petshopLogoWrapper}>
-          <Image source={item.logo} style={styles.petshopLogo} />
+          <Image source={item.logoEmpresa} style={styles.petshopLogo} />
         </View>
         <View style={styles.petshopDetails}>
-          <Text style={styles.petshopName}>{item.name}</Text>
+          <Text style={styles.petshopName}>{item.nome}</Text>
           <View style={styles.petshopRatingCategoryDistance}>
             <Ionicons name="star" size={width * 0.035} color={COLORS.yellowStar} />
-            <Text style={styles.petshopRatingText}>{item.rating}</Text>
-            <Text style={styles.petshopCategoryText}> • {item.category}</Text>
+            <Text style={styles.petshopRatingText}>{item.nota}</Text>
+            <Text style={styles.petshopCategoryText}> • {item.sobre}</Text>
             <Text style={styles.petshopDistanceText}> • {item.distance}</Text>
           </View>
         </View>
         <TouchableOpacity>
           <Ionicons
-            name={"heart-outline"}
-            size={width * 0.06}
-            color={COLORS.primaryOrange}
-            style={styles.petshopHeartIcon}
+            name={isFavorited ? "heart" : "heart-outline"}
+            size={width * 0.06}
+            color={COLORS.redHeart}
+            style={styles.petshopHeartIcon}
           />
         </TouchableOpacity>
       </TouchableOpacity>

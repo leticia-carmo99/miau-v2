@@ -320,41 +320,54 @@ if (webViewRef.current) {
 
 const centerCoord = { lat: region.latitude, lon: region.longitude };
 const generateMapScript = (data, center) => {
+    const petshopsJsonString = JSON.stringify(data);
+    
     return `
     (function() {
         if (typeof L === 'undefined' || document.getElementById('map')._leaflet_id) {
-            return; 
+            return; 
         }
         window.activeMarkers = [];
         
         const initialCenter = [${center.lat}, ${center.lon}];
         const zoomLevel = 13;
+        
         window.map = L.map('map').setView(initialCenter, zoomLevel);
         L.tileLayer('${MAP_PROVIDER.url}', {
             attribution: '${MAP_PROVIDER.attribution}',
             maxZoom: 19,
         }).addTo(map);
+
+        // Função para criar o ícone customizado
         window.getCustomIcon = (initials) => L.divIcon({
             className: 'custom-div-icon',
-            html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">'P'</div>',
-            iconSize: [30, 30], 
-            iconAnchor: [15, 30], 
+            // Agora 'P' é uma STRING literal
+            html: '<div style="background-color:#9156D1; width:30px; height:30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">P</div>', // <-- CORRIGIDO
+            iconSize: [30, 30], 
+            iconAnchor: [15, 30], 
         });
+
+        // Função para adicionar marcadores
         window.addMarkers = (petshops) => {
             window.activeMarkers.forEach(marker => map.removeLayer(marker));
             window.activeMarkers = [];
+            
+            // Cria o ícone uma única vez se for sempre 'P'
+            const pIcon = window.getCustomIcon('P'); 
 
             petshops.forEach(p => {
-                const marker = L.marker([p.lat, p.lon], { icon: window.getCustomIcon(P) })
+                const marker = L.marker([p.lat, p.lon], { icon: pIcon }) // <-- CORRIGIDO: Usa a variável de ícone
                 .addTo(map)
                 .bindPopup('<b>' + p.name + '</b><br>' + p.description + '<br>Distância: ' + p.distance);
                 
                 window.activeMarkers.push(marker);
             });
         };
-window.addMarkers(${JSON.stringify(dbPetshops)});
-    })();
-    true;
+        
+        // Injeta os dados e chama a função addMarkers para inicializar os pontos
+        window.addMarkers(${petshopsJsonString}); // <-- Usa o JSON stringify pré-calculado (boa prática)
+    })();
+    true;
 `;
 }
 
@@ -379,13 +392,13 @@ const mapHtmlContent = MapHtmlModule;
           originWhitelist={['*']}
 source={{ html: mapHtmlContent }}
           style={styles.map}
-          onLoadEnd={() => {
-setTimeout(() => {
-        if (webViewRef.current) {
-            webViewRef.current.injectJavaScript(generateMapScript(dbPetshops, centerCoord));
-        }
-    }, 300); 
-          }}
+onLoadEnd={() => {
+    setTimeout(() => {
+        if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(generateMapScript(dbPetshops, centerCoord));
+        }
+    }, 300); 
+}}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           allowFileAccess={true}
