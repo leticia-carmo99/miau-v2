@@ -7,7 +7,7 @@ import Menu from '../NavigationUser/MenuV1.js';
 import * as ImagePicker from "expo-image-picker"; 
 import { useUser } from "../NavigationUser/UserContext";
 
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from "../../../../firebaseConfig"; 
 
 
@@ -82,17 +82,41 @@ const establishments = [
 
 export default function Inicial() {
   const navigation = useNavigation();
+  const { user } = useUser();
   const [blogPostsState, setBlogPostsState] = useState([]);
   const [isLoadingBlogs, setIsLoadingBlogs] = useState(true);
 const [serviceProvidersState, setServiceProvidersState] = useState([]);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
-
+const [favoritedItemIds, setFavoritedItemIds] = useState([]);
+const [dbPetshops, setDbPetshops] = useState([]); 
+  const [isLoadingPetshops, setIsLoadingPetshops] = useState(true);
   const [fontsLoaded] = useFonts({
     Nunito_400Regular,
     Nunito_700Bold,
   });
 
-  const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([]);
+
+
+const fetchUserFavorites = async () => {
+        if (!user || !user.uid) return;
+        
+        const favRef = doc(db, "favoritos", user.uid);
+        
+        try {
+            const favDoc = await getDoc(favRef);
+            if (favDoc.exists()) {
+                const data = favDoc.data();
+                setFavoritedItemIds(data.itensFavoritados || []);
+            } else {
+                setFavoritedItemIds([]);
+            }
+        } catch (error) {
+            console.error("Erro ao buscar favoritos:", error);
+        }
+    };
+    useEffect(() => {
+        fetchUserFavorites();
+    }, [user]);
 
   useEffect(() => {
     const fetchBlogPosts = async () => {
@@ -192,7 +216,6 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    // prevenir flicker do splash
     SplashScreen.preventAutoHideAsync().catch(() => {});
   }, []);
 
@@ -205,6 +228,34 @@ useEffect(() => {
   if (!fontsLoaded) {
     return null;
   }
+
+
+  const toggleFavorite = async (itemId) => {
+        if (!user || !user.uid) {
+            Alert.alert("Erro", "Você precisa estar logado para favoritar itens.");
+            return;
+        }
+        const favRef = doc(db, "favoritos", user.uid);
+        const isCurrentlyFavorited = favoritedItemIds.includes(itemId);
+        try {
+            if (isCurrentlyFavorited) {
+                await updateDoc(favRef, {
+                    itensFavoritados: arrayRemove(itemId)
+                });
+                setFavoritedItemIds(prev => prev.filter(id => id !== itemId));
+                
+            } else {
+                await setDoc(favRef, { 
+                    itensFavoritados: arrayUnion(itemId)
+                }, { merge: true }); 
+                setFavoritedItemIds(prev => [...prev, itemId]);
+            }
+            
+        } catch (error) {
+            console.error("Erro ao atualizar favorito:", error);
+            Alert.alert("Erro", "Falha ao salvar a preferência de favorito.");
+        }
+    };
 
   const renderBlogPost = ({ item }) => (
     <TouchableOpacity
@@ -249,14 +300,14 @@ const logoSource = typeof item.logoEmpresa === 'string' && item.logoEmpresa.star
         ? { uri: item.logoEmpresa } 
         : item.logoEmpresa; 
     
-    const isFavorited = favoritedPetshopIds.includes(item.favoriteId);
+    const isFavorited = favoritedItemIds.includes(item.id);
     return (
       <TouchableOpacity
         style={styles.petshopCard}
         onPress={() => navigation.navigate('PetshopUser', { petshopId: item.id })}
       >
         <View style={styles.petshopLogoWrapper}>
-          <Image source={item.logoEmpresa} style={styles.petshopLogo} />
+          <Image source={logoSource} style={styles.petshopLogo} />
         </View>
         <View style={styles.petshopDetails}>
           <Text style={styles.petshopName}>{item.nome}</Text>
@@ -267,7 +318,7 @@ const logoSource = typeof item.logoEmpresa === 'string' && item.logoEmpresa.star
             <Text style={styles.petshopDistanceText}> • {item.distance}</Text>
           </View>
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
           <Ionicons
             name={isFavorited ? "heart" : "heart-outline"}
             size={width * 0.06}
@@ -279,26 +330,30 @@ const logoSource = typeof item.logoEmpresa === 'string' && item.logoEmpresa.star
     );
   };
 
-const renderService = ({ item }) => (
+const renderService = ({ item }) => {
+const logoSource = typeof item.logoPerfil === 'string' && item.logoPerfil.startsWith('http') 
+        ? { uri: item.logoPerfil } 
+        : item.logoPerfil; 
+    return (
     <TouchableOpacity
       style={styles.serviceCard}
       onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}
     >
       <Image 
-        source={{ uri: item.image }} 
+        source={logoSource} 
         style={styles.serviceImage} 
-        defaultSource={UserIcon} // Opção de imagem de fallback, se o UserIcon for uma imagem local
+        defaultSource={UserIcon}
       />
       <Text style={styles.serviceName}>{item.name}</Text>
       <Text style={styles.serviceRole}>{item.role}</Text>
       <Text style={styles.serviceLocation}>{item.location}</Text>
       <TouchableOpacity
         style={styles.serviceButton}
-        onPress={() => navigation.navigate('ServicoUser', { cuidadorId: item.id })}>
+        onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}>
         <Text style={styles.serviceButtonText}>Ver perfil</Text>
       </TouchableOpacity>
     </TouchableOpacity>
-  );
+  );};
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -399,7 +454,7 @@ const renderService = ({ item }) => (
             </TouchableOpacity>
           </View>
           <FlatList
-            data={petshops}
+            data={dbPetshops}
             renderItem={renderPetshop}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}

@@ -11,7 +11,7 @@ import {
   Button,
   useWindowDimensions,
   TextInput,
-  ActivityIndicator, // Adicionado para indicar carregamento
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,8 +58,6 @@ function useChats(uid, tipo) {
     let profileData = null;
     let targetCollection = null;
     let profileDocSnap = null;
-    
-    // Para 'prestador', checa prestador e empresa. Para 'ongs', checa só ongs.
     const collectionsToCheck = 
         chatTipo === 'ongs' ? ['ongs'] : 
         chatTipo === 'prestador' ? ['prestador', 'empresa'] : 
@@ -75,7 +73,6 @@ function useChats(uid, tipo) {
                 break;
             }
         } catch (error) {
-            // Se o getDoc falhar por permissão, logamos isso
             if (error.code === 'permission-denied') {
                 console.error(
                     `ERRO DE PERMISSÃO AO LER PERFIL EM: ${targetCollection}/${outroLadoId}`

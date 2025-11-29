@@ -14,10 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/FontAwesome';
-// Importação do Firebase ajustada para usar a sua instância 'db'
 import { db } from "../../../../firebaseConfig"; 
-import { doc, getDoc, getFirestore } from 'firebase/firestore'; 
-// Importe as fontes
+import { doc, getDoc, getFirestore, setDoc } from 'firebase/firestore'; 
 import {
   useFonts,
   JosefinSans_400Regular,
@@ -26,8 +24,6 @@ import {
 } from '@expo-google-fonts/josefin-sans';
 import { Nunito_700Bold, Nunito_400Regular } from '@expo-google-fonts/nunito';
 import { useUser } from "../NavigationUser/UserContext";
-
-// Mock de assets
 import Back from '../assets/FotosInicial/Back.png';
 import CatImage from '../assets/FotosMapa/GatoCaindo.png';
 import CardBg from '../assets/FotosMapa/CaixaPerfilLaranja.png';
@@ -48,8 +44,6 @@ const COLORS = {
   offWhite: '#f8f8f8',
   yellowStar: '#FFD700',
 };
-
-// --- Funções de Avaliação (Mantidas no escopo principal) ---
 
 function AvaliacaoEstrelas({ max = 5, onChange }) {
   const [rating, setRating] = useState(0);
@@ -126,7 +120,6 @@ export default function ServicoDetalhes() {
   const mockImage = require('../assets/FotosMapa/Nicolas.png'); 
    const { userData, setUserData } = useUser();
 
-  // Carregamento de fontes
   const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
     JosefinSans_700Bold,
@@ -134,16 +127,12 @@ export default function ServicoDetalhes() {
     Nunito_400Regular,
     Nunito_700Bold,
   });
-  
-  // Efeito para buscar dados do serviço
   useEffect(() => {
     if (!uid) {
       console.error("ID do Serviço não fornecido!");
       setIsLoading(false);
       return;
     }
-    
-    // Removemos getFirestore() se 'db' já está importado e inicializado
 
     const fetchServicoDetails = async () => {
       try {

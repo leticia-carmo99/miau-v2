@@ -486,20 +486,35 @@ onLoadEnd={() => {
     </View>
 
     {/* Cards */}
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      {filtered.map((item) => (
-        <TouchableOpacity key={item.id} onPress={() => navigation.navigate('PetshopUser', { uid: item.id })}>
-        <View key={item.id} style={styles.card}>
-          <Image source={item.logo} style={styles.cardImage} />
-          <View style={styles.cardTitleContainer}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            <Text style={styles.cardText}> {'• ' + item.cidade} </Text>
-          </View>
-          <Text style={styles.cardText}>{item.description}</Text>
-        </View>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+/* Cards */
+<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    {filtered.map((item) => {
+        const logoSource = typeof item.logo === 'string' && item.logo.startsWith('http') 
+            ? { uri: item.logo } 
+            : item.logo;
+        return (
+            <TouchableOpacity 
+                key={item.id} 
+                onPress={() => navigation.navigate('PetshopUser', { uid: item.id })}
+            >
+                <View style={styles.card}>
+                    <TouchableOpacity 
+                        style={styles.favoriteButton}
+                        onPress={() => toggleFavorite(item.id)}
+                    >
+                    </TouchableOpacity>
+                    <Image source={logoSource} style={styles.cardImage} />
+
+                    <View style={styles.cardTitleContainer}>
+                        <Text style={styles.cardTitle}>{item.name}</Text>
+                        <Text style={styles.cardText}> {'• ' + item.cidade} </Text>
+                    </View>
+                    <Text style={styles.cardText}>{item.description}</Text>
+                </View>
+            </TouchableOpacity>
+        );
+    })}
+</ScrollView>
 
 </ScrollView>
 
