@@ -337,7 +337,7 @@ const logoSource = typeof item.logoPerfil === 'string' && item.logoPerfil.starts
     return (
     <TouchableOpacity
       style={styles.serviceCard}
-      onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}
+      onPress={() => navigation.navigate('ServicoUser', { uid: item.id })}
     >
       <Image 
         source={logoSource} 
@@ -349,7 +349,7 @@ const logoSource = typeof item.logoPerfil === 'string' && item.logoPerfil.starts
       <Text style={styles.serviceLocation}>{item.location}</Text>
       <TouchableOpacity
         style={styles.serviceButton}
-        onPress={() => navigation.navigate('ServicoUser', { serviceId: item.id })}>
+        onPress={() => navigation.navigate('ServicoUser', { uid: item.id })}>
         <Text style={styles.serviceButtonText}>Ver perfil</Text>
       </TouchableOpacity>
     </TouchableOpacity>

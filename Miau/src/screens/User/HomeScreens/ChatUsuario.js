@@ -188,12 +188,7 @@ function useChats(uid, tipo) {
   return { chats, loading };
 }
 
-
-// ==========================================================
-// 🎨 RENDER ITEM (MANTIDO E AJUSTADO PARA USAR AS NOVAS PROPS)
-// ==========================================================
 const renderItemFirebase = ({ item, navigationRef }) => {
-    // Agora o 'item' já contém 'nomeOutroLado' e 'fotoOutroLado' enriquecidos
     const { 
         id, 
         nomeOutroLado, 
@@ -203,8 +198,6 @@ const renderItemFirebase = ({ item, navigationRef }) => {
         naoLidas,
         outroLadoId // Novo campo para navegação
     } = item;
-    
-    // Lógica de formatação de hora
     let hora = "Não disponível";
     if (ultima_alz && ultima_alz.toDate) {
         hora = ultima_alz.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -217,15 +210,18 @@ const renderItemFirebase = ({ item, navigationRef }) => {
     }
 
     const nome = nomeOutroLado || "Conversa Desconhecida"; 
-    // Usamos a URL de imagem fornecida, garantindo que seja um objeto {uri: ...}
-    const avatarSource = { uri: fotoOutroLado || 'https://placehold.co/150x150/FFAB36/FFFFFF?text=PET' }; 
+    const urlFoto = fotoOutroLado && typeof fotoOutroLado === 'string' && fotoOutroLado.length > 5 
+        ? fotoOutroLado 
+        : 'https://placehold.co/150x150/FFAB36/FFFFFF?text=PET';
+        
+    const avatarSource = { uri: urlFoto };
     const ultimaMensagem = ultima_msg || "Nenhuma mensagem..."; 
     const unread = naoLidas || 0;
     
+
   return (
     <TouchableOpacity
       style={styles.chatItem}
-      // Passa o chatId e o targetUser (ID do outro lado)
       onPress={() =>
         navigationRef.navigate('ChatConversa', {
           chatId: id,
@@ -252,9 +248,6 @@ const renderItemFirebase = ({ item, navigationRef }) => {
   );
 };
 
-// ==========================================================
-// 🤝 TELAS DE TABS (AJUSTADAS PARA USAR O NOVO HOOK)
-// ==========================================================
 
 const OngsScreen = ({ search, setSearch, navigationRef }) => {
   const { userData } = useUser();
@@ -324,7 +317,6 @@ const OngsScreen = ({ search, setSearch, navigationRef }) => {
 
 const ServicosScreen = ({ search, setSearch, navigationRef }) => { 
   const { userData } = useUser();
-  // Usa o novo hook useChats
   const { chats, loading } = useChats(userData?.uid, "prestador");
   
   const filteredChats = chats.filter((item) =>

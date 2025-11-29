@@ -175,10 +175,10 @@ export default function ServicoDetalhes() {
     nome = 'Serviço Não Informado', 
     email = 'contato@servico.com', // Este campo pode não existir em 'prestador'
     telefone = '(00) 90000-0000',
-    redes = { instagram: '@perfil', facebook: '@perfil' }, 
+    redes = '@perfil', 
     descricao = 'Nenhuma descrição fornecida.', // Este campo pode não existir em 'prestador'
     horarioFuncionamento = 'Não informado', // Ajustado o fallback
-    logoPerfil = mockImage // Usando o nome correto do campo da imagem
+    logoPerfil = mockImage
   } = servicoData; 
 
 const handleChatPress = async () => {
@@ -235,11 +235,15 @@ await updateDoc(chatRef, {
       Alert.alert("Sucesso", `Obrigado! Sua nota de ${selectedRating} estrelas foi registrada.`);
   };
 
+  const logoSource = typeof logoPerfil === 'string' && logoPerfil.startsWith('http') 
+        ? { uri: logoPerfil } 
+        : logoPerfil; 
+
   return (
     <ScrollView style={{flex:1, backgroundColor: COLORS.white}}>
       <SafeAreaView style={styles.container}>
         {/* Usar a imagem do BD ou fallback */}
-        <Image source={logoPerfil} style={styles.background} />
+        <Image source={logoSource} style={styles.background} />
 
         <View style={styles.menuView}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -288,14 +292,14 @@ await updateDoc(chatRef, {
                 
                 {redes.instagram && (
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{redes.instagram}</Text>
+                    <Text style={styles.socialText}>{redes}</Text>
                     <Image source={InstagramIcon} style={styles.socialIconImage} />
                   </View>
                 )}
                 
                 {redes.facebook && (
                   <View style={styles.socialRow}>
-                    <Text style={styles.socialText}>{redes.facebook}</Text>
+                    <Text style={styles.socialText}>{redes}</Text>
                     <Image source={FacebookIcon} style={styles.socialIconImage} />
                   </View>
                 )}

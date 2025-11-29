@@ -14,7 +14,7 @@ import {
 import { useNavigation, DrawerActions, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Menu from '../NavigationUser/MenuV1';
-import { auth, db } from "../../../../firebaseConfig";
+import { db } from "../../../../firebaseConfig";
 import { collection, getDocs, query, where } from "firebase/firestore";
 
 const { width } = Dimensions.get('window');
@@ -27,12 +27,15 @@ const Colors = {
   mediumGray: '#A0A0A0',
 };
 
-// --- Componente do Card de Animal (com imagem e barra de info) ---
 const AnimalCard = ({ item, index, onPress }) => {
   const cardColor =
     index % 4 === 0 || index % 4 === 3
       ? Colors.primaryPurple
       : Colors.primaryOrange;
+
+  const petImageSource = typeof item.petImageUri === 'string' && item.petImageUri.startsWith('http') 
+      ? { uri: item.petImageUri } 
+      : item.petImageUri; 
 
   return (
     <TouchableOpacity
@@ -43,8 +46,8 @@ const AnimalCard = ({ item, index, onPress }) => {
        onPress={() => onPress(item)}
       activeOpacity={0.8}>
       
-      {item.petImageUri ? (
-        <Image source={item.petImageUri} style={styles.animalImage} />
+      {petImageSource ? (
+        <Image source={petImageSource} style={styles.animalImage} />
       ) : (
         <View style={styles.animalImagePlaceholder} />
       )}
@@ -65,7 +68,6 @@ const AnimalCard = ({ item, index, onPress }) => {
   );
 };
 
-// --- Componente SearchLocation ---
 const SearchLocation = () => {
   const [searchVisible, setSearchVisible] = useState(false);
   const [query, setQuery] = useState('');

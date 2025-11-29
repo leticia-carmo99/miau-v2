@@ -23,7 +23,7 @@ import {
 } from '@expo-google-fonts/josefin-sans';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import PatinhaBranca from '../Images/LogoMiniPretoBranco.png';
-import { collection, query, where, onSnapshot, orderBy, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useOng } from '../NavigationOng/OngContext';
 import { db } from "../../../../firebaseConfig";
 
@@ -91,13 +91,13 @@ const otherUserAvatar = targetImage || data?.fotoOutroLado || 'https://images.pe
     useEffect(() => {
         if (!chatId) return;
 
-        const msgsRef = collection(db, "chat", chatId, "mensagens");
-        const q = query(msgsRef, orderBy("timestamp", "asc"));
+const msgsRef = collection(db, "chat", chatId, "msg"); // MUDAR AQUI
+const q = query(msgsRef, orderBy("createdAt", "asc"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedMessages = snapshot.docs.map(doc => {
                 const msgData = doc.data();
-                const senderType = msgData.remetenteId === ongId ? 'user' : 'friend';
+const senderType = msgData.senderId === ongId ? 'user' : 'friend';
                 
                 const timeString = msgData.timestamp?.toDate()?.toLocaleTimeString([], {
                     hour: '2-digit',
@@ -106,8 +106,8 @@ const otherUserAvatar = targetImage || data?.fotoOutroLado || 'https://images.pe
 
                 return {
                     id: doc.id,
-                    text: msgData.texto || null,
-                    image: msgData.fotoBase64 || null, // Se for Base64
+text: msgData.text || null,
+    image: msgData.image || null,
                     sender: senderType,
                     time: timeString,
                 };
@@ -132,20 +132,19 @@ const otherUserAvatar = targetImage || data?.fotoOutroLado || 'https://images.pe
         if (!chatId || !ongId || !text) return;
 
         try {
-            const msgsRef = collection(db, "chat", chatId, "mensagens");
+            const msgsRef = collection(db, "chat", chatId, "msg");
             
-            await addDoc(msgsRef, {
-                texto: text,
-                remetenteId: ongId,
-                timestamp: serverTimestamp(),
-            });
+await addDoc(msgsRef, {
+    text: text,
+    senderId: ongId,
+    createdAt: serverTimestamp(), 
+});
             const chatDocRef = doc(db, "chat", chatId);
             await updateDoc(chatDocRef, {
                 ultima_msg: text,
                 ultima_alz: serverTimestamp(),
                 naoLidasOng: 0, 
             });
-
 
             setInputText('');
         } catch (error) {
@@ -175,11 +174,11 @@ const otherUserAvatar = targetImage || data?.fotoOutroLado || 'https://images.pe
                 
                 if (base64Image) {
                     const msgsRef = collection(db, "chat", chatId, "mensagens");
-                    await addDoc(msgsRef, {
-                        fotoBase64: base64Image,
-                        remetenteId: ongId,
-                        timestamp: serverTimestamp(),
-                    });
+await addDoc(msgsRef, {
+    image: base64Image, // MUDAR AQUI
+    senderId: ongId, // MUDAR AQUI
+    createdAt: serverTimestamp(), // MUDAR AQUI
+});
 
                     const chatDocRef = doc(db, "chat", chatId);
                     await updateDoc(chatDocRef, {

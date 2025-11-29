@@ -77,17 +77,12 @@ const { targetUser, targetName, chatId: routeChatId } = route.params || {};
   const flatListRef = useRef(null);
   const [loading, setLoading] = useState(true);
   
-
-  
-// EFEITO PRINCIPAL CORRIGIDO: Implementando um cleanup mais seguro para Promises assíncronas
   useEffect(() => {
 if (!currentUserId || !friendId || !routeChatId) {
             Alert.alert("Erro", "IDs de chat ou usuário ausentes. Não foi possível iniciar.");
             setLoading(false);
             return;
         }
-    
-    // Declara a variável de unsubscribe. Começa como undefined.
     let unsubscribe;
 
     const initializeChat = async () => {

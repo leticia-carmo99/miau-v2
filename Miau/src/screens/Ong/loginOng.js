@@ -48,7 +48,6 @@ export default function LoginUser({ navigation }) {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        Alert.alert("Sucesso!", "Login de ONG realizado com sucesso.");
         navigation.navigate('MainDrawerOng');
       } else {
         await auth.signOut(); 
