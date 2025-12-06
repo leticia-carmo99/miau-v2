@@ -60,7 +60,7 @@ function useChats(uid, tipo) {
     let profileDocSnap = null;
     const collectionsToCheck = 
         chatTipo === 'ongs' ? ['ongs'] : 
-        chatTipo === 'prestador' ? ['prestador', 'empresa'] : 
+        chatTipo === 'prestador' ? ['prestador'] : 
         [];
     
     for (const collectionName of collectionsToCheck) {
@@ -106,10 +106,19 @@ function useChats(uid, tipo) {
     };
   };
 
+  const descobrirColecao = async (uid) => {
+  const colOng = await getDoc(doc(db, "ongs", uid));
+  if (colOng.exists()) return "ongs";
+
+  const colPrestador = await getDoc(doc(db, "prestador", uid));
+  if (colPrestador.exists()) return "prestador";
+
+  return "usuario";
+};
+
 
   useEffect(() => {
-    // 1. LOG INICIAL
-    console.log(`[DEBUG CHAT] Tentando buscar chats. UID: ${uid}, Tipo: ${tipo}`); // <-- ALTERAÇÃO AQUI
+    console.log(`[DEBUG CHAT] Tentando buscar chats. UID: ${uid}, Tipo: ${tipo}`);
 
     if (!uid) {
         setLoading(true);
@@ -118,40 +127,61 @@ function useChats(uid, tipo) {
 
     const q = query(
       collection(db, "chat"),
-  where("participantes", "array-contains", uid),
+      where("participantes", "array-contains", uid),
       orderBy("ultima_alz", "desc")
     );
     
     const fetchDataAndListen = () => {
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             setLoading(true);
-            
-            // 2. LOG DE RESULTADOS DA QUERY PRINCIPAL
             console.log(`[DEBUG CHAT] Query principal (chat) retornou: ${snapshot.size} documento(s) para o tipo: ${tipo}.`); // <-- ALTERAÇÃO AQUI
             
             if (snapshot.empty) {
-                // Se a lista de chats estiver vazia, desliga o loading imediatamente
                 setChats([]);
                 setLoading(false);
                 console.log(`[DEBUG CHAT] Lista de chats vazia para o tipo '${tipo}'.`);
                 return;
             }
 
-            const chatsData = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
+const chatsData = await Promise.all(
+  snapshot.docs.map(async (docSnap) => {
+      const data = docSnap.data();
+      const outroId = data.participantes.find(p => p !== uid);
+
+      let colecaoOutroLado = null;
+      if (outroId) {
+          colecaoOutroLado = await descobrirColecao(outroId);
+      }
+
+      return {
+          id: docSnap.id,
+          ...data,
+          colecaoOutroLado
+      };
+  })
+);
+
+
+const chatsFiltrados = chatsData.filter(chat => {
+    if (!chat.colecaoOutroLado) return false;
+
+    if (tipo === "ongs") return chat.colecaoOutroLado === "ongs";
+
+    if (tipo === "prestador") return chat.colecaoOutroLado === "prestador";
+
+    return false;
+});
+
             
-            const enrichedChats = await Promise.all(
-                chatsData.map(async (chat) => {
+const enrichedChats = await Promise.all(
+    chatsFiltrados.map(async (chat) => {
+
                     const outroLadoId = chat.participantes.find(p => p !== uid);
                     
                     if (!outroLadoId) return null;
                     
                     try {
                         const profile = await fetchProfileData(outroLadoId, tipo);
-                        
-                        // 3. LOG DE ENRIQUECIMENTO BEM SUCEDIDO
                         console.log(`[DEBUG CHAT] Perfil de ${profile.nomeOutroLado} carregado da coleção: ${profile.targetCollection}.`); // <-- ALTERAÇÃO AQUI
                         
                         return {
@@ -172,7 +202,7 @@ function useChats(uid, tipo) {
             );
             
             setChats(enrichedChats.filter(chat => chat !== null));
-            setLoading(false); // Desativa o loading no final do processamento
+            setLoading(false); 
         }, (error) => {
              console.error(`ERRO DE PERMISSÃO NA QUERY PRINCIPAL (collection: chat, tipo: ${tipo}):`, error.message);
              setLoading(false);
@@ -196,7 +226,7 @@ const renderItemFirebase = ({ item, navigationRef }) => {
         ultima_msg, 
         ultima_alz, 
         naoLidas,
-        outroLadoId // Novo campo para navegação
+        outroLadoId
     } = item;
     let hora = "Não disponível";
     if (ultima_alz && ultima_alz.toDate) {
@@ -225,7 +255,7 @@ const renderItemFirebase = ({ item, navigationRef }) => {
       onPress={() =>
         navigationRef.navigate('ChatConversa', {
           chatId: id,
-          targetUser: outroLadoId, // Adiciona o ID do outro lado para o ChatConversa
+          targetUser: outroLadoId,
           targetName: nome,
         })
       }>

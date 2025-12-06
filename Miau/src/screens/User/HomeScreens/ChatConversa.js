@@ -63,7 +63,7 @@ export default function ChatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   
-const { targetUser, targetName, chatId: routeChatId } = route.params || {};
+const { targetUser, targetName, chatId: routeChatId, uid } = route.params || {};
   
   const { userData } = useUser(); 
   const currentUserId = userData?.uid; 
@@ -121,7 +121,6 @@ if (!currentUserId || !friendId || !routeChatId) {
         }
     };
     
-    // Chama a função assíncrona imediatamente
     initializeChat();
     return () => {
         if (typeof unsubscribe === 'function') {
@@ -140,7 +139,9 @@ if (!currentUserId || !friendId || !routeChatId) {
   }, [messages, loading]);
 
 const handleSend = async (messageText = inputText, imageUri = null) => {
-    if (!chatId || !currentUserId || (!messageText.trim() && !imageUri)) return;
+    const text = messageText?.trim() || ""; 
+
+    if (!chatId || !currentUserId || (!text && !imageUri)) return;
 
     try {
         const message = messageText.trim() || "Imagem";

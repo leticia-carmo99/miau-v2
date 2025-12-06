@@ -4,6 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Menu from '../NavigationUser/MenuV1.js';
+import { useUser } from "../NavigationUser/UserContext";
+
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db } from "../../../../firebaseConfig"; 
+
 
 import {
   useFonts,
@@ -78,62 +83,11 @@ const establishments = [
   },
 ];
 
-const petshops = [
-  {
-    id: 'p1',
-    name: 'Petz',
-    logo: require('../assets/FotosInicial/PetzRedondo.png'),
-    rating: 4.9,
-    distance: '0.4 km',
-    category: 'Pet shop',
-    favoriteId: 'fav_p1',
-  },
-  {
-    id: 'p2',
-    name: 'Pet Point',
-    logo: require('../assets/FotosInicial/PetPoint.png'),
-    rating: 3.9,
-    distance: '0.4 km',
-    category: 'Pet shop',
-    favoriteId: 'fav_p2',
-  },
-  {
-    id: 'p3',
-    name: 'Pet-shop',
-    logo: require('../assets/FotosInicial/PetShop.png'),
-    rating: 4.2,
-    distance: '0.8 km',
-    category: 'Pet shop',
-    favoriteId: 'fav_p3',
-  },
-];
-
-const services = [
-  {
-    id: '1',
-    name: 'Nome do Cuidador',
-    image: 'https://placehold.co/80x80/FFA07A/FFFFFF?text=Cuidador',
-    role: 'Cuidador - SP',
-    location: 'Capital - SP',
-  },
-  {
-    id: '2',
-    name: 'Nome do Cuidador',
-    image: 'https://placehold.co/80x80/98FB98/FFFFFF?text=Cuidador',
-    role: 'Cuidador - SP',
-    location: 'Capital - SP',
-  },
-  {
-    id: '3',
-    name: 'Nome do Cuidador',
-    image: 'https://placehold.co/80x80/ADD8E6/FFFFFF?text=Cuidador',
-    role: 'Cuidador - SP',
-    location: 'Capital - SP',
-  },
-];
 
   export default function Favoritos() {
   const navigation = useNavigation();
+  const { user } = useUser();
+  const [servicesFavoritos, setServicesFavoritos] = useState([]);
 
 const [fontsLoaded] = useFonts({
     JosefinSans_400Regular,
@@ -152,6 +106,60 @@ const [fontsLoaded] = useFonts({
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded]);
+
+useEffect(() => {
+  const fetchFavoritos = async () => {
+    if (!user?.uid) return;
+
+    try {
+      // ---------------- PETSHOPS ----------------
+      const petshopRef = collection(db, "empresa");
+      const qPet = query(
+        petshopRef,
+        where("tipoServico", "==", "Petshop"),
+        where("curtidas", "array-contains", user.uid)
+      );
+      const snapshotPet = await getDocs(qPet);
+
+      const likedPetshops = snapshotPet.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().nome || "Petshop",
+        logo: doc.data().logoEmpresa || require('../assets/FotosInicial/PetShop.png'),
+        rating: doc.data().nota || 4.0,
+        distance: '3 km',
+        description: doc.data().sobre || 'Petshop',
+      }));
+
+      setFavoritos(likedPetshops);
+
+
+      // ---------------- SERVIÇOS / PRESTADORES ----------------
+      const prestadorRef = collection(db, "prestador");
+      const qPrest = query(
+        prestadorRef,
+        where("curtidas", "array-contains", user.uid)
+      );
+      const snapshotPrest = await getDocs(qPrest);
+
+      const likedServices = snapshotPrest.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().nome || "Prestador",
+        image: doc.data().fotoPerfil || "https://placehold.co/80x80/AAAAAA/FFFFFF?text=User",
+        role: doc.data().tipoServico || "Serviço",
+        location: doc.data().cidade || "Local não informado",
+      }));
+
+      setServicesFavoritos(likedServices);
+
+    } catch (err) {
+      console.log("Erro ao carregar favoritos:", err);
+    }
+  };
+
+  fetchFavoritos();
+}, [user]);
+
+
 
 const [favoritos, setFavoritos] = useState([]);
 const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([])
@@ -178,7 +186,7 @@ const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([])
   );
 
   const renderPetshop = ({ item }) => {
-    const isFavorited = favoritedPetshopIds.includes(item.favoriteId);
+    const isFavorited = favoritedPetshopIds.includes(item.id);
     return (
       <TouchableOpacity
         style={styles.petshopCard}
@@ -196,7 +204,7 @@ const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([])
             <Text style={styles.petshopDistanceText}> • {item.distance}</Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => toggleFavorite(item.favoriteId)}>
+        <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
           <Ionicons
             name={isFavorited ? "heart" : "heart-outline"}
             size={width * 0.06}
@@ -254,45 +262,41 @@ const [favoritedPetshopIds, setFavoritedPetshopIds] = useState([])
 
 <Text style={styles.subtitle}>Pet-shops</Text>
 <View style={styles.petshopContainer}>
-      {favoritos.length === 0 ? (
-        <Text
-          style={{
-            fontSize: width * 0.045,
-            textAlign: "center",
-            marginTop: width * 0.2,
-            color: "gray",
-          }}
-        >
-          Nenhum item favoritado
-        </Text>
-      ) : (
-        <FlatList
-          data={favoritos}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View
-              style={{
-                padding: width * 0.04,
-                borderBottomWidth: 1,
-                borderColor: "#ddd",
-              }}
-            >
-              <Text style={{ fontSize: width * 0.045 }}>{item.name}</Text>
-            </View>
-          )}
-        />
-      )}
-          </View>
+  {favoritos.length === 0 ? (
+    <Text
+      style={{
+        fontSize: width * 0.045,
+        textAlign: "center",
+        marginTop: width * 0.2,
+        color: "gray",
+      }}
+    >
+      Nenhum item favoritado
+    </Text>
+  ) : (
+    <FlatList
+      data={favoritos}
+      keyExtractor={(item) => item.id}
+      renderItem={renderPetshop}
+    />
+  )}
+</View>
 
 <Text style={styles.subtitle}>Serviços</Text>
-          <FlatList
-            data={services}
-            renderItem={renderService}
-            keyExtractor={(item) => item.id + 'service'}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListContent}
-          />
+{servicesFavoritos.length === 0 ? (
+  <Text style={{ fontSize: width * 0.045, marginTop: width * 0.2, color: "gray" }}>
+    Nenhum serviço favoritado
+  </Text>
+) : (
+  <FlatList
+    data={servicesFavoritos}
+    renderItem={renderService}
+    keyExtractor={(item) => item.id}
+    horizontal
+    showsHorizontalScrollIndicator={false}
+  />
+)}
+
 
 </View>
 

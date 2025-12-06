@@ -15,7 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { db } from "../../../../firebaseConfig"; 
-import { doc, getDoc, getFirestore, setDoc } from 'firebase/firestore'; 
+import { doc, getDoc, getFirestore, setDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import {
   useFonts,
   JosefinSans_400Regular,
@@ -135,27 +135,31 @@ export default function ServicoDetalhes() {
     }
 
     const fetchServicoDetails = async () => {
-      try {
-        // CORRIGIDO: Coleção "prestador" e variável "uid"
-        const docRef = doc(db, "prestador", uid); 
-        const docSnap = await getDoc(docRef);
+try {
+  const docRef = doc(db, "prestador", uid);
+  const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setServicoData(data);
-        } else {
-          Alert.alert("Erro", "Prestador de Serviço não encontrado.");
-        }
-      } catch (error) {
-        console.error("Erro ao buscar detalhes do Prestador:", error);
-        Alert.alert("Erro", "Não foi possível carregar os dados do Prestador.");
-      } finally {
-        setIsLoading(false);
-      }
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    setServicoData(data);
+
+    if (data.curtidas && Array.isArray(data.curtidas)) {
+      setFavorited(data.curtidas.includes(userData.uid));
+    }
+
+  } else {
+    Alert.alert("Erro", "Prestador de Serviço não encontrado.");
+  }
+
+} catch (error) {
+  console.error("Erro ao buscar detalhes do Prestador:", error);
+  Alert.alert("Erro", "Não foi possível carregar os dados do Prestador.");
+} finally {
+  setIsLoading(false);
+}
     };
 
     fetchServicoDetails();
-  // CORRIGIDO: Dependência do useEffect usando 'uid'
   }, [uid]);
 
 
@@ -173,11 +177,11 @@ export default function ServicoDetalhes() {
   
   const { 
     nome = 'Serviço Não Informado', 
-    email = 'contato@servico.com', // Este campo pode não existir em 'prestador'
+    email = 'contato@servico.com',
     telefone = '(00) 90000-0000',
     redes = '@perfil', 
     descricao = 'Nenhuma descrição fornecida.', // Este campo pode não existir em 'prestador'
-    horarioFuncionamento = 'Não informado', // Ajustado o fallback
+    horarioFuncionamento = 'Não informado', 
     logoPerfil = mockImage
   } = servicoData; 
 
@@ -235,6 +239,30 @@ await updateDoc(chatRef, {
       Alert.alert("Sucesso", `Obrigado! Sua nota de ${selectedRating} estrelas foi registrada.`);
   };
 
+  const handleToggleCurtida = async () => {
+  try {
+    if (!userData?.uid || !uid) return;
+
+    const prestadorRef = doc(db, "prestador", uid);
+
+    if (favorited) {
+      await updateDoc(prestadorRef, {
+        curtidas: arrayRemove(userData.uid)
+      });
+    } else {
+      await updateDoc(prestadorRef, {
+        curtidas: arrayUnion(userData.uid)
+      });
+    }
+
+    setFavorited(!favorited);
+
+  } catch (error) {
+    console.log("Erro ao atualizar curtida:", error);
+  }
+};
+
+
   const logoSource = typeof logoPerfil === 'string' && logoPerfil.startsWith('http') 
         ? { uri: logoPerfil } 
         : logoPerfil; 
@@ -242,7 +270,6 @@ await updateDoc(chatRef, {
   return (
     <ScrollView style={{flex:1, backgroundColor: COLORS.white}}>
       <SafeAreaView style={styles.container}>
-        {/* Usar a imagem do BD ou fallback */}
         <Image source={logoSource} style={styles.background} />
 
         <View style={styles.menuView}>
@@ -262,7 +289,7 @@ await updateDoc(chatRef, {
               </View>
               <Text style={styles.headDate}>{horarioFuncionamento}</Text>
             </View>
-            <TouchableOpacity onPress={() => setFavorited(!favorited)}>
+            <TouchableOpacity onPress={handleToggleCurtida}>
               <Ionicons
                 name={favorited ? "heart" : "heart-outline"}
                 size={width * 0.1}

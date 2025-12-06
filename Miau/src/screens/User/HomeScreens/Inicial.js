@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, Dimensions, Button} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, Dimensions, Button, Alert} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -90,7 +90,10 @@ const [serviceProvidersState, setServiceProvidersState] = useState([]);
 const [favoritedItemIds, setFavoritedItemIds] = useState([]);
 const [dbPetshops, setDbPetshops] = useState([]); 
   const [isLoadingPetshops, setIsLoadingPetshops] = useState(true);
+const [likedItems, setLikedItems] = useState([]);
+
   const [fontsLoaded] = useFonts({
+
     Nunito_400Regular,
     Nunito_700Bold,
   });
@@ -168,10 +171,16 @@ useEffect(() => {
                     nota: data.nota || 4.0,
                     distance: '3km', 
                     sobre: data.sobre || 'Pet shop',
+                    curtidas: data.curtidas || []
                 };
             });
 
             setDbPetshops(fetchedPetshops);
+                      setLikedItems(
+              fetchedPetshops
+                .filter(p => p.curtidas.includes(user?.uid))
+                .map(p => p.id)
+            );
         } catch (error) {
             console.error("Erro ao buscar petshops do Firestore:", error);
             Alert.alert("Erro", "Não foi possível carregar a lista de Petshops.");
@@ -182,6 +191,7 @@ useEffect(() => {
 
     fetchPetshops();
 }, []); 
+
 
 
 useEffect(() => {
@@ -198,7 +208,6 @@ useEffect(() => {
             name: data.nome || 'Prestador de Serviço', 
             image: data.fotoPerfil || 'https://placehold.co/80x80/666666/FFFFFF?text=Foto', 
             role: `${data.servico || 'Serviço'} - ${data.estado || 'BR'}`, 
-            // Usando Cidade e Estado
             location: `${data.cidade || ''} - ${data.estado || ''}`.trim().replace(/^ - | - $/, ''), 
             ...data 
           };
@@ -229,33 +238,36 @@ useEffect(() => {
     return null;
   }
 
+  
 
-  const toggleFavorite = async (itemId) => {
-        if (!user || !user.uid) {
-            Alert.alert("Erro", "Você precisa estar logado para favoritar itens.");
-            return;
-        }
-        const favRef = doc(db, "favoritos", user.uid);
-        const isCurrentlyFavorited = favoritedItemIds.includes(itemId);
-        try {
-            if (isCurrentlyFavorited) {
-                await updateDoc(favRef, {
-                    itensFavoritados: arrayRemove(itemId)
-                });
-                setFavoritedItemIds(prev => prev.filter(id => id !== itemId));
-                
-            } else {
-                await setDoc(favRef, { 
-                    itensFavoritados: arrayUnion(itemId)
-                }, { merge: true }); 
-                setFavoritedItemIds(prev => [...prev, itemId]);
-            }
-            
-        } catch (error) {
-            console.error("Erro ao atualizar favorito:", error);
-            Alert.alert("Erro", "Falha ao salvar a preferência de favorito.");
-        }
-    };
+
+  const toggleFavorite = async (petshopId) => {
+  if (!user || !user.uid) {
+    Alert.alert("Erro", "Você precisa estar logado para curtir.");
+    return;
+  }
+
+  const petshopRef = doc(db, "empresa", petshopId);
+  const isLiked = likedItems.includes(petshopId);
+
+  try {
+    if (isLiked) {
+      await updateDoc(petshopRef, {
+        curtidas: arrayRemove(user.uid)
+      });
+      setLikedItems(prev => prev.filter(id => id !== petshopId));
+    } else {
+      await updateDoc(petshopRef, {
+        curtidas: arrayUnion(user.uid)
+      });
+      setLikedItems(prev => [...prev, petshopId]);
+    }
+
+  } catch (error) {
+    console.error("Erro ao atualizar curtida:", error);
+  }
+};
+
 
   const renderBlogPost = ({ item }) => (
     <TouchableOpacity
@@ -276,10 +288,9 @@ useEffect(() => {
   );
 
   const renderEstablishment = ({ item }) => (
-    <TouchableOpacity
+    <View
       style={styles.establishmentCard}
-      onPress={() => navigation.navigate('VeterinarioDetalhes', { establishmentId: item.id })}
-    >
+       >
       <View style={styles.establishmentLogoContainer}>
         <Image source={item.logo} style={styles.establishmentLogo} />
       </View>
@@ -292,7 +303,7 @@ useEffect(() => {
         </View>
         <Text style={styles.establishmentDescription}>{item.description}</Text>
       </View>
-    </TouchableOpacity>
+      </View>
   );
 
   const renderPetshop = ({ item }) => {
@@ -300,7 +311,7 @@ const logoSource = typeof item.logoEmpresa === 'string' && item.logoEmpresa.star
         ? { uri: item.logoEmpresa } 
         : item.logoEmpresa; 
     
-    const isFavorited = favoritedItemIds.includes(item.id);
+    const isFavorited = likedItems.includes(item.id);
     return (
       <TouchableOpacity
         style={styles.petshopCard}
@@ -490,7 +501,7 @@ const logoSource = typeof item.logoPerfil === 'string' && item.logoPerfil.starts
 
           <View style={styles.eventCard}>
             <View style={styles.eventDarkArea}>
-            <Text style={styles.eventDate}>19 de abril</Text>
+            <Text style={styles.eventDate}>19 de dezembro</Text>
             <Text style={styles.eventTitle}>Encontro e doação de cães e gatos</Text>
            </View> 
             <View style={styles.eventLocationContainer}>
